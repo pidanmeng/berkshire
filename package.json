@@ -1,0 +1,25 @@
+{
+  "name": "投研",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "bun run --cwd valuation-tracker dev",
+    "server": "bun run --cwd valuation-tracker server",
+    "sync-data": "bun run --cwd valuation-tracker sync-data",
+    "build": "bun run --cwd valuation-tracker build",
+    "deploy": "bun run --cwd valuation-tracker deploy",
+    "deploy:preview": "bun run --cwd valuation-tracker deploy:preview"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@mozilla/readability": "^0.6.0",
+    "gray-matter": "^4.0.3",
+    "jsdom": "^30.0.1"
+  }
+}

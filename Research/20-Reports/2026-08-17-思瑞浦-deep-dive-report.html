@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>思瑞浦（688536.SH）深度调研报告 · 2026-08-17</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js" onerror="window.__ECHARTS_FAIL=true"></script>
+<style>
+/* ===== Vercel Dark — 系统自研暗黑专业风（design.md） ===== */
+:root{
+  --color-canvas:#000000; --color-surface:#0a0a0a; --color-surface-raised:#111111;
+  --color-border:#1a1a1a; --color-ink:#ffffff; --color-ink-muted:#a1a1a1;
+  --color-ink-subtle:#666666; --color-accent:#0070f3; --color-accent-hover:#3291ff;
+  --color-danger:#ee0000;
+  --fin-up:#ee0000; --fin-down:#3fb950; --star-on:#fbbf24; --star-off:#333333;
+  --radius-sm:6px; --radius-md:12px;
+  --font-ui:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",Inter,sans-serif;
+  --font-mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--color-canvas);color:var(--color-ink);font-family:var(--font-ui);font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased;}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px 80px;}
+/* ---- Hero ---- */
+.hero{padding:64px 0 40px;border-bottom:1px solid var(--color-border);margin-bottom:40px;}
+.hero .kicker{font-family:var(--font-mono);font-size:12px;color:var(--color-accent);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:16px;}
+.hero h1{font-size:40px;font-weight:600;letter-spacing:-1.2px;line-height:1.15;margin-bottom:12px;}
+.hero .sub{color:var(--color-ink-muted);font-size:15px;max-width:760px;}
+.hero .meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px;}
+.pill{border:1px solid var(--color-border);background:var(--color-surface);color:var(--color-ink-muted);border-radius:var(--radius-full);padding:4px 12px;font-size:12px;font-family:var(--font-mono);}
+.pill.red{color:#ff7b7b;border-color:#4a1a1a;background:#140a0a;}
+.pill.green{color:var(--fin-down);border-color:#14301f;background:#0a140d;}
+.pill.blue{color:var(--color-accent);border-color:#0a2a4a;background:#050d1a;}
+/* ---- Sections ---- */
+section{margin-top:56px;}
+h2{font-size:26px;font-weight:600;letter-spacing:-0.8px;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid var(--color-border);}
+h3{font-size:18px;font-weight:600;margin:28px 0 12px;}
+h4{font-size:15px;font-weight:600;margin:20px 0 8px;color:var(--color-ink-muted);}
+p{margin-bottom:12px;color:var(--color-ink-muted);}
+p strong,li strong{color:var(--color-ink);}
+.card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:20px 24px;margin-bottom:16px;}
+.card.tight{padding:14px 18px;}
+ul,ol{padding-left:20px;margin-bottom:12px;}
+li{margin-bottom:6px;color:var(--color-ink-muted);}
+a{color:var(--color-accent);text-decoration:none;}
+a:hover{color:var(--color-accent-hover);}
+code{font-family:var(--font-mono);font-size:13px;background:var(--color-surface-raised);border:1px solid var(--color-border);border-radius:4px;padding:1px 6px;}
+/* ---- Tables ---- */
+.table-scroll{overflow-x:auto;margin-bottom:16px;border:1px solid var(--color-border);border-radius:var(--radius-md);}
+table{width:100%;border-collapse:collapse;font-size:13.5px;background:var(--color-surface);}
+th{font-family:var(--font-mono);font-size:12px;font-weight:500;color:var(--color-ink-subtle);text-align:left;padding:10px 14px;border-bottom:1px solid var(--color-border);white-space:nowrap;background:var(--color-surface-raised);}
+td{padding:10px 14px;border-bottom:1px solid var(--color-border);color:var(--color-ink-muted);vertical-align:top;}
+tr:last-child td{border-bottom:none;}
+td.num{font-family:var(--font-mono);font-size:13px;white-space:nowrap;}
+.up{color:var(--fin-up);} .down{color:var(--fin-down);}
+/* ---- Star rating ---- */
+.star-rating{color:var(--star-on);letter-spacing:2px;font-size:16px;white-space:nowrap;}
+.star-rating .off{color:var(--star-off);}
+/* ---- Score grid ---- */
+.grid6{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+@media(max-width:720px){.grid6{grid-template-columns:repeat(2,1fr);}}
+.score-cell{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:16px;}
+.score-cell .dim{font-size:12px;color:var(--color-ink-subtle);font-family:var(--font-mono);}
+.score-cell .val{font-size:30px;font-weight:600;margin:6px 0 2px;}
+.score-cell .desc{font-size:12px;color:var(--color-ink-muted);line-height:1.5;}
+/* ---- Bull/Bear ---- */
+.bull{border-left:3px solid var(--fin-up);}
+.bear{border-left:3px solid var(--fin-down);}
+.verdict{background:var(--color-surface);border:1px solid var(--color-accent);border-radius:var(--radius-md);padding:20px 24px;margin:16px 0;}
+.verdict h4{color:var(--color-accent);margin-top:0;}
+/* ---- Chart ---- */
+.chart-container{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:16px;margin:16px 0;}
+.chart-source{font-family:var(--font-mono);font-size:11px;color:var(--color-ink-subtle);margin-top:8px;padding-top:8px;border-top:1px solid var(--color-border);}
+.chart-fallback{padding:16px;border:1px dashed var(--color-border);border-radius:var(--radius-sm);color:var(--color-ink-subtle);font-size:13px;}
+/* ---- Footer ---- */
+footer{margin-top:72px;padding-top:24px;border-top:1px solid var(--color-border);font-size:12px;color:var(--color-ink-subtle);line-height:1.8;}
+@media(max-width:720px){.hero h1{font-size:30px;}.wrap{padding:0 16px 60px;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ===== HERO ===== -->
+<div class="hero">
+  <div class="kicker">Deep Dive Report · 688536.SH · 半导体/模拟芯片</div>
+  <h1>思瑞浦：好公司 × 坏价格</h1>
+  <p class="sub">信号链国内第一梯队、连续 8 季环比增长、管理层诚实——但 PE-TTM 152x 将一切美好兑现进了价格。基本面改善真实（置信度 8），安全边际为负，<strong style="color:var(--color-ink)">当前建议观望</strong>。</p>
+  <div class="meta">
+    <span class="pill">数据时点 2026-08-17</span>
+    <span class="pill blue">taskId deep-dive-思瑞浦-20260817-8472</span>
+    <span class="pill red">质量筛查 🔴 RED</span>
+    <span class="pill green">管理层诚信 🟢</span>
+    <span class="pill">综合评分 6.7/10 ★★★☆</span>
+  </div>
+</div>
+
+<!-- ===== 核心结论 ===== -->
+<section>
+  <h2>一、核心结论</h2>
+  <div class="card bull">
+    <h3>🟢 多方：拐点真实</h3>
+    <p>2026Q1 营收 7.02 亿（+66.5%，连续 8 季环比增长）、扣非 +5256%、OCF 1.99 亿单季超 2025 全年、研发费用率 47.3%→23.3%——经营杠杆集中释放。（deep-read 10.1｜置信度 9）</p>
+  </div>
+  <div class="card bear">
+    <h3>🔴 空方：价格透支</h3>
+    <p>PE-TTM 152.1x / PB 6.28x / 历史分位 76.4%，隐含 2026-2028 归母 4.68/6.49/7.95 亿的连续高增（国信预测）；任一季失速即面临 40-60% 回撤空间。非经常性损益占净利 33%，扣非口径 PE 高达 227x。（deep-read 10.2｜置信度 9）</p>
+  </div>
+  <div class="verdict">
+    <h4>⚖ 裁决：好公司、坏价格 → 观望</h4>
+    <p style="margin-bottom:0">基本面方向多空均认可复苏，最大分歧是「2026-2028 盈利兑现的确定性 vs 152x 的安全边际」。结合产业（光模块仅占收入 5%，翻倍难撑 152x）、周期（2027 年成熟制程产能过剩是悬顶之剑）、国际（地缘双向风险）、政策（10% 所得税提供缓冲而非估值理由）综合裁决：<strong style="color:var(--color-ink)">安全边际为负，当前不构成买点</strong>。</p>
+  </div>
+</section>
+
+<!-- ===== 四大师评分卡 ===== -->
+<section>
+  <h2>二、四大师综合评分卡</h2>
+  <div class="grid6">
+    <div class="score-cell"><div class="dim">能力圈 · 巴菲特</div><div class="val">7.0</div><div class="star-rating">★★★☆<span class="off">✩</span></div><div class="desc">生意本质清晰；技术深度理解有限，已标注</div></div>
+    <div class="score-cell"><div class="dim">护城河 · 巴菲特</div><div class="val">6.5</div><div class="star-rating">★★★☆<span class="off">✩</span></div><div class="desc">信号链宽、电源窄，毛利率 4 年连降</div></div>
+    <div class="score-cell"><div class="dim">生意模式 · 段永平</div><div class="val">6.5</div><div class="star-rating">★★★☆<span class="off">✩</span></div><div class="desc">轻资产高毛利好骨架，ROE 3% 低效现金拖累</div></div>
+    <div class="score-cell"><div class="dim">管理层诚信 · 段永平</div><div class="val">8.0</div><div class="star-rating">★★★★<span class="off">☆✩</span></div><div class="desc">三年诚实 🟢；MCU 沉没 3.35 亿为瑕疵</div></div>
+    <div class="score-cell"><div class="dim">反向检查 · 芒格</div><div class="val">6.0</div><div class="star-rating">★★★<span class="off">☆☆✩</span></div><div class="desc">估值/商誉/周期风险识别充分</div></div>
+    <div class="score-cell"><div class="dim">历史类比 · 李录</div><div class="val">6.0</div><div class="star-rating">★★★<span class="off">☆☆✩</span></div><div class="desc">圣邦 2021 年 150x 回撤前鉴</div></div>
+  </div>
+  <p style="font-family:var(--font-mono);font-size:12px;color:var(--color-ink-subtle);">综合 = (7.0+6.5+6.5+8.0+6.0+6.0)/6 = 6.7/10（composite.ts 等权）→ ★★★☆</p>
+</section>
+
+<!-- ===== 估值 ===== -->
+<section>
+  <h2>三、估值与安全边际</h2>
+  <div class="table-scroll">
+    <table>
+      <tr><th>指标</th><th>当前值</th><th>历史分位</th><th>同业/说明</th><th>评价</th></tr>
+      <tr><td>最新股价</td><td class="num">289.52 元</td><td class="num">76.4%（近250日）</td><td>52 周区间 139.96~364.09</td><td>高位</td></tr>
+      <tr><td>总市值</td><td class="num">399.8 亿</td><td>—</td><td>圣邦约 500-600 亿</td><td>—</td></tr>
+      <tr><td><strong>PE-TTM</strong></td><td class="num up">152.1x</td><td>—</td><td>含非经常性损益失真；扣非口径 227x</td><td class="up"><strong>贵</strong></td></tr>
+      <tr><td>PB-MRQ</td><td class="num">6.28x</td><td>—</td><td>—</td><td>贵</td></tr>
+      <tr><td>PS-TTM / PCF-TTM</td><td class="num">16.5x / 125.4x</td><td>—</td><td>—</td><td>贵</td></tr>
+      <tr><td>股息率</td><td class="num">0.06%</td><td>—</td><td>2025 年分红率 12.25%</td><td>极低</td></tr>
+    </table>
+  </div>
+  <p>⚠️ 估值口径说明：PE-TTM 152x 基于归母 1.73 亿，其中理财收益+政府补助 5708 万占 33%。<strong style="color:var(--color-ink)">须以正常化盈利（扣非 1.16 亿）判断——扣非口径 PE 227x，当前价格隐含的成长假设更为苛刻。</strong>Forward PE 2026E ≈ 85-125x（85x 按国信 4.68 亿 / 125x 按市场一致 3.2 亿）。</p>
+
+  <div class="chart-container">
+    <div id="chart-target" style="width:100%;height:340px;"></div>
+    <div class="chart-source">数据来源：[[思瑞浦-公司研究]] 估值区间与目标价｜时点：2026-08-17｜目标价为 Agent 综合裁决，非精确预测</div>
+  </div>
+
+  <div class="table-scroll">
+    <table>
+      <tr><th>情景</th><th>估值假设</th><th>目标价</th><th>目标市值</th><th>隐含涨跌幅</th></tr>
+      <tr><td>悲观</td><td>2026E 归母 2.5 亿 × PE 45x</td><td class="num">81 元</td><td class="num">112 亿</td><td class="num down">-72%</td></tr>
+      <tr><td>中性</td><td>2026E 归母 3.2 亿 × PE 60x</td><td class="num">139 元</td><td class="num">192 亿</td><td class="num down">-52%</td></tr>
+      <tr><td>乐观</td><td>2026E 归母 4.68 亿 × PE 70x（国信）</td><td class="num">237 元</td><td class="num">328 亿</td><td class="num down">-18%</td></tr>
+    </table>
+  </div>
+  <div class="card tight"><p style="margin:0"><strong style="color:var(--color-ink)">目标买入价 ~65 元</strong>（悲观估值 × 0.8）｜<strong style="color:var(--color-ink)">目标卖出价 ~240 元</strong>｜<strong style="color:var(--color-accent)">当前操作建议：观望</strong></p></div>
+</section>
+
+<!-- ===== 财务 ===== -->
+<section>
+  <h2>四、财务数据（三年 + 2026Q1）</h2>
+  <div class="table-scroll">
+    <table>
+      <tr><th>指标</th><th>2023</th><th>2024</th><th>2025</th><th>2026Q1</th><th>趋势</th></tr>
+      <tr><td>营收（亿元）</td><td class="num">10.94（-38.7%）</td><td class="num">12.20（+11.5%）</td><td class="num up">21.42（+75.7%）</td><td class="num up">7.02（+66.5%）</td><td>恢复→加速</td></tr>
+      <tr><td>归母净利（亿元）</td><td class="num">-0.35</td><td class="num down">-1.97</td><td class="num up">1.73</td><td class="num up">1.05（+577%）</td><td>V 型扭亏</td></tr>
+      <tr><td>扣非净利（亿元）</td><td class="num">-1.13</td><td class="num down">-2.81</td><td class="num up">1.16</td><td class="num up">0.93（+5256%）</td><td>V 型扭亏</td></tr>
+      <tr><td>毛利率</td><td class="num">51.78%</td><td class="num">48.19%</td><td class="num down">46.64%</td><td class="num up">47.66%</td><td><strong>持续下行（结构性）</strong></td></tr>
+      <tr><td>ROE（加权）</td><td class="num">-0.85%</td><td class="num">-3.64%</td><td class="num">3.08%</td><td class="num">1.68%（单季）</td><td>转正爬坡</td></tr>
+      <tr><td>经营现金流（亿元）</td><td class="num">-1.65</td><td class="num">0.71</td><td class="num up">1.48</td><td class="num up">1.99（超 2025 全年）</td><td>转正扩大</td></tr>
+      <tr><td>资产负债率</td><td class="num">约 5.6%</td><td class="num">约 14.5%</td><td class="num">9.71%</td><td class="num">10.34%</td><td>极低杠杆</td></tr>
+      <tr><td>商誉（亿元）</td><td class="num">0</td><td class="num">6.85</td><td class="num">6.85</td><td class="num">—</td><td>未减值</td></tr>
+      <tr><td>研发投入（亿元）</td><td class="num">5.54（50.7%）</td><td class="num">5.77（47.3%）</td><td class="num">5.88（27.5%）</td><td class="num">—</td><td>费率摊薄</td></tr>
+    </table>
+  </div>
+  <div class="chart-container">
+    <div id="chart-fin" style="width:100%;height:340px;"></div>
+    <div class="chart-source">数据来源：[[2026-08-17-思瑞浦-processed]] 时间序列｜时点：2025FY（2026Q1 为单季观察点）</div>
+  </div>
+  <p><strong style="color:var(--color-ink)">杜邦拆解（2025）</strong>：ROE 2.78% = 净利率 8.08% × 周转率 0.31 × 权益乘数 1.11。30+ 亿理财趴账拖累周转率；<strong style="color:var(--color-ink)">扣非归因</strong>：非经常性损益 5708 万（理财 4147 万半经常性 + 补助 1466 万政策依赖）占归母 33%；2026Q1 降至 11.3%，质量改善中。</p>
+</section>
+
+<!-- ===== 增长驱动 ===== -->
+<section>
+  <h2>五、增长驱动分析（高增长能否持续）</h2>
+  <div class="grid6">
+    <div class="score-cell"><div class="dim">是否高增长</div><div class="val" style="font-size:20px">是</div><div class="desc">2024 +11.5% → 2025 +75.7% → 2026Q1 +66.5%，连续 8 季环比增长</div></div>
+    <div class="score-cell"><div class="dim">促成原因</div><div class="val" style="font-size:20px">量价+并购+摊薄</div><div class="desc">信号链量增 34.4% 价升 7%（ASP 0.42→0.45）；创芯微并表增厚约 1/3；费用率摊薄（研发费率 -19.9pp）</div></div>
+    <div class="score-cell"><div class="dim">内生 vs 并购</div><div class="val" style="font-size:20px">约 2/3 内生</div><div class="desc">剔除并购后内生增速约 +50-60%；增长质量真实但含低基数</div></div>
+    <div class="score-cell"><div class="dim">内因占比</div><div class="val" style="font-size:20px">约 60%</div><div class="desc">技术/平台/车规/并购整合可主导；40% 外因（光模块/AI 资本开支、涨价潮）</div></div>
+    <div class="score-cell"><div class="dim">失速阈值</div><div class="val" style="font-size:20px">环比 &lt;10%</div><div class="desc">季度环比增速 &lt;10% 或毛利率 &lt;46% = 增长失速/盈利恶化信号（deep-read 10.5）</div></div>
+    <div class="score-cell"><div class="dim">可持续年限</div><div class="val" style="font-size:20px">至 2027</div><div class="desc">内因兑现可维持高增长；2027 年成熟制程产能过剩后斜率放缓</div></div>
+  </div>
+  <p><strong style="color:var(--color-ink)">未来增长因素内外因分类</strong>：内因（已兑现/可主导）——信号链料号扩张（3200+ 款）、车规 300+ 款放量、创芯微业绩承诺（2026 需完成 8517 万）；外因（不可主导/周期敏感）——光模块/AI 服务器资本开支（收入仅占约 5%）、行业涨价潮（TI/ADI 领涨，2027 或逆转）。外因暴露度须在跟踪中持续验证。</p>
+</section>
+
+<!-- ===== 核心优势 ===== -->
+<section>
+  <h2>六、核心优势可持续性（相对同行能否维持）</h2>
+  <div class="table-scroll">
+    <table>
+      <tr><th>公司</th><th>2025 营收（增速）</th><th>综合毛利率</th><th>研发占营收</th><th>优势维度</th></tr>
+      <tr><td><strong>思瑞浦</strong></td><td class="num">21.42 亿（+75.7%）</td><td class="num">46.64%</td><td class="num">27.46%</td><td>信号链第一梯队、增速最快</td></tr>
+      <tr><td>圣邦股份</td><td class="num">38.98 亿（+16.5%）</td><td class="num up">50.94%</td><td class="num">26.81%</td><td>规模最大、毛利率最高（+4.3pp）</td></tr>
+      <tr><td>纳芯微</td><td class="num">33.68 亿（+71.8%）</td><td class="num">约 40%+</td><td class="num">23.59%</td><td>规模相当、汽车+AI 电源</td></tr>
+      <tr><td>TI（全球龙头）</td><td class="num">市占率约 19%</td><td class="num">—</td><td class="num">—</td><td>10 万 SKU、IDM、成本 -40% 目标</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>优势成因 → 独特壁垒 → 敏感性</h3>
+    <ul>
+      <li><strong>成因</strong>：技术壁垒（40 项核心技术、8GHz 超带宽运放、100fA 偏置电流、17/18 串 BMS AFE 国际先进）→ 车规/光模块认证 → 转换成本 → 定价权（信号链 ASP 提升、毛利率 50.5% 企稳）。</li>
+      <li><strong>独特壁垒可持续年限</strong>：信号链技术+认证因果链 <strong style="color:var(--color-ink)">5-10 年</strong>（模拟芯片长生命周期+国产替代窗口）；电源管理无独特壁垒（追赶型）。</li>
+      <li><strong>侵蚀风险（概率/幅度）</strong>：2027 产能过剩价格战（中高/大）＞ TI Lehi 成本 -40% 反击（中/大）＞ 结构向低毛利电源倾斜（高/中）＞ 圣邦/纳芯微技术追赶（中/中）。</li>
+      <li><strong>优势敏感性</strong>：综合毛利率每收窄 1pp → 归母净利 -12.4%（2142 万）；若跌至 40%（-6.6pp）理论吞噬 2025 全部扣非净利——<strong style="color:var(--color-ink)">毛利率是盈利质量命门</strong>。</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ===== 质量筛查 ===== -->
+<section>
+  <h2>七、质量筛查（quality-screen，🔴 RED）</h2>
+  <div class="chart-container">
+    <div id="chart-quality" style="width:100%;height:300px;"></div>
+    <div class="chart-source">数据来源：quality-screen.ts --mode report（2026-08-17）｜综合质量分 0.1/10</div>
+  </div>
+  <div class="card bear">
+    <p style="margin-bottom:8px"><strong style="color:#ff7b7b">🔴 RED — 质量存疑</strong>（不标注「值得跟踪」等级）</p>
+    <ul style="margin-bottom:0">
+      <li><strong>红牌</strong>：ROE 3.1% &lt; 5% 资本回报红线（扣非后 2.06%）；净利含大额一次性损益（非经常性 5708 万占归母 33%）</li>
+      <li><strong>黄牌</strong>：PE-TTM 152x 估值维度 0 分；利息覆盖/短债占比 N/A（无有息负债）</li>
+      <li><strong>绿牌</strong>：毛利率 46.6%、资产负债率 9.7%、营收 +75.7%、净利 +173%</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ===== 多空论证 ===== -->
+<section>
+  <h2>八、多空论证（Bull vs Bear 五维度）</h2>
+  <div class="table-scroll">
+    <table>
+      <tr><th style="width:14%">维度</th><th style="width:29%">🟢 多方论点（强度）</th><th style="width:29%">🔴 空方论点（强度）</th><th>综合裁决</th></tr>
+      <tr><td>增长</td><td>连续 8 季环比增长、量价齐升、AI/车规/光模块结构性需求（强，9/8）</td><td>含并表基数+低基数补偿，2026H2 环比或放缓（中）</td><td>增长真实（置信度 8），维持 50%+ 需光模块/AI 资本开支不减速；2026 中报验证</td></tr>
+      <tr><td>护城河</td><td>信号链国内第一梯队+车规/光模块认证壁垒（强）</td><td>毛利率 4 年连降、电源管理仅 39%、TI/ADI 体系碾压（中）</td><td>信号链可持续 5-10 年；电源管理窄；综合 6.5/10</td></tr>
+      <tr><td>财务质量</td><td>净现金 38 亿、OCF/NI 0.85、商誉/净资产 11%（中强）</td><td>非经常性损益占净利 33%、30 亿理财低效、OCF 绝对值小（中强）</td><td>「安全但单薄」：资产负债表极稳、盈利含金量一般</td></tr>
+      <tr><td>估值</td><td>2026E forward PE 85-125x，兑现 4.68 亿则成长匹配（中）</td><td>PE-TTM 152x、历史分位 76.4%、安全边际为负（<strong>强，9</strong>）</td><td><strong>最大分歧点</strong>：152x 容错率极低；圣邦 150x 回撤前鉴 → 高估</td></tr>
+      <tr><td>周期/政策/国际</td><td>国产替代+涨价潮提价窗口+10% 所得税+税盾（中强）</td><td>2027 产能过剩、涨价为成本推动、贸易摩擦（中强）</td><td>政策/替代逻辑 5-10 年成立；2027 产能周期是悬顶之剑</td></tr>
+    </table>
+  </div>
+  <div class="verdict">
+    <h4>⚖ 最大分歧点与裁决</h4>
+    <p style="margin-bottom:8px">分歧：<strong style="color:var(--color-ink)">2026-2028 盈利兑现的确定性（4.68/6.49/7.95 亿） vs 152x PE 的安全边际</strong>。双方均认可 2025-2026 复苏，方向无分歧。</p>
+    <p style="margin-bottom:0">裁决：①产业——AI/光模块/车规需求真实，但光模块仅占收入约 5%，翻倍难独立支撑 152x；②周期——当前处涨价潮初期，但 2027 年产能过剩确定性高，三次涨价潮后均有价格战前鉴；③国际——地缘催化国产替代但双向风险；④政策——10% 所得税与税盾 9.29 亿提供盈利缓冲，不构成估值理由。<strong style="color:var(--color-ink)">基本面改善真实（置信度 8），安全边际为负，建议观望</strong>。多方最脆弱点：增长依赖光模块/AI 资本开支不减速+创芯微不探底+毛利率不下滑三条件；空方最脆弱点：高估值在强 beta 下可长期持续（若 2026 兑现 4.68 亿则估值论点 12 个月内失效）。</p>
+  </div>
+</section>
+
+<!-- ===== 风险与反向检查 ===== -->
+<section>
+  <h2>九、风险提示与反向检查清单</h2>
+  <div class="card">
+    <h3>风险分级</h3>
+    <ul>
+      <li><strong class="up">高 · 估值风险</strong>：PE-TTM 152x / PS 16.5x，隐含 2026-2028 连续高增；失速即回撤 40-60%（52 周振幅已 61%）</li>
+      <li><strong class="up">高 · 商誉减值</strong>：创芯微承诺完成率 61.29%，2026 需完成 8517 万；减值测试安全边际仅 14%；全减值吞噬约 4 年净利</li>
+      <li><strong>中 · 盈利质量</strong>：非经常性损益占净利 33%、OCF/NI 0.85、应收/利润比率偏高</li>
+      <li><strong>中 · 周期风险</strong>：2027 年成熟制程产能过剩（TI Lehi 投产、中国 28nm 占全球约 31%）；毛利率已从约 60% 降至 46.6%</li>
+      <li><strong>中 · 治理/并购</strong>：无实控人；累计融资 45-48 亿 vs 分红 1.1 亿大幅摊薄；奥拉收购 2025-12-09 终止</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>什么情况下我们会错（反向检查）</h3>
+    <ol>
+      <li>2026 年净利兑现 ≥ 4.68 亿（国信）且 2027 继续高增 → 高估可能被消化，我们错在「高增长不可持续」</li>
+      <li>创芯微 2026 达标（只需 8517 万）且减值测试假设兑现 → 我们错在「商誉必爆」</li>
+      <li>2027 新产能被 AI 需求吸收而非过剩 → 我们错在「涨价潮不可持续」</li>
+      <li>心理偏差：警惕市场「国产替代+AI」叙事的从众/锚定效应；反之股价跌至 139-200 元时应检查是否过度悲观（基本面并未恶化）</li>
+      <li>技术代际判断局限（8GHz 运放/100fA 偏置电流等为采信式判断）——技术路线若被颠覆，护城河评估需修正</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ===== 跟踪指标与建议 ===== -->
+<section>
+  <h2>十、跟踪指标与投资建议</h2>
+  <div class="table-scroll">
+    <table>
+      <tr><th>#</th><th>跟踪指标</th><th>阈值/验证点</th></tr>
+      <tr><td>1</td><td>季度营收环比增速 + 综合毛利率</td><td>环比 &lt;10% 或毛利率 &lt;46% = 失速信号（2026 中报 8-20 首个验证点）</td></tr>
+      <tr><td>2</td><td>创芯微业绩承诺</td><td>2026 年需完成剔除股份支付后净利 8517 万（决定商誉减值测试）</td></tr>
+      <tr><td>3</td><td>光模块/AI 服务器收入占比 + 头部客户资本开支指引</td><td>验证结构性需求持续性（中际旭创/新易盛/英伟达链 2026H2）</td></tr>
+      <tr><td>4</td><td>OCF/净利 + 应收增速 vs 收入增速</td><td>2026Q1 达 1.89，需验证全年持续性</td></tr>
+      <tr><td>5</td><td>2026 年激励考核营收 22.94 亿 / 累计 +238%</td><td>管理层对自身增长的承诺兑现度</td></tr>
+      <tr><td>6</td><td>2024 年股份支付异常原因</td><td>待查证（不影响诚信结论，需闭环）</td></tr>
+    </table>
+  </div>
+  <div class="verdict">
+    <h4>投资建议</h4>
+    <p style="margin-bottom:0"><strong style="color:var(--color-ink)">观望</strong>（跟踪，非买入推荐）。目标买入价 ~65 元（悲观情景 × 0.8），目标卖出价 ~240 元（乐观上沿），当前 289.52 元高于乐观情景。若回落至 139 元以下接近 81-100 元区间进入安全边际关注区，可结合 2026 中报/年报验证盈利兑现后再评估；若盈利快速兑现（2026 净利 ≥ 4.68 亿、ROE 年化 &gt;10%）且股价横盘消化估值，重新评估。</p>
+  </div>
+</section>
+
+<!-- ===== 附录 ===== -->
+<section>
+  <h2>附录</h2>
+  <div class="card tight"><p style="margin:0"><strong style="color:var(--color-ink)">质量筛查 7 项评分卡</strong>：盈利能力 3｜现金流 6｜杠杆安全 9｜估值 0｜成长 6｜生意模式护城河 5｜盈利质量 6（综合 0.1/10，🔴 RED）</p></div>
+  <div class="card tight"><p style="margin:0"><strong style="color:var(--color-ink)">财报精读 10 项检查</strong>：❌ ROE&lt;12%（3.08%）｜✅ OCF/NI 0.85｜✅ 资产负债率 9.7%｜✅ 盈利为正｜✅ 毛利率 46.6%｜✅ 营收连续 2 年稳健｜✅ 商誉/净资产 11%&lt;30%｜⚠️ 存货减值历史波动（2024 年 9120 万→2025 年 3832 万）｜✅ 审计标准无保留｜✅ MD&A 无重大隐瞒——❌ 仅 1 项，未触发高优先级风险线</p></div>
+  <div class="card tight"><p style="margin:0"><strong style="color:var(--color-ink)">50 项投资决策清单 AUTO 扫描</strong>：退出码 0，✅ 放行（CRITICAL 0/2 未通过、IMPORTANT 1/7、NORMAL 1/3 均为 ROE 项；商誉占比项为脚本解析误报，实际 11.02% 通过）——详见 Markdown 报告附录 5</p></div>
+  <div class="card tight"><p style="margin:0"><strong style="color:var(--color-ink)">来源</strong>：2023/2024/2025 年报 + 2025 半年报 + 2026Q1 季报（pdf-texts/思瑞浦/）｜国信 2026-04-30、中邮 2026-03-08｜evaluate.ts 估值快照、quality-screen.ts、investment-checklist-auto.ts｜集微网 2026-04-13、36kr 2026-08-07 等</p></div>
+</section>
+
+<footer>
+  本报告由投研系统基于公开信息生成（deep-dive 流程，taskId: deep-dive-思瑞浦-20260817-8472）。数据时点: 2026-08-17。核心事实源：[[2026-08-17-思瑞浦-deep-read]] 第十章多空论证、[[思瑞浦-公司研究]]。<br>
+  能力圈边界声明：模拟芯片技术细节（BCD 工艺/运放拓扑/BMS AFE）超出部分能力圈，技术先进性为采信式判断，已标注。本报告为决策参考，不构成投资建议。
+</footer>
+</div>
+
+<script>
+/* ===== ECharts 主题基座（DARK_THEME_BASE 暗黑 Vercel 风格）===== */
+var DARK_THEME_BASE = {
+  backgroundColor: "transparent",
+  textStyle: { color: "#a1a1a1", fontFamily: "Inter,-apple-system,'PingFang SC','Microsoft YaHei',sans-serif" },
+  title: { textStyle: { color: "#ffffff", fontSize: 15, fontWeight: 600 }, left: 0 },
+  legend: { textStyle: { color: "#a1a1a1" }, top: 0, type: "scroll" },
+  tooltip: { backgroundColor: "#111111", borderColor: "#1a1a1a", textStyle: { color: "#e5e5e5", fontSize: 12 } },
+  grid: { left: 56, right: 20, top: 48, bottom: 40 },
+  xAxis: { axisLine: { lineStyle: { color: "#1a1a1a" } }, axisLabel: { color: "#666666" }, splitLine: { show: false } },
+  yAxis: { axisLine: { lineStyle: { color: "#1a1a1a" } }, axisLabel: { color: "#666666" }, splitLine: { lineStyle: { color: "#1a1a1a" } } },
+  color: ["#0070f3", "#ee0000", "#3fb950", "#fbbf24", "#a1a1a1", "#ffffff"]
+};
+var REPORT_PALETTE = ["#0070f3", "#ee0000", "#3fb950", "#fbbf24", "#a1a1a1", "#ffffff"];
+
+function mergeTheme(base, opt){ var o = JSON.parse(JSON.stringify(base)); for (var k in opt){ if (k === "series") o.series = opt.series; else o[k] = opt[k]; } return o; }
+function initChart(id, opt){
+  var el = document.getElementById(id);
+  if (window.__ECHARTS_FAIL || typeof echarts === "undefined"){
+    el.innerHTML = '<div class="chart-fallback">图表加载失败（ECharts CDN 不可用）。关键数据见表格：' + (el.getAttribute("data-fallback") || "") + '</div>';
+    return null;
+  }
+  var c = echarts.init(el);
+  c.setOption(mergeTheme(DARK_THEME_BASE, opt));
+  return c;
+}
+window.addEventListener("resize", function(){
+  ["chart-fin","chart-target","chart-quality"].forEach(function(id){ var el=document.getElementById(id); if(el && el._chart) el._chart.resize(); });
+});
+
+/* 1. 财务趋势：营收 + 归母/扣非 */
+(function(){
+  var opt = {
+    title: { text: "营收与盈利（亿元）· 三年 V 型反转" },
+    legend: { data: ["营收", "归母净利", "扣非净利"] },
+    tooltip: { trigger: "axis", valueFormatter: function(v){ return (v===null||v===undefined) ? "-" : v.toFixed(2) + " 亿"; } },
+    xAxis: { type: "category", data: ["2023", "2024", "2025", "2026Q1(单季)"] },
+    yAxis: { type: "value" },
+    series: [
+      { name: "营收", type: "bar", data: [10.94, 12.20, 21.42, 7.02], itemStyle: { color: "#0070f3" }, label: { show: true, position: "top", color: "#a1a1a1", fontSize: 11 } },
+      { name: "归母净利", type: "bar", data: [-0.35, -1.97, 1.73, 1.05], itemStyle: { color: "#ee0000" }, label: { show: true, position: "top", color: "#a1a1a1", fontSize: 11 } },
+      { name: "扣非净利", type: "line", data: [-1.13, -2.81, 1.16, 0.93], itemStyle: { color: "#3fb950" }, lineStyle: { width: 2 }, label: { show: true, position: "top", color: "#a1a1a1", fontSize: 11 } }
+    ]
+  };
+  var c = initChart("chart-fin", opt); if(c) document.getElementById("chart-fin")._chart = c;
+})();
+
+/* 2. 三情景目标价 vs 现价 */
+(function(){
+  var opt = {
+    title: { text: "三情景目标价 vs 现价（元）· 安全边际为负" },
+    tooltip: { trigger: "axis" },
+    xAxis: { type: "category", data: ["悲观（81）", "中性（139）", "乐观（237）"] },
+    yAxis: { type: "value", min: 0, max: 320 },
+    series: [
+      { name: "目标价", type: "bar", data: [81, 139, 237], itemStyle: { color: "#0070f3" }, label: { show: true, position: "top", color: "#a1a1a1", fontSize: 11, formatter: "{c} 元" } },
+      { name: "现价", type: "line", data: [289.52, 289.52, 289.52], itemStyle: { color: "#ee0000" }, lineStyle: { width: 2, type: "dashed" }, markLine: { silent: true, symbol: "none", data: [{ yAxis: 289.52 }], label: { formatter: "现价 289.52", color: "#ee0000", position: "end" }, lineStyle: { color: "#ee0000", type: "dashed" } } }
+    ]
+  };
+  var c = initChart("chart-target", opt); if(c) document.getElementById("chart-target")._chart = c;
+})();
+
+/* 3. 质量筛查 7 维评分 */
+(function(){
+  var opt = {
+    title: { text: "质量筛查 7 项评分卡（0-10）· 综合 0.1/10 🔴 RED" },
+    tooltip: { trigger: "axis" },
+    grid: { left: 110, right: 30, top: 48, bottom: 30 },
+    xAxis: { type: "value", max: 10 },
+    yAxis: { type: "category", data: ["盈利质量", "生意模式护城河", "成长性", "估值合理性", "杠杆安全", "现金流质量", "盈利能力"], inverse: true },
+    series: [{
+      name: "得分", type: "bar", barWidth: 14,
+      data: [
+        { value: 6, itemStyle: { color: "#fbbf24" } },
+        { value: 5, itemStyle: { color: "#fbbf24" } },
+        { value: 6, itemStyle: { color: "#fbbf24" } },
+        { value: 0, itemStyle: { color: "#ee0000" } },
+        { value: 9, itemStyle: { color: "#3fb950" } },
+        { value: 6, itemStyle: { color: "#fbbf24" } },
+        { value: 3, itemStyle: { color: "#ee0000" } }
+      ],
+      label: { show: true, position: "right", color: "#a1a1a1", fontSize: 11 }
+    }]
+  };
+  var c = initChart("chart-quality", opt); if(c) document.getElementById("chart-quality")._chart = c;
+})();
+</script>
+</body>
+</html>

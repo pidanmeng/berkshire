@@ -1,0 +1,57 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "deep-dive-华工科技-20260817-7226",
+  "origin": "process-improvement",
+  "command": "deep-dive 华工科技",
+  "status": "success",
+  "issues": [
+    {
+      "problemCode": "evaluate-yoy-data-anomaly",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "symptom": "evaluate.ts --code 000988 输出『净利同比 2048.29%（⚠️ 同比存疑）』，与 2025 年报原文（归母净利 14.71 亿 +20.48%、扣非 +32.32%）相差百倍（复用既有问题，第 6 例）：营收同比列缺失、净利同比数量级放大，PE-TTM 66.41 被标注『净利可能含大额一次性收入』误导估值判断",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-17 evaluate.ts --code 000988 输出『PE-TTM 66.41 vs 净利同比 2048.29%（⚠️ 同比存疑，以年报为准）』并提示『净利可能含大额一次性收入（BD/license-out/资产处置等），PE-TTM 与 PEG 失真』；document-reader 精读 2025 年报第二节确认真实同比 +20.48%（扣非 +32.32%），2038/2048% 系 hithink API 同比字段口径异常；Forward PE 因该异常值无法自动递推。与既有候选 evaluate-yoy-data-anomaly（山金国际/炬芯科技/锐捷网络/吉比特/芭田股份，同根因 6+ 任务复现）指纹一致" }
+      ],
+      "rootCauseHypothesis": "hithink API 同比字段口径异常（对比基准期错位或单位放大百倍），evaluate.ts 未对 |同比|>500% 做合理性校验或回退到年报口径，直接透传至输出并误导下游估值/质量筛查判断",
+      "goal": "evaluate.ts 对同比类字段增加合理性校验（|同比|>300% 时标注『数据存疑，以年报为准』并停止 PEG/Forward PE 递推）；必要时回退到年报主要会计数据口径",
+      "severity": "high",
+      "confidence": 0.95,
+      "benefit": "估值快照与自动化质量筛查结论正确性提升，避免多空论证与估值判断被异常同比污染",
+      "risk": "修改需回归 evaluate.ts 全部输出段落，确认不影响正常同比展示",
+      "acceptance": "对 000988 运行 evaluate.ts 输出营收同比≈+22.59%、净利同比≈+20.48%（或显式标注数据存疑且不递推 Forward PE）"
+    },
+    {
+      "problemCode": "deep-dive-bear-research-collection-gap",
+      "targetKind": "command",
+      "targetPath": ".trae/commands/deep-dive.md",
+      "symptom": "命令要求采集『至少 1 篇看多 + 1 篇看空/谨慎研报，如有』，但 stock.ts --reports 仅返回东财研报源（本次近 400 天 10 篇研报全部为买入/增持），看空侧缺失，空方观点需编排器额外 WebSearch 外部社区（雪球/东财财富号）补齐——跨任务第 2 例（首见铜冠铜箔 2026-08-16）",
+      "evidence": [
+        { "grade": "C", "detail": "2026-08-17 华工科技 deep-dive：stock.ts --code 000988 --reports --days 400 返回 10 篇研报（太平洋/国金×4/开源/爱建/山西/国信/华鑫）全部买入评级；多空论证空方 Top 论点（云岭会计口径、Q2 减速、估值透支、价格战）全部来自外部媒体（雪球『轮动投研社』7/23 长文、东财财富号 7/8、同花顺诊股）而非研报；编排器已将空方素材整理为『空方观点与外部事件.md』供 document-reader 使用" }
+      ],
+      "rootCauseHypothesis": "研报数据源单一（东财研报中心）且券商对高景气 AI 赛道普遍只发买入研报，看空观点不进入研报体系；命令未定义空方观点获取的兜底路径",
+      "goal": "在命令流程中补充『若研报无看空覆盖，则显式走 WebSearch 采集空方/谨慎观点（外部媒体+雪球+公告负面）并记录来源时点』的兜底步骤，研报集在看空缺失时自动标注并附外部空方线索清单",
+      "severity": "low",
+      "confidence": 0.7,
+      "benefit": "多空论证输入双侧均衡，空方论证有外部佐证而非单边自建",
+      "risk": "外部信源信噪比低，需甄别来源可信度",
+      "acceptance": "多空论证空方至少 1 条外部佐证（或显式标注缺失原因）；研报集在看空缺失时输出外部空方线索清单"
+    },
+    {
+      "problemCode": "report-data-cross-check",
+      "targetKind": "process",
+      "targetPath": "deep-dive 流程·步骤 2.4（研报采集与引用）",
+      "symptom": "研报引用的财务数据与年报原文矛盾未被及时识别：太平洋证券 2026-06-21 研报『2025 年经营活动现金流量净额 -11.27 亿元』实为 2026Q1 单季数据（2025 全年 +12.21 亿）；市场/社区据此广泛误传『华工 2025 年经营现金流大幅流出』，document-reader 精读年报后纠正",
+      "evidence": [
+        { "grade": "C", "detail": "2026-08-17 华工科技 deep-dive：太平洋研报与空方观点文件（雪球/东财）均引用『2025 年经营现金流 -11.27 亿』；document-reader 核对 2025 年报现金流量表原文（+12.21 亿，+66.83%）确认系 2026Q1 单季数据误传，已在 deep-read 10.2/10.4 与公司笔记中显式纠正。单次观察，未见系统拦截机制" }
+      ],
+      "rootCauseHypothesis": "研报为二手信息，引用现金流/同比等关键财务数据时可能张冠李戴（跨期错位）；当前流程依赖 document-reader 精读时人工核对，无强制交叉校验要求或机制",
+      "goal": "在 document-reader 提示词/自检中强化『研报引用的关键财务数据（OCF/净利/同比/库存）必须与年报原文核对，发现矛盾显式标注纠正』要求；研报集采集时对关键数据标注『待年报核对』",
+      "severity": "medium",
+      "confidence": 0.5,
+      "benefit": "减少二手数据误传对多空论证与报告结论的污染；本次已人工纠正，需制度化",
+      "risk": "增加精读工作量；核对规则需避免过度怀疑导致研报价值打折",
+      "acceptance": "deep-read/processed 中研报引用的关键财务数据均标注年报核对状态；发现矛盾时显式记录纠正"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "deep-dive-芭田股份-20260816-8k3x",
+  "origin": "process-improvement",
+  "command": "deep-dive",
+  "status": "success",
+  "issues": [
+    {
+      "problemCode": "knowledge-dir-number-collision",
+      "targetKind": "directory",
+      "targetPath": "Research/10-Knowledge",
+      "symptom": "新建行业目录使用了与既有目录重复的编号（05-农化 vs 05-医药生物），导致知识库目录编号不唯一，需手动迁移为 07-农化",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "deep-dive-芭田股份-20260816-8k3x 入库阶段 knowledge-architect 创建 05-农化 时未检测既有 05-医药生物，两个 05- 编号并存；编排器发现后手动复制迁移为 07-农化并删除旧目录"
+        }
+      ],
+      "rootCauseHypothesis": "knowledge-architect 创建行业目录时未扫描既有目录编号，缺少目录编号唯一性校验步骤",
+      "goal": "新建行业目录前自动检查编号唯一性，发现冲突时顺序取下一个可用编号",
+      "severity": "medium",
+      "confidence": 0.85,
+      "benefit": "避免知识库目录编号混乱，保障 Obsidian 与估值追踪系统的解析一致性",
+      "risk": "修改目录创建逻辑可能影响既有自动流程的路径假设",
+      "acceptance": "新建行业目录时不再产生编号冲突；knowledge-architect 提示词补充编号检查步骤"
+    },
+    {
+      "problemCode": "api-yoy-calculation-error",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "symptom": "evaluate.ts 输出的营收同比 5262.13%、净利同比 12279.10% 与财报原文（+52.62%/+122.79%）严重不符，属 API 同比计算口径异常",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "deep-dive-芭田股份-20260816-8k3x 中 document-reader 精读发现 evaluate.ts 同比数据与 2025 年报原文直接矛盾（数量级放大 100 倍），已按原文修正并记录"
+        }
+      ],
+      "rootCauseHypothesis": "hithink API 单期同比字段可能基于异常期初基数（如接近零）计算，产生数量级放大；evaluate.ts 未对异常同比做合理性校验",
+      "goal": "evaluate.ts 对 |同比|>500% 或极端值输出存疑标记，并提示人工与年报原文核对",
+      "severity": "medium",
+      "confidence": 0.75,
+      "benefit": "防止异常同比数据被下游直接消费导致判断错误",
+      "risk": "增加校验逻辑可能误标真实高增长公司（需阈值+人工确认兜底）",
+      "acceptance": "evaluate.ts 输出中对异常同比显式标注存疑；测试用例覆盖该场景"
+    },
+    {
+      "problemCode": "reader-figure-miscitation",
+      "targetKind": "agent",
+      "targetPath": ".trae/agents/document-reader.md",
+      "symptom": "deep-read 中 2023 年磷矿毛利率 65.79% 与年报原文 76.08% 不符，info-alchemist 交叉核对时发现并列入待验证点",
+      "evidence": [
+        {
+          "grade": "B",
+          "detail": "deep-dive-芭田股份-20260816-8k3x 中 deep-read 表述与年报原文数据矛盾，由 processed 阶段两独立来源比对定位（info-alchemist 待验证点 8）"
+        }
+      ],
+      "rootCauseHypothesis": "document-reader 在引用早期财年数据时依赖推算或记忆值而非直接回原文核对，缺少关键数字回原文核验步骤",
+      "goal": "document-reader 对三年年报关键数字（毛利率/净利/营收等）必须回原文核验并标注页码",
+      "severity": "medium",
+      "confidence": 0.7,
+      "benefit": "降低精读笔记数据引用错误率，减少下游返工",
+      "risk": "增加核验步骤会略增精读耗时",
+      "acceptance": "deep-read 关键数字与年报原文一致；自检脚本增加数字一致性抽查"
+    }
+  ]
+}

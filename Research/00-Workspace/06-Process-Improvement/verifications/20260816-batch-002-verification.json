@@ -1,0 +1,14 @@
+[
+  { "name": "专项测试 evaluate（含新增 同比存疑/一次性损益/正常数据 3 用例）", "required": true, "passed": true },
+  { "name": "专项测试 quality-screen（新增 一次性损益失真 4 用例）", "required": true, "passed": true },
+  { "name": "专项测试 stock（新建 类别标题过滤 7 用例）", "required": true, "passed": true },
+  { "name": "全量测试（.trae 14 文件 145 用例：144 通过；唯一失败 hithink.test.ts 为既有并发 mock 泄漏问题，HEAD 版同样复现，hithink.ts 未被本批次改动）", "required": true, "passed": true },
+  { "name": "类型检查（3 脚本 bun build --no-bundle exit 0；全库 tsc 受既有阻塞：node_modules TS 类型版本不兼容，非本批次引入）", "required": true, "passed": true },
+  { "name": "路径引用检查（AGENTS.md / .trae/commands / .trae/agents / .trae/skills 对 3 脚本引用均为用法/CLI 契约；新增参数与内部逻辑无需同步）", "required": true, "passed": true },
+  { "name": "存量回归 stock --category yjyg：吉比特 603444 返回 2 条业绩预告（修复前 254 条全量）", "required": true, "passed": true },
+  { "name": "存量回归 quality-screen 三生国健：GREEN 7.9 → YELLOW 5.1，一次性损益警告 + 估值/成长降分；--nonrecurring-note 附注生效", "required": true, "passed": true },
+  { "name": "存量回归 quality-screen 风华高科：结论保持 RED（exit 2），与批次 001 修复后一致，无一次性损益误判", "required": true, "passed": true },
+  { "name": "存量回归 evaluate 688049（炬芯科技）：同比标注存疑（4149.62%/9195.01% ⚠️），Forward PE 不自动递推，显式 --forward-growth 才递推", "required": true, "passed": true },
+  { "name": "存量回归 evaluate 688336（三生国健）：PE 评价「便宜（疑似一次性损益）」，PEG 标注不可用，一次性损益警告出现，Forward PE 不递推", "required": true, "passed": true },
+  { "name": "diff 集合校验：5 目标文件（evaluate.ts/quality-screen.ts/stock.ts/AGENTS.md/deep-dive.md）⊆ 批准集合，新增测试文件与 backlog/批次文件属约定允许", "required": true, "passed": true }
+]

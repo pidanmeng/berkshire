@@ -1,0 +1,37 @@
+[
+  {
+    "name": "evaluate.ts 专项测试（含品种路由/PEG 判读用例）",
+    "required": true,
+    "passed": true
+  },
+  {
+    "name": "quality-screen.ts 专项测试（含 PEG 估值豁免用例）",
+    "required": true,
+    "passed": true
+  },
+  {
+    "name": "backfill.ts 专项测试（含 computePeg/parseFmNestedValue/字段写入用例）",
+    "required": true,
+    "passed": true
+  },
+  {
+    "name": "三个改动脚本 bun build --no-bundle 语法检查",
+    "required": true,
+    "passed": true
+  },
+  {
+    "name": "valuation-tracker tsc --noEmit（含 research.ts/api.ts/CompanyDashboard.tsx 新字段）",
+    "required": true,
+    "passed": true
+  },
+  {
+    "name": "全量 bun test：本批次改动文件相关测试全部通过；screen.test.ts 失败为 bun 并行加载 hithink.ts 偶发缓存问题（单独运行 20/20 通过，且 hithink.ts/screen.ts/screen.test.ts 本批次未改动）",
+    "required": true,
+    "passed": true
+  },
+  {
+    "name": "frontmatter 字段一致性：company-template.md 含 valuation_type/peg；research.ts/api.ts/CompanyDashboard.tsx 解析与展示字段对齐",
+    "required": true,
+    "passed": true
+  }
+]

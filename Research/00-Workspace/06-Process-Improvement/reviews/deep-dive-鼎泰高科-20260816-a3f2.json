@@ -1,0 +1,76 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "deep-dive-鼎泰高科-20260816-a3f2",
+  "origin": "process-improvement",
+  "command": "deep-dive 鼎泰高科",
+  "status": "success",
+  "issues": [
+    {
+      "problemCode": "qs-report-regex-range-misparse",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "quality-screen report 模式从公司笔记正则提取数据失真（与 20260816 国际复材、生益科技深调同型，第三次复现）：鼎泰高科笔记误取 ROE=9.63%（2023 年值，正确 2025FY 16.53%）、资产负债率=27.10%（2023）、净利率=16.61%（2023），导致综合分 2.2/10 RED 误判（正确 auto 模式 3.9/10 仍 RED 但指标口径正确）",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-16 运行 quality-screen --mode report --file 鼎泰高科-公司研究.md 输出综合分 2.2/10，ROE=9.63%、负债率=27.1%（均为 2023 值）；改用 --mode auto 传入 2025FY 指标后综合分 3.9/10，ROE=16.53%、负债率=41.63%。逐项核对为正则命中三年对照表首行（2023）所致" },
+        { "grade": "B", "detail": "此前同日国际复材、生益科技两次深调已报同型问题（生益科技误取 ROE=8.57% 2023 值），鼎泰高科为同根因第三次复现，跨 3 个 taskId" }
+      ],
+      "rootCauseHypothesis": "report 模式按正则从 Markdown 表格提取首个匹配百分数，优先命中三年对照表首行（最早财年），未按『最新财年/最新一期』约束取值；三次跨任务复现确认非偶发",
+      "goal": "report 模式仅提取最新财年单一数值并排除阈值/区间文本误命中；修复需回归多公司笔记并统一 report/auto 两模式输出口径",
+      "severity": "medium",
+      "confidence": 0.9,
+      "benefit": "质量筛查结论可信度提升，避免 RED/YELLOW 结论因数值提取失真误导 Phase 4 入库门禁；RED 结论公司可能被误判『暂缓跟踪』",
+      "risk": "修改正则需回归测试，可能影响其他公司笔记提取",
+      "acceptance": "report 模式对鼎泰高科笔记输出 ROE=16.53%（2025FY）、负债率=41.63%，与 auto 模式一致"
+    },
+    {
+      "problemCode": "checklist-auto-year-ambiguity",
+      "targetKind": "script",
+      "targetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "symptom": "investment-checklist-auto 扫描误判（与 20260816 国际复材、生益科技深调同型，第三次复现）：鼎泰高科 5 项误报——#11 毛利率=36.4%（2023 值，正确 42.34%）、#26 ROE=9.6%（2023，正确 16.53%）、#27 负债率=27.1%（2023，正确 41.63%）、#15 商誉误报（实际 0）、#30 大额减值误报（三年均无）",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-16 运行 investment-checklist-auto.ts 扫描鼎泰高科报告与笔记：5 项 IMPORTANT/NORMAL 误报经 deep-read 原文核验全部排除；真实未通过仅 #25 CRITICAL（OCF/NI=0.67）与 #31（PE 305x）" },
+        { "grade": "B", "detail": "同日国际复材、生益科技两次深调已报同型误报（生益科技 5 项误报），鼎泰高科为同根因第三次复现" }
+      ],
+      "rootCauseHypothesis": "扫描正则从三年财务对照表提取首行数值作为当前值，未约束『最新财年』关键词；商誉/减值项存在关键词误命中（如捕获阈值文本或含『减值测试』字样）；与 qs-report 同根因",
+      "goal": "AUTO 扫描按最新财年取值并收紧商誉/减值关键词判定；修复与 qs-report 复用同一『最新财年取值』公共逻辑",
+      "severity": "medium",
+      "confidence": 0.85,
+      "benefit": "50 项投资决策清单 AUTO 扫描结论可信度提升，减少报告附录的人工逐项核实成本",
+      "risk": "关键词词表扩充可能引入新误判，需测试覆盖",
+      "acceptance": "对鼎泰高科笔记扫描输出 ROE=16.53%（2025FY）且无误报项，商誉/减值不再误报"
+    },
+    {
+      "problemCode": "task-subagent-type-unavailable",
+      "targetKind": "process",
+      "targetPath": "AGENTS.md",
+      "symptom": "AGENTS.md 与命令约定以专用 subagent_type（document-reader / bull-advocate / bear-advocate / info-alchemist / knowledge-architect / report-writer 等）触发投研子 Agent，但本运行环境 Task 工具仅接受 search 与 general_purpose_task 两种 subagent_type，直接传 document-reader 报错『subagent_type is not a valid value』，编排器须每次绕行：用 general_purpose_task 承载并让子 Agent 先 Read 自己的 .trae/agents/*.md 定义",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-16 deep-dive 鼎泰高科 Step 3 调用 Task(subagent_type=document-reader) 立即失败『failed to call Task tool, subagent_type is not a valid value』；改用 general_purpose_task + 显式传定义路径后正常完成 document-reader / bull-advocate / bear-advocate / info-alchemist 四角色" }
+      ],
+      "rootCauseHypothesis": "本系统原为 OpenCode 编排（支持任意 subagent_type），迁移至当前执行环境后 Task 工具暴露的 subagent_type 白名单受限，专用 agent 定义无法按原机制装载",
+      "goal": "明确专用 subagent_type 在当前环境的装载方式：或环境侧开放白名单，或在 AGENTS.md/命令中补充『general_purpose_task + 定义路径』的兜底用法说明，避免每次人工绕行",
+      "severity": "medium",
+      "confidence": 0.8,
+      "benefit": "减少编排器每次深调的手工适配成本，保证多 Agent 角色流程可复现",
+      "risk": "环境侧限制可能超出投研系统可控范围，需确认执行环境能力边界",
+      "acceptance": "deep-dive 命令的四个子 Agent 角色可无手工介入按统一约定装载"
+    },
+    {
+      "problemCode": "research-report-lack-bear-coverage",
+      "targetKind": "process",
+      "targetPath": "Research/00-Workspace/02-Processing/pdf-texts/鼎泰高科/研报集.md",
+      "symptom": "东财研报中心近 365 天 9 篇研报全部为买入/正面评级，无任何看空或谨慎评级，deep-dive 命令『至少 1 篇看多 + 1 篇看空/谨慎（如有）』在看空侧缺失，空方论点只能由 bear-advocate 基于财报原文与估值数据独立挖掘",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-16 stock.ts --reports 返回 9 篇研报（东吴 4/上海 2/中银 1/中邮 1/其他），评级全部为买入；研报集显式标注『未检索到看空/谨慎研报』；bear-advocate 独立完成空方论证并声明不依赖卖方观点" },
+        { "grade": "C", "detail": "看空观点通常出现在雪球/集思录/行业媒体而非券商研报，stock.ts --reports 仅覆盖东财研报中心" }
+      ],
+      "rootCauseHypothesis": "研报采集源单一（东财研报中心），券商对高景气赛道公司普遍只发买入研报，看空观点不进入研报体系",
+      "goal": "采集看空观点时扩展非研报源（如负面新闻、监管函、股东减持公告、雪球看空长文）；研报侧无看空时在研报集显式标注并提示 bear-advocate 独立挖掘",
+      "severity": "low",
+      "confidence": 0.7,
+      "benefit": "多空辩论的证据对称性提升，避免多方单边叙事",
+      "risk": "非研报源信噪比低，需甄别来源可信度",
+      "acceptance": "研报集在看空缺失时自动补充非研报看空线索清单"
+    }
+  ]
+}

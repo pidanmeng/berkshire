@@ -1,0 +1,11 @@
+{
+  "id": "conv-1785625499451-aksietb80",
+  "providerId": "codex",
+  "title": "hi",
+  "titleGenerationStatus": "failed",
+  "createdAt": 1785625499451,
+  "updatedAt": 1785625598540,
+  "lastResponseAt": 1785625531990,
+  "sessionId": null,
+  "selectedModel": "openai-codex/deepseek-v4-flash"
+}

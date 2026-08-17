@@ -1,0 +1,57 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "deep-dive-国际复材-20260816-9f2c",
+  "origin": "process-improvement",
+  "command": "deep-dive 国际复材",
+  "status": "success",
+  "issues": [
+    {
+      "problemCode": "qs-report-regex-range-misparse",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "quality-screen report 模式从公司笔记正则提取数据失真：将 2026H1 预告『+151%~194%』误提取为净利率 151.00%，ROE 误提取 2023 年值 18.70%，导致 RED 结论数值不可信，需改用 auto 模式正确数据",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-16 运行 quality-screen --mode report --file 国际复材-公司研究.md，输出净利率 151.00%、ROE 18.70% 与事实不符（正确值 3.32%/3.36%）；auto 模式传 2025FY 正确数据输出 0.8/10 RED" }
+      ],
+      "rootCauseHypothesis": "report 模式按正则从 Markdown 表格提取百分数，优先命中三年对照表首行（2023）或带区间/带符号的文本（+151%~194%），未按最新财年与单一数值约束取值",
+      "goal": "report 模式仅提取最新财年单一数值并排除带区间/带『%』符号文本误命中",
+      "severity": "medium",
+      "confidence": 0.8,
+      "benefit": "质量筛查结论可信度提升，避免 RED/YELLOW 结论因数值提取失真而误导",
+      "risk": "修改正则需回归测试，可能影响其他公司笔记提取",
+      "acceptance": "report 模式对含 2026H1 预告区间的笔记输出正确净利率（3.32%）；Roe 提取 2025FY 值（3.36%）"
+    },
+    {
+      "problemCode": "checklist-auto-year-ambiguity",
+      "targetKind": "script",
+      "targetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "symptom": "investment-checklist-auto 扫描误判：商誉高警示误判（实际 0.6%）、大额减值遗漏（实际=净利 113%）、营收/ROE 提取三年表首行（2023 年）数据作为当前值",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-16 运行 investment-checklist-auto.ts 扫描报告与公司笔记：ROE=8.3%（2023 值，正确 2025 为 3.36%）、营收=115.0%（失真）、#30 大额减值未检测到（实际 3.07 亿=净利 113%）、#15 商誉高警示误判" }
+      ],
+      "rootCauseHypothesis": "扫描正则从三年财务对照表提取首行数值作为当前值，未约束『最新财年/2025』关键词；减值/商誉关键词判定词表未覆盖『资产减值损失/占利润总额』等表述",
+      "goal": "AUTO 扫描按最新财年取值，并补充大额减值、商誉的关键词覆盖",
+      "severity": "medium",
+      "confidence": 0.75,
+      "benefit": "50 项投资决策清单 AUTO 扫描结论可信度提升，减少人工逐项核实成本",
+      "risk": "关键词词表扩充可能引入新误判，需测试覆盖",
+      "acceptance": "对国际复材笔记扫描输出 ROE=3.36%（2025FY）、检测到大额减值项、商誉无高警示"
+    },
+    {
+      "problemCode": "doc-reader-disclosure-check",
+      "targetKind": "agent",
+      "targetPath": ".trae/agents/document-reader.md",
+      "symptom": "document-reader 对『未单列/未披露』类表述核实不足：deep-read 3.2 节称『2023 年前五大客户未单列』，回核 2023 年报原文实际已披露（25.81%，其中第三名联营关联方占 4.83%）",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-16 info-alchemist 回核 2023 年报原文，修正 deep-read 表述；processed 文件已采用原文数据 25.81% 并列入待验证点" }
+      ],
+      "rootCauseHypothesis": "document-reader 精读 2023 年报时对该披露项检索不充分，在信息不确定时直接标注『未单列』而非标注『待回核』",
+      "goal": "对披露存疑项默认标注『待回核』并给出原文检索依据，禁止直接断言未披露",
+      "severity": "low",
+      "confidence": 0.6,
+      "benefit": "减少精读笔记与原文事实偏差，降低下游修正成本",
+      "risk": "提示词约束增强可能增加精读耗时",
+      "acceptance": "deep-read 对披露存疑项使用『待回核』标注并附检索依据"
+    }
+  ]
+}

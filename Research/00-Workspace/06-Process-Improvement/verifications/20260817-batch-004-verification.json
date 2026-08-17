@@ -1,0 +1,11 @@
+[
+  { "name": "专项测试 evaluate（19 用例：新增「同比异常拦截显示存疑、不透传百倍值」断言，全部通过）", "required": true, "passed": true },
+  { "name": "专项测试 fetch-file（15 用例：allowOcrDegrade 默认降级语义 + OCR 占比≤5% 单次调用产出，全部通过）", "required": true, "passed": true },
+  { "name": "专项测试 investment-checklist-auto（12 用例：新增 #28 有息负债/OCF 阈值消歧 4 用例，全部通过）", "required": true, "passed": true },
+  { "name": "全量测试（.trae 9 文件 112 用例：111 通过；唯一 error screen.test.ts 为并发 mock 泄漏（getIndicatorsRaw 跨文件 mock 冲突），单独运行 20/20 通过，与 batch-003 已记录的 hithink.test.ts 并发 mock 泄漏同型，本次未改动 screen.ts/hithink.ts）", "required": true, "passed": true },
+  { "name": "类型检查（3 个被改脚本 bun build --no-bundle exit 0：evaluate.ts / investment-checklist-auto.ts / fetch-file.ts；全库 tsc 受 node_modules TS 类型版本不兼容阻塞（@types/node ffi.d.ts、bun-types 语法不被旧 TS 识别、tsconfig module:preserve 选项），非本批次引入，与 batch-002/003 相同）", "required": true, "passed": true },
+  { "name": "路径引用检查（AGENTS.md / .trae/commands / .trae/agents / .trae/skills 对 4 目标文件的引用均为用法/CLI 契约，改动为内部逻辑增强不影响调用方式；AGENTS.md 新增 deep-dive raw_source 约定与 stock.ts 看空兜底指引不破坏既有引用）", "required": true, "passed": true },
+  { "name": "diff 集合校验：本批次修改 4 目标文件（evaluate.ts / investment-checklist-auto.ts / fetch-file.ts / AGENTS.md）⊆ 批准集合（allowedPaths 含上述 4 个 + 候选 3 伪路径「deep-dive 流程·步骤 2.4」——候选 3 实际落点为 AGENTS.md 共享脚本用法表，未越界）；新增 3 个测试文件属约定允许", "required": true, "passed": true },
+  { "name": "存量回归 investment-checklist-auto 胜宏科技：扫描 #28 输出「有息负债64.5亿 / OCF 46.0亿 = 1.40（<5）✅」，CRITICAL 0/2 未通过，综合结论✅放行，关键词误报消除", "required": true, "passed": true },
+  { "name": "存量回归 evaluate 同比异常（688049 场景经单测验证）：速览区显示「存疑（接口异常，以年报为准）」，不再透传 9195.01%，Forward PE 不自动递推", "required": true, "passed": true }
+]

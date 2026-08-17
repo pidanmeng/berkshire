@@ -1,0 +1,12 @@
+[
+  { "name": "专项测试 quality-screen（含新增 parseCompanyNoteMetrics 6 用例）", "required": true, "passed": true },
+  { "name": "专项测试 fetch-file（含 OCR 降级 3 用例）", "required": true, "passed": true },
+  { "name": "专项测试 investment-checklist-auto（新增 3 用例）", "required": true, "passed": true },
+  { "name": "全量测试（项目 12 个测试文件 127 用例：126 通过；唯一失败 hithink 无凭据用例为环境相关既有失败，hithink.ts 未被本批次改动）", "required": true, "passed": true },
+  { "name": "类型检查（batch 3 脚本 strict + TS 5.9.3：0 错误；全库 tsc 受既有阻塞：bunx 解析 TS 4.9.5 与 tsconfig 不兼容、根 tsconfig 未排除 valuation-tracker，均非本批次引入）", "required": true, "passed": true },
+  { "name": "路径引用检查（AGENTS.md / .trae/commands / .trae/agents / .trae/skills 对 3 目标文件的引用均为用法/CLI 契约，本批次仅新增可选参数与内部逻辑，无需同步）", "required": true, "passed": true },
+  { "name": "验收回归 quality-screen --mode report 风华高科：ROE=2.29%、OCF/NI=1.49、营收同比 16.54%、净利同比 -16.02%、商誉 0、结论 RED（与 auto 一致）", "required": true, "passed": true },
+  { "name": "验收回归 investment-checklist-auto 风华高科：#15 商誉 0 通过、#25 OCF/NI=1.49 通过、#26 ROE=2.3%、#29 营收 16.5%", "required": true, "passed": true },
+  { "name": "全库 tsc --noEmit（既有阻塞，记录留档）", "required": false, "passed": false },
+  { "name": "hithink 无凭据用例（环境已配置同花顺 API 凭据，属既有环境相关失败，记录留档）", "required": false, "passed": false }
+]

@@ -1,0 +1,14 @@
+{
+  "id": "conv-1785766219017-bw8jtt3tk",
+  "providerId": "opencode",
+  "title": "/research 猪周期",
+  "titleGenerationStatus": "failed",
+  "createdAt": 1785766219017,
+  "updatedAt": 1785778987885,
+  "lastResponseAt": 1785768726804,
+  "sessionId": "ses_037e997d7ffe4ffuz9Qjeq8WAu",
+  "selectedModel": "opencode:opencode/deepseek-v4-flash-free",
+  "providerState": {
+    "databasePath": "C:\\Users\\Administrator.DESKTOP-TOIASJ8\\AppData\\Roaming\\opencode\\opencode.db"
+  }
+}

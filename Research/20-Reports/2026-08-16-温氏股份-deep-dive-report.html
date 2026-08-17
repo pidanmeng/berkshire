@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>温氏股份（300498.SZ）深度调研报告</title>
+<style>
+:root {
+  --color-canvas: #000000;
+  --color-surface: #0a0a0a;
+  --color-surface-raised: #111111;
+  --color-border: #1a1a1a;
+  --color-ink: #ffffff;
+  --color-ink-muted: #a1a1a1;
+  --color-ink-subtle: #666666;
+  --color-accent: #0070f3;
+  --color-accent-hover: #3291ff;
+  --color-danger: #ee0000;
+  --color-up: #f04141;
+  --color-down: #2e9e5b;
+  --star-on: #fbbf24;
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: "Geist", Inter, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  line-height: 1.6;
+  padding-bottom: 80px;
+}
+.container { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+header {
+  border-bottom: 1px solid var(--color-border);
+  padding: 56px 0 40px;
+  background: linear-gradient(180deg, #0a0a0a 0%, #000000 100%);
+}
+h1 { font-size: 40px; font-weight: 600; letter-spacing: -1.28px; margin-bottom: 12px; }
+h2 { font-size: 24px; font-weight: 600; letter-spacing: -0.96px; margin: 48px 0 20px; padding-bottom: 8px; border-bottom: 1px solid var(--color-border); }
+h3 { font-size: 18px; font-weight: 600; margin: 24px 0 12px; }
+p, li { color: var(--color-ink-muted); font-size: 15px; }
+a { color: var(--color-accent); text-decoration: none; }
+a:hover { color: var(--color-accent-hover); }
+.subtitle { color: var(--color-ink-subtle); font-size: 14px; }
+.tag { display: inline-block; padding: 2px 10px; border: 1px solid var(--color-border); border-radius: 9999px; font-size: 12px; color: var(--color-ink-muted); margin-right: 8px; margin-bottom: 8px; }
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--color-border, var(--radius-md));
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card h3 { margin-top: 0; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+@media (max-width: 800px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+.stat { text-align: center; padding: 20px 12px; }
+.stat .value { font-size: 28px; font-weight: 600; letter-spacing: -0.8px; }
+.stat .label { font-size: 12px; color: var(--color-ink-subtle); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+.up { color: var(--color-up); }
+.down { color: var(--color-down); }
+.warn { color: #fbbf24; }
+.star { color: var(--star-on); letter-spacing: 2px; }
+.star-off { color: #333; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13.5px; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--color-border); }
+th { color: var(--color-ink-subtle); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+td { color: var(--color-ink-muted); }
+.verdict-red { color: var(--color-danger); font-weight: 600; }
+.verdict-green { color: var(--color-down); font-weight: 600; }
+.verdict-yellow { color: #fbbf24; font-weight: 600; }
+.chart-box { width: 100%; height: 340px; margin: 16px 0; }
+.chart-note { font-size: 12px; color: var(--color-ink-subtle); margin-top: -8px; }
+.quote { border-left: 3px solid var(--color-accent); padding: 12px 16px; background: var(--color-surface-raised); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; margin: 12px 0; font-size: 14px; color: var(--color-ink-muted); }
+.badge { display: inline-block; padding: 2px 8px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 500; }
+.badge-red { background: rgba(238,0,0,0.15); color: var(--color-danger); border: 1px solid rgba(238,0,0,0.4); }
+.badge-green { background: rgba(46,158,91,0.15); color: var(--color-down); border: 1px solid rgba(46,158,91,0.4); }
+.badge-yellow { background: rgba(251,191,36,0.15); color: #fbbf24; border: 1px solid rgba(251,191,36,0.4); }
+footer { border-top: 1px solid var(--color-border); margin-top: 64px; padding-top: 24px; font-size: 12px; color: var(--color-ink-subtle); }
+.conclusion-item { margin-bottom: 14px; padding-left: 16px; border-left: 2px solid var(--color-accent); }
+.conclusion-item h4 { font-size: 15px; margin-bottom: 4px; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js" onerror="window.__ECHARTS_FAIL=true"></script>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <div style="margin-bottom:16px;">
+      <span class="tag">300498.SZ</span><span class="tag">养殖业 · 生猪 + 黄羽鸡</span><span class="tag">deep-dive</span>
+    </div>
+    <h1>温氏股份 深度调研报告</h1>
+    <p class="subtitle">数据时点：2026-08-15（估值快照）｜ 财报基准：2025 年报 + 2026Q1 ｜ 生成：2026-08-16</p>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- 核心结论 -->
+  <section>
+    <h2>核心结论</h2>
+    <div class="conclusion-item">
+      <h4>① 生意性质（置信度：高）</h4>
+      <p>温氏是<strong>强周期、无定价权</strong>的养殖龙头（猪+鸡双主业），利润引擎是猪价周期，量增与成本下降只提供弹性。<strong>非独立复利生意，属"周期成长股"而非"好生意"</strong>。当前处猪周期下行探底期，2026Q1 已亏损 10.70 亿元。</p>
+    </div>
+    <div class="conclusion-item">
+      <h4>② 财务与经营质量（置信度：高）</h4>
+      <p>经营质量真实优秀：三年经营现金流恒正（2023 亏损年仍 +75.94 亿）、资产负债率三年连续下降（60%→49.82%）、2025 年分红+回购 43.4 亿占归母净利 82.8%。<strong>但流动性红旗显著</strong>：货币资金仅 10.13 亿（-79%）、速动比率 0.28、温氏转债 77.06 亿未转股（2027 年 3 月到期）。</p>
+    </div>
+    <div class="conclusion-item">
+      <h4>③ 估值与安全边际（置信度：中）</h4>
+      <p>PE-TTM 41 倍（周期股底部盈利失真）、PB 2.27 倍。以 2027 年券商盈利预测中枢（约 100 亿）计对应约 9-10 倍 PE——<strong>估值本身不算贵，但周期位置判断与转债出清路径是两大不确定性，当前安全边际不足</strong>。</p>
+    </div>
+    <div class="card" style="margin-top:16px;">
+      <h3>四大师综合评分 <span style="font-size:13px;color:var(--color-ink-subtle);">综合 ★★★☆☆（合格）</span></h3>
+      <table>
+        <tr><th>维度</th><th>大师</th><th>星级</th><th>核心判断</th></tr>
+        <tr><td>能力圈</td><td>巴菲特</td><td><span class="star">★★★★</span><span class="star-off">☆</span></td><td>生意本质简单，核心变量是猪价周期与成本，可理解可跟踪</td></tr>
+        <tr><td>护城河</td><td>巴菲特</td><td><span class="star">★★★</span><span class="star-off">☆☆</span></td><td>成本管控+黄羽鸡种源+公司+农户；成本较牧原差 0.8 元/公斤、无定价权</td></tr>
+        <tr><td>生意模式</td><td>段永平</td><td><span class="star">★★★</span><span class="star-off">☆☆</span></td><td>重资产周期生意，现金流好但利润由价格周期主导，非独立复利</td></tr>
+        <tr><td>管理层诚信</td><td>段永平</td><td><span class="star">★★★★</span><span class="star-off">☆</span></td><td>三年审计无保留、亏损年仍分红、销量口径诚实披露、近亲属增持</td></tr>
+        <tr><td>反向检查清单</td><td>芒格</td><td><span class="star">★★★</span><span class="star-off">☆☆</span></td><td>红旗清晰可识别，但当前处于风险释放期</td></tr>
+        <tr><td>历史类比</td><td>李录</td><td><span class="star">★★★</span><span class="star-off">☆☆</span></td><td>类比 2014-2016 去产能周期，本轮振幅或收窄、底部拉长</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 财务数据可视化 -->
+  <section>
+    <h2>关键财务数据（2023-2025 + 2026Q1）</h2>
+    <div class="grid-3" style="margin-bottom:16px;">
+      <div class="card stat"><div class="value">13.47<span style="font-size:14px;">元</span></div><div class="label">最新股价</div></div>
+      <div class="card stat"><div class="value">896.3<span style="font-size:14px;">亿</span></div><div class="label">总市值</div></div>
+      <div class="card stat"><div class="value down">41.06</div><div class="label">PE-TTM（周期失真）</div></div>
+    </div>
+    <div class="card">
+      <h3>归母净利润三年曲线（亿元）——量价脱钩实证</h3>
+      <div id="chart-profit" class="chart-box"></div>
+      <p class="chart-note">数据来源：2023/2024/2025 年报｜2026Q1 为研报旁证（E24）</p>
+    </div>
+    <div class="card">
+      <h3>出栏量 vs 成本（生猪）</h3>
+      <div id="chart-volume" class="chart-box"></div>
+      <p class="chart-note">数据来源：三份年报｜成本 2025 年为 6.1-6.2 元/斤，2023/2024 仅披露相对值</p>
+    </div>
+  </section>
+
+  <!-- 估值区间 -->
+  <section>
+    <h2>估值区间与目标价（安全边际视角）</h2>
+    <div class="card">
+      <h3>三情景目标价</h3>
+      <div id="chart-target" class="chart-box"></div>
+      <p class="chart-note">周期股采用"正常化 EPS"估值路径，单年 PE-TTM 系统性失真</p>
+      <table style="margin-top:16px;">
+        <tr><th>情景</th><th>假设</th><th>目标价</th><th>隐含涨跌幅</th></tr>
+        <tr><td>悲观</td><td>2026 亏损 + 转债兑付 + 正常化 8 倍</td><td>8.0 元</td><td class="down">-41%</td></tr>
+        <tr><td>中性</td><td>2027 反转兑现 + 转债转股 + 12 倍</td><td>15.0 元</td><td class="up">+11%</td></tr>
+        <tr><td>乐观</td><td>反转 + 成本降至 11.8 元/公斤 + 16 倍</td><td>21.0 元</td><td class="up">+56%</td></tr>
+      </table>
+      <div class="quote">
+        <strong>目标买入价（安全边际）：6.4 元</strong>（悲观 × 0.8）或等周期反转信号确认后的 8-10 元区间<br>
+        <strong>目标卖出价（高估）：21 元</strong>｜ <strong>当前操作建议：观望</strong>（RED 筛查 + 周期下行 + 转债压力未解）
+      </div>
+    </div>
+  </section>
+
+  <!-- 护城河 -->
+  <section>
+    <h2>护城河评估（巴菲特框架）</h2>
+    <div class="card">
+      <table>
+        <tr><th>类型</th><th>是否存在</th><th>量化证据</th><th>趋势</th></tr>
+        <tr><td>成本优势</td><td><span class="badge badge-yellow">中等偏强</span></td><td>肉猪 6.1-6.2 元/斤（2025）；较牧原差约 0.8 元/公斤</td><td>收窄中</td></tr>
+        <tr><td>品牌/定价权</td><td><span class="badge badge-red">无</span></td><td>猪鸡均充分竞争，"与同行价格无重大差异"（年报自认）</td><td>—</td></tr>
+        <tr><td>育种/技术</td><td><span class="badge badge-green">真护城河</span></td><td>黄羽鸡全球最大基因库（57 纯系）、100% 自主育种；国产猪基因芯片</td><td>稳固</td></tr>
+        <tr><td>规模效应</td><td><span class="badge badge-green">有</span></td><td>全国 20+ 省布局、PSY 23.7、肉鸡上市率 95.2%</td><td>稳定</td></tr>
+        <tr><td>转换成本</td><td><span class="badge badge-yellow">部分</span></td><td>4.49 万户农户网络（2021-2025 累计收益 519 亿）</td><td>稳定</td></tr>
+      </table>
+      <p style="margin-top:12px;"><strong>宽度评分：5.5/10</strong> ｜ 能否持续 10 年以上：是（育种+农户网络有积累效应），但<strong>非"定价权型"护城河</strong></p>
+    </div>
+  </section>
+
+  <!-- 多空辩论 -->
+  <section>
+    <h2>多空辩论摘要（综合裁决）</h2>
+    <div class="card">
+      <table>
+        <tr><th>维度</th><th>🟢 多方</th><th>🔴 空方</th><th>裁决</th></tr>
+        <tr><td>增长</td><td>量增本降复利：2025 年猪价 -17.95% 下仍盈利 52.66 亿（强/高）</td><td>量价脱钩：2026Q1 亏 10.7 亿，量增无法对冲价跌（强/高）</td><td><span class="badge badge-red">空方胜</span>（当期实证）</td></tr>
+        <tr><td>财务</td><td>去杠杆 60%→49.82% + 现金流恒正（强/高）</td><td>货币资金 -79% + 106.85 亿到期债务（强/高）</td><td><span class="badge badge-red">空方胜</span>（当期）</td></tr>
+        <tr><td>护城河</td><td>种源+农户网络+成本第一梯队（中/中高）</td><td>较牧原差 0.8 元/公斤、无定价权（强/高）</td><td>长期多方、当期空方</td></tr>
+        <tr><td>估值</td><td>2027 年 PE 约 10 倍（中/中）</td><td>PE-TTM 41 倍 + 预测下修至亏损（中强/中高）</td><td><span class="badge badge-red">空方胜</span>（当期）</td></tr>
+        <tr><td>周期/政策</td><td>产能出清+集中度 36%+政策调控（中/中）</td><td>去化缓慢（101.6%）+头部竞争延长底部（中/中）</td><td><span class="badge badge-yellow">多方部分成立</span>（长期）</td></tr>
+      </table>
+      <div class="quote" style="margin-top:16px;">
+        <strong>最大分歧点</strong>：2026-2027 年盈利路径与转债化解方式。<br>
+        <strong>综合裁决</strong>：结合产业周期（能繁母猪仍高于保有量、产能去化刚起步）、政策（产能综合调控使周期振幅收窄、底部拉长）、国际（饲料原料价格稳定）、行业（白羽鸡替代黄羽鸡）——<strong>空方当期风险证据更强，多方长期逻辑需等待周期反转确认信号</strong>。
+      </div>
+    </div>
+  </section>
+
+  <!-- 质量筛查 -->
+  <section>
+    <h2>质量筛查与投资清单</h2>
+    <div class="grid-2">
+      <div class="card">
+        <h3>质量筛查 <span class="badge badge-red" style="margin-left:8px;">RED</span></h3>
+        <p>质量评分：<strong>0.0/100</strong>（受成长性与估值维度严重拖累）</p>
+        <table>
+          <tr><td>盈利能力</td><td>5</td><td>现金流质量</td><td>10</td></tr>
+          <tr><td>杠杆安全</td><td>5</td><td>估值合理性</td><td>3</td></tr>
+          <tr><td>成长性</td><td>1</td><td>生意护城河</td><td>4</td></tr>
+          <tr><td>盈利质量</td><td>8</td><td>—</td><td>—</td></tr>
+        </table>
+        <p style="font-size:13px;color:var(--color-ink-subtle);">红牌：净利 -43.3% + 戴维斯双杀预警。定性修正：周期股底部估值失真，非基本面崩坏 → 归入「周期底部观察池」</p>
+      </div>
+      <div class="card">
+        <h3>50 项投资清单 AUTO</h3>
+        <p>综合结论：<span class="badge badge-green">✅ 放行</span></p>
+        <table>
+          <tr><td>🔴 CRITICAL</td><td>0/2 未通过</td><td class="verdict-green">通过</td></tr>
+          <tr><td>🟠 IMPORTANT</td><td>4/7 未通过*</td><td>人工复核已修正</td></tr>
+          <tr><td>⚪️ NORMAL</td><td>1/3 未通过*</td><td>实际已下载财报</td></tr>
+        </table>
+        <p style="font-size:13px;color:var(--color-ink-subtle);">* 脚本正则误读 frontmatter 2023 年历史数据（ROE -17.6%），以 2025 年报为准（ROE 12.57%、OCF/NI 2.24）</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 风险 -->
+  <section>
+    <h2>风险提示（芒格框架）</h2>
+    <div class="card">
+      <h3>这家公司可能怎么死？</h3>
+      <ul style="list-style:none;padding:0;">
+        <li style="padding:10px 0;border-bottom:1px solid var(--color-border);">🔴 <strong>失败剧本 A：猪价长期低迷 + 高负债 + 减值螺旋</strong>——生物资产 209.98 亿（占 23.46%）按市价重估，2026Q1 单季计提跌价 5.09 亿（去年同期 538 万）；转债 77.06 亿（2027.3 到期）+ 美元债 7.9 亿叠加，货币资金仅 10.13 亿</li>
+        <li style="padding:10px 0;border-bottom:1px solid var(--color-border);">🟠 <strong>失败剧本 B：疫病黑天鹅</strong>——非洲猪瘟点状爆发持续存在，"公司+农户"生物安全管控半径大</li>
+        <li style="padding:10px 0;border-bottom:1px solid var(--color-border);">🟠 <strong>失败剧本 C：鸡价持续低迷</strong>——白羽鸡替代黄羽鸡加速则养鸡主业利润归零</li>
+        <li style="padding:10px 0;">🟠 <strong>失败剧本 D：金融投资反噬</strong>——金融资产 55.91 亿市值波动直接冲击利润表（2023 年已发生过）</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>核心跟踪指标</h3>
+      <ol>
+        <li>全国能繁母猪存栏（目标降至 3,900 万以下）——产能去化拐点</li>
+        <li>生猪价格（站稳 12 元/公斤为盈利信号）与月度销售简报</li>
+        <li>肉猪综合成本（目标 11.8 元/公斤）vs 牧原完全成本差距</li>
+        <li>温氏转债剩余规模与转股价（16.29 元 vs 股价 13.47 元）</li>
+        <li>2026 年中报/三季报：Q2/Q3 是否扭亏、减值、经营现金流、分红率</li>
+      </ol>
+    </div>
+  </section>
+
+  <footer>
+    <p>本报告由本系统基于公开信息生成（2023/2024/2025 年报原文 + 2025 半年报 + 公告 + 研报集）。数据时点：2026-08-16。仅供内部研究参考，不构成投资建议。</p>
+    <p style="margin-top:8px;">相关笔记：温氏股份-公司研究 ｜ 生猪养殖-行业分析 ｜ 黄羽鸡养殖-行业分析 ｜ 养殖业-行业概览 ｜ 养殖业-MOC</p>
+  </footer>
+</div>
+
+<script>
+if (window.__ECHARTS_FAIL) {
+  document.querySelectorAll("[id^='chart-']").forEach(function(el){
+    el.innerHTML = '<div style="padding:16px;border:1px dashed #333;color:#666;border-radius:8px;">图表加载失败（CDN 不可用），请查阅 Markdown 报告数据表</div>';
+  });
+}
+
+var DARK = {
+  text: "#a1a1a1", axis: "#666666", split: "#1a1a1a", accent: "#0070f3"
+};
+
+// 1. 归母净利润曲线
+(function(){
+  var el = document.getElementById("chart-profit");
+  if (!el) return;
+  var c = echarts.init(el);
+  c.setOption({
+    backgroundColor: "transparent",
+    color: ["#0070f3", "#f04141"],
+    tooltip: { trigger: "axis" },
+    legend: { top: 0, textStyle: { color: DARK.text } },
+    grid: { left: 60, right: 20, top: 44, bottom: 30 },
+    xAxis: { type: "category", data: ["2023", "2024", "2025", "2026Q1"], axisLine: { lineStyle: { color: DARK.axis } }, axisLabel: { color: DARK.text } },
+    yAxis: { type: "value", name: "亿元", nameTextStyle: { color: DARK.axis }, axisLabel: { color: DARK.text }, splitLine: { lineStyle: { color: DARK.split } } },
+    series: [{
+      name: "归母净利润", type: "bar", barWidth: 36,
+      data: [
+        { value: -63.90, itemStyle: { color: "#f04141" } },
+        { value: 92.30, itemStyle: { color: "#2e9e5b" } },
+        { value: 52.66, itemStyle: { color: "#2e9e5b" } },
+        { value: -10.70, itemStyle: { color: "#f04141" } }
+      ],
+      label: { show: true, position: "top", color: DARK.text, formatter: function(p){ return p.value; } },
+      markLine: { data: [{ yAxis: 0 }], lineStyle: { color: "#666" } }
+    }]
+  });
+})();
+
+// 2. 出栏量 vs 成本
+(function(){
+  var el = document.getElementById("chart-volume");
+  if (!el) return;
+  var c = echarts.init(el);
+  c.setOption({
+    backgroundColor: "transparent",
+    color: ["#0070f3", "#fbbf24"],
+    tooltip: { trigger: "axis" },
+    legend: { top: 0, textStyle: { color: DARK.text } },
+    grid: { left: 60, right: 60, top: 44, bottom: 30 },
+    xAxis: { type: "category", data: ["2023", "2024", "2025", "2026Q1"], axisLine: { lineStyle: { color: DARK.axis } }, axisLabel: { color: DARK.text } },
+    yAxis: [
+      { type: "value", name: "出栏（万头）", nameTextStyle: { color: DARK.axis }, axisLabel: { color: DARK.text }, splitLine: { lineStyle: { color: DARK.split } } },
+      { type: "value", name: "成本（元/斤）", nameTextStyle: { color: DARK.axis }, axisLabel: { color: DARK.text }, splitLine: { show: false } }
+    ],
+    series: [
+      { name: "生猪出栏（万头）", type: "bar", barWidth: 32, data: [2626, 3018, 4048, 934], label: { show: true, position: "top", color: DARK.text } },
+      { name: "肉猪成本（元/斤）", type: "line", yAxisIndex: 1, smooth: true, data: [null, null, 6.15, null], label: { show: true, position: "top", color: "#fbbf24", formatter: "6.1-6.2" } }
+    ]
+  });
+})();
+
+// 3. 三情景目标价
+(function(){
+  var el = document.getElementById("chart-target");
+  if (!el) return;
+  var c = echarts.init(el);
+  c.setOption({
+    backgroundColor: "transparent",
+    color: ["#f04141", "#0070f3", "#2e9e5b"],
+    tooltip: { trigger: "axis" },
+    legend: { top: 0, textStyle: { color: DARK.text } },
+    grid: { left: 60, right: 20, top: 44, bottom: 30 },
+    xAxis: { type: "category", data: ["悲观", "中性", "乐观"], axisLine: { lineStyle: { color: DARK.axis } }, axisLabel: { color: DARK.text } },
+    yAxis: { type: "value", name: "元", nameTextStyle: { color: DARK.axis }, axisLabel: { color: DARK.text }, splitLine: { lineStyle: { color: DARK.split } } },
+    series: [{
+      name: "目标价", type: "bar", barWidth: 48,
+      data: [
+        { value: 8.0, itemStyle: { color: "#f04141" } },
+        { value: 15.0, itemStyle: { color: "#0070f3" } },
+        { value: 21.0, itemStyle: { color: "#2e9e5b" } }
+      ],
+      label: { show: true, position: "top", color: DARK.text, formatter: function(p){ return p.value + " 元"; } },
+      markLine: {
+        data: [{ yAxis: 13.47, name: "当前价 13.47 元" }],
+        lineStyle: { color: "#fbbf24", type: "dashed" },
+        label: { color: "#fbbf24", formatter: "当前价 13.47" }
+      }
+    }]
+  });
+})();
+</script>
+</body>
+</html>

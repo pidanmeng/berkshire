@@ -1,0 +1,73 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "deep-dive-太极实业-20260817-a7k2",
+  "origin": "process-improvement",
+  "command": "deep-dive 太极实业",
+  "status": "success",
+  "issues": [
+    {
+      "problemCode": "evaluate-yoy-metric-misparse",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "symptom": "evaluate.ts 输出太极实业净利同比 -3183.89%（接口异常），2025 年报原文『主要会计数据』实际为 -31.84%；脚本自带『同比存疑』警告并阻止 Forward PE 递推，但异常字段仍污染估值快照与 PEG/同比对照行",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-17 运行 evaluate.ts --code 600667 输出『PE-TTM vs 净利同比 109.52 vs -3183.89%（⚠️ 同比存疑，以年报为准）』；document-reader 精读 2025 年报确认归母净利同比 -31.84%；与既有 candidate（deep-dive-胜宏科技-20260817-8f3a、deep-dive-中石科技-20260817-cd4f）同根因，跨 3 个 taskId 复现" }
+      ],
+      "rootCauseHypothesis": "evaluate.ts 同比字段来自 hithink API 同比接口（或 TTM 口径拼错），对 2025 年报口径取数错误（数量级放大百倍）；该字段被估值/杜邦/同业行直接消费，属数据源口径问题而非公司业务事实",
+      "goal": "evaluate.ts 同比字段改以年报原文口径核验或显式标注『接口同比存疑，请以财报为准』；下游在同比异常（|同比|>500%）时拦截而非透传",
+      "severity": "high",
+      "confidence": 0.95,
+      "benefit": "估值快照与自动化指标对下游可信，避免误导多空论证与估值判断",
+      "risk": "修改取数逻辑需回归测试其他公司",
+      "acceptance": "evaluate.ts --code 600667 输出归母净利同比 -31.84%（或显式标注数据存疑），不再输出百倍异常值"
+    },
+    {
+      "problemCode": "checklist-auto-threshold-text-misread",
+      "targetKind": "script",
+      "targetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "symptom": "investment-checklist-auto 扫描太极实业报告与笔记出现两处关键词误读：①商誉/净资产被误读为 30.0%（实际 5.72/86.34=6.6%，应判 ✅）；②净利增速被误读为 +448.0%（实际年报口径 -31.84%，#29 双负增长/#31 PE>40 应判 ❌ 触发）；ReportWriter 需人工核验并在附录⑤说明修正",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-17 运行 investment-checklist-auto.ts 扫描太极实业报告+公司笔记：AUTO 判『⚠️ 有条件放行』CRITICAL 1/2 未通过（#25 OCF/NI 0.79）；人工核验 deep-read 4.4/4.6 与 2025 年报确认商誉/净资产 6.6%、净利增速 -31.84% 两处误读；与既有 candidate（deep-dive-胜宏科技-20260817-8f3a、deep-dive-中石科技-20260817-cd4f）同型，跨 3 个 taskId 复现" }
+      ],
+      "rootCauseHypothesis": "扫描器按关键词/正则机械匹配：商誉/净资产字段从报表节选中取到含其他口径的数值；净利增速从 TTM 或含一次性损益口径取数，未与 deep-read 归母/扣非口径对齐",
+      "goal": "AUTO 扫描对关键阈值项做上下文消歧：商誉/净资产取深读口径并校验，净利增速以 deep-read 归母净利口径为准（区分一次性损益影响）",
+      "severity": "medium",
+      "confidence": 0.85,
+      "benefit": "50 项投资决策清单 AUTO 扫描结论可信度提升，减少 CRITICAL 误判与人工核验成本",
+      "risk": "消歧规则可能漏检真实风险，需测试覆盖",
+      "acceptance": "对太极实业报告+笔记扫描不再误读商誉/净资产与净利增速；真实高风险公司仍能正确警示"
+    },
+    {
+      "problemCode": "deep-dive-bear-report-coverage-gap",
+      "targetKind": "process",
+      "targetPath": "deep-dive 流程·步骤 2.4（研报采集）",
+      "symptom": "太极实业近 365 天东财研报 0 条、近 730 天仅 1 条（2024-08-30 国信证券中性『业绩阶段性承压』），卖方近期覆盖极稀疏；多空论证空方依赖 document-reader 从财报原文自建 + 编排器 WebSearch 补充外部观点（广发 2024-08 增持 8.62 元、AI 谨慎报告、同花顺无评级），缺少近期卖方谨慎视角的研报级外部佐证",
+      "evidence": [
+        { "grade": "C", "detail": "2026-08-17 stock.ts --code 600667 --reports --days 365 返回 0 条、--days 730 返回 1 条（2024-08 国信中性）；编排器另以 WebSearch 获取广发深度研报、高盛/大摩/东证看多目标价（40-43 元）、AI 生成谨慎报告作为多空佐证；与既有 observing（deep-dive-胜宏科技-20260817-8f3a、deep-dive-中石科技-20260817-cd4f）同型，跨 3 个 taskId 复现" }
+      ],
+      "rootCauseHypothesis": "A 股研报市场整体偏多且对低关注度公司覆盖稀疏；stock.ts 未提供跨券商（慧博/研报客等）补充检索或『谨慎评级』定向筛选，导致部分公司研报级多空素材不足",
+      "goal": "研报采集在卖方覆盖稀疏或看空稀缺时，补充检索中性/谨慎评级或负面观点新闻作为空方外部证据源；多空论证标注『空方研报级佐证缺失，已以外部观点+财报自建补充』",
+      "severity": "medium",
+      "confidence": 0.65,
+      "benefit": "多空论证外部证据链更完整，减少单边依赖",
+      "risk": "增加采集步骤耗时；负面观点信源质量参差需人工甄别",
+      "acceptance": "多空论证空方至少 1 条外部佐证（或显式标注缺失原因与替代路径）"
+    },
+    {
+      "problemCode": "quality-screen-growth-param-scale",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "quality-screen.ts --mode auto 的 growth 类参数按倍数解析（--revenue-growth -12.77 被输出为『营收同比下降 -1277.0%』红牌），与 ROE/毛利率等百分比参数自动折算（0-1 小数）行为不一致；AGENTS.md 共享脚本用法表未说明 growth 需传小数，首轮筛查结论失真必须重跑",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-17 运行 quality-screen.ts --mode auto --revenue-growth -12.77 --earnings-growth -31.84：输出红牌『营收同比下降 -1277.0%』『净利同比下降 -3184.0%』；脚本对 ROE 5.22 自动折算为 0.0522 并告警，但对 growth 未折算告警；重跑传 --revenue-growth=-0.1277 后输出正确 -12.77%。单次观察，未跨任务复现（记录为 observing）" }
+      ],
+      "rootCauseHypothesis": "quality-screen auto 模式对 growth/倍数类参数不做折算且无显式提示（脚本注释说明『growth/倍数类参数不做折算』），但 AGENTS.md 用法表未同步该契约，编排器按百分比直觉传参导致首轮结论失真",
+      "goal": "quality-screen auto 模式对 growth 参数增加显式契约提示（百分比需传小数），或在 AGENTS.md 共享脚本用法表中补充『growth 类参数传小数（如 -12.77% 传 -0.1277）』",
+      "severity": "medium",
+      "confidence": 0.7,
+      "benefit": "避免自动筛查首轮失真与重复执行，提高筛查结论可信度",
+      "risk": "低，仅影响参数契约与文档说明",
+      "acceptance": "quality-screen auto 模式在 growth 传百分比时给出明确告警（或 AGENTS.md 用法表注明小数契约），首轮输出不再出现 -1277% 类异常值"
+    }
+  ]
+}

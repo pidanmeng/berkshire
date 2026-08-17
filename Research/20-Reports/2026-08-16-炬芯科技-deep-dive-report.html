@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>炬芯科技（688049.SH）深度调研报告 · 2026-08-16</title>
+<style>
+  /* ============================================================
+     Vercel Dark — Style Reference（依据 .trae/skills/research-report-generator/design.md）
+     Canvas #000000 / Surface #0a0a0a / Raised #111111 / Border #1a1a1a
+     Ink #ffffff / Muted #a1a1a1 / Subtle #666666 / Accent #0070f3
+     A股红涨绿跌：--fin-up / --fin-down
+     ============================================================ */
+  :root {
+    --color-canvas: #000000;
+    --color-surface: #0a0a0a;
+    --color-surface-raised: #111111;
+    --color-border: #1a1a1a;
+    --color-ink: #ffffff;
+    --color-ink-muted: #a1a1a1;
+    --color-ink-subtle: #666666;
+    --color-accent: #0070f3;
+    --color-accent-hover: #3291ff;
+    --color-danger: #ee0000;
+    --fin-up: #ee0000;        /* A股：红涨 */
+    --fin-down: #16a34a;      /* A股：绿跌 */
+    --star-on: #fbbf24;       /* 星级：亮 */
+    --star-half: #fbbf24;
+    --star-off: #3f3f46;      /* 星级：暗 */
+    --radius-sm: 6px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --font-sans: "Geist", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    --font-mono: "Geist Mono", ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--color-accent); text-decoration: none; }
+  a:hover { color: var(--color-accent-hover); }
+
+  .page { max-width: 1080px; margin: 0 auto; padding: 48px 24px 96px; }
+
+  /* ---- Hero ---- */
+  .hero { padding: 8px 0 40px; border-bottom: 1px solid var(--color-border); }
+  .hero .eyebrow {
+    font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--color-ink-subtle); margin-bottom: 16px;
+  }
+  .hero h1 { font-size: 48px; font-weight: 600; line-height: 1.1; letter-spacing: -2.4px; margin-bottom: 16px; }
+  .hero .sub { color: var(--color-ink-muted); font-size: 16px; max-width: 720px; }
+  .hero .meta {
+    margin-top: 20px; display: flex; flex-wrap: wrap; gap: 8px;
+    font-family: var(--font-mono); font-size: 12px; color: var(--color-ink-subtle);
+  }
+  .chip {
+    display: inline-block; padding: 4px 10px; border: 1px solid var(--color-border);
+    border-radius: var(--radius-full, 9999px); background: var(--color-surface);
+  }
+  .chip.accent { border-color: var(--color-accent); color: var(--color-accent-hover); }
+
+  /* ---- Section ---- */
+  section { padding: 40px 0; border-bottom: 1px solid var(--color-border); }
+  .sec-title { font-size: 24px; font-weight: 600; letter-spacing: -0.96px; margin-bottom: 4px; }
+  .sec-no {
+    font-family: var(--font-mono); font-size: 12px; color: var(--color-accent);
+    letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; display: block;
+  }
+  .sec-desc { color: var(--color-ink-muted); font-size: 14px; margin-bottom: 24px; }
+
+  /* ---- Cards ---- */
+  .grid { display: grid; gap: 16px; }
+  .grid-2 { grid-template-columns: repeat(2, 1fr); }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid-4 { grid-template-columns: repeat(4, 1fr); }
+  @media (max-width: 860px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--color-surface); border: 1px solid var(--color-border);
+    border-radius: var(--radius-md); padding: 20px;
+  }
+  .card.raised { background: var(--color-surface-raised); }
+  .card h3 { font-size: 14px; font-weight: 600; letter-spacing: -0.28px; margin-bottom: 12px; color: var(--color-ink-muted); }
+  .card .num { font-size: 32px; font-weight: 600; letter-spacing: -1.28px; }
+  .card .num small { font-size: 14px; color: var(--color-ink-muted); font-weight: 400; letter-spacing: 0; }
+  .card .tag { font-family: var(--font-mono); font-size: 12px; color: var(--color-ink-subtle); }
+  .card .note { font-size: 13px; color: var(--color-ink-muted); margin-top: 8px; }
+
+  /* ---- Tables ---- */
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th {
+    text-align: left; font-size: 12px; font-weight: 500; color: var(--color-ink-subtle);
+    text-transform: uppercase; letter-spacing: 0.04em; padding: 10px 12px;
+    border-bottom: 1px solid var(--color-border);
+  }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--color-border); color: var(--color-ink-muted); vertical-align: top; }
+  td:first-child, th:first-child { padding-left: 0; }
+  td:last-child, th:last-child { padding-right: 0; }
+  tr:last-child td { border-bottom: none; }
+  .num-cell { font-family: var(--font-mono); font-size: 13px; color: var(--color-ink); white-space: nowrap; }
+  .up { color: var(--fin-up); }
+  .down { color: var(--fin-down); }
+  .dim { color: var(--color-ink-subtle); }
+
+  /* ---- Star rating ---- */
+  .star-rating { font-size: 20px; letter-spacing: 2px; white-space: nowrap; }
+  .star-rating .on { color: var(--star-on); }
+  .star-rating .off { color: var(--star-off); }
+
+  /* ---- Key findings ---- */
+  .finding { display: flex; gap: 16px; padding: 20px 0; border-bottom: 1px solid var(--color-border); }
+  .finding:last-child { border-bottom: none; }
+  .finding .idx {
+    flex: 0 0 40px; height: 40px; border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono); font-size: 16px; color: var(--color-accent);
+  }
+  .finding h3 { font-size: 17px; font-weight: 600; letter-spacing: -0.34px; margin-bottom: 6px; }
+  .finding p { font-size: 14px; color: var(--color-ink-muted); }
+  .conf {
+    display: inline-block; margin-left: 8px; padding: 2px 8px; font-size: 12px;
+    font-family: var(--font-mono); border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm); color: var(--color-ink-subtle); vertical-align: middle;
+  }
+
+  /* ---- Bull / Bear ---- */
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 860px) { .split { grid-template-columns: 1fr; } }
+  .bull { border-top: 2px solid var(--fin-up); }
+  .bear { border-top: 2px solid var(--fin-down); }
+  .split .card h3 { color: var(--color-ink); }
+  .split ul { list-style: none; }
+  .split li { font-size: 13.5px; color: var(--color-ink-muted); padding: 8px 0; border-bottom: 1px solid var(--color-border); }
+  .split li:last-child { border-bottom: none; }
+  .strength { font-family: var(--font-mono); font-size: 12px; }
+  .verdict {
+    background: var(--color-surface-raised); border: 1px solid var(--color-border);
+    border-left: 3px solid var(--color-accent); border-radius: var(--radius-md);
+    padding: 16px 20px; margin-top: 16px; font-size: 14px; color: var(--color-ink-muted);
+  }
+  .verdict strong { color: var(--color-ink); }
+
+  /* ---- Chart ---- */
+  .chart-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 20px; margin-bottom: 16px; }
+  .chart-card h4 { font-size: 14px; font-weight: 600; letter-spacing: -0.28px; margin-bottom: 4px; }
+  .chart-card .chart-source { font-family: var(--font-mono); font-size: 11px; color: var(--color-ink-subtle); margin-top: 8px; }
+  .chart-container { width: 100%; height: 340px; }
+
+  /* ---- Footnotes / disclaimer ---- */
+  .footnote { font-family: var(--font-mono); font-size: 12px; color: var(--color-ink-subtle); margin-top: 8px; }
+  .disclaimer {
+    margin-top: 48px; padding: 24px; border: 1px solid var(--color-border);
+    border-radius: var(--radius-md); background: var(--color-surface);
+    font-size: 12px; color: var(--color-ink-subtle); line-height: 1.8;
+  }
+  .disclaimer strong { color: var(--color-ink-muted); }
+
+  /* ---- Pill list / track ---- */
+  .track { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  @media (max-width: 860px) { .track { grid-template-columns: 1fr; } }
+  .track-item {
+    background: var(--color-surface); border: 1px solid var(--color-border);
+    border-radius: var(--radius-md); padding: 14px 16px; font-size: 13.5px; color: var(--color-ink-muted);
+  }
+  .track-item b { color: var(--color-ink); font-weight: 600; display: block; margin-bottom: 4px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ═══════════ 1. HERO ═══════════ -->
+  <header class="hero">
+    <div class="eyebrow">Deep-Dive Research · Phase 5 Report · taskId deep-dive-炬芯科技-20260816-a8x2</div>
+    <h1>炬芯科技（688049.SH）<br>深度调研报告</h1>
+    <p class="sub">低功耗 AIoT / 端侧 AI 音频 SoC 芯片设计（Fabless）——以"CPU+DSP+NPU 三核异构 + 存内计算(CIM)"差异化技术绑定哈曼/索尼/Bose 等全球一线音频品牌，赚取 51%+ 毛利率的技术设计溢价。</p>
+    <div class="meta">
+      <span class="chip">数据时点 2026-08-16</span>
+      <span class="chip">股价 41.25 元</span>
+      <span class="chip">PE-TTM 34.27</span>
+      <span class="chip">置信度 中高</span>
+      <span class="chip accent">质量筛查 🟡 YELLOW 7.1/10</span>
+      <span class="chip">操作建议：观望</span>
+    </div>
+  </header>
+
+  <!-- ═══════════ 2. 核心结论 ═══════════ -->
+  <section id="conclusions">
+    <span class="sec-no">01 / Core Conclusions</span>
+    <h2 class="sec-title">核心结论（带置信度）</h2>
+    <p class="sec-desc">每条结论可回溯至三年年报原文 / 公告 / 多空辩论证据（详见附录与相关研究）。</p>
+
+    <div class="finding">
+      <div class="idx">1</div>
+      <div>
+        <h3>端侧 AI 第二曲线已验证，结构性成长成立<span class="conf">置信度 9</span></h3>
+        <p>端侧 AI 处理器收入三年 CAGR <b>115.2%</b>（3,401万→8,199万→15,748万），2026H1 AI 赋能产品营收占比 <b>&gt;25%</b>（2026-07-21 公告），CIM 存内计算为 A 股音频 SoC 首家商用；但 2025-2026 高基数换挡（25Q4 单季 +8.12%、26Q1 净利 +17.49%），须按"结构性渗透 × 周期换挡"双重属性定价。<span class="conf">置信度 8</span> <b style="color:var(--color-ink)">最大分歧：2026 年增长预期</b>——公司激励目标 9.42 亿（+2.2%）vs 券商 12.2 亿（+32%），相差约 30pp，8-25 半年报为裁决窗口。</p>
+      </div>
+    </div>
+    <div class="finding">
+      <div class="idx">2</div>
+      <div>
+        <h3>护城河中等偏窄、暂未变窄<span class="conf">置信度 8</span></h3>
+        <p>毛利率 51.15%（三年 +7.46pp、分产品全线抬升）显著高于恒玄 38.69% / 中科蓝讯 22.10%，本质是<b>高端定位/品牌定价权优势</b>（哈曼核心战略合作伙伴）而非成本优势；硅基通胀下 26Q1 毛利率 49.47%（-1.71pp）<b>仍高于 2024 全年 48.17%</b>，顶部承压、未破位。技术壁垒（CIM + 20 年音频 IP）3-5 年可维持，10 年不确定。<span class="conf">置信度 6 存疑</span></p>
+      </div>
+    </div>
+    <div class="finding">
+      <div class="idx">3</div>
+      <div>
+        <h3>估值无足够安全边际，操作建议观望<span class="conf">置信度 7</span></h3>
+        <p>PE-TTM 34.27（历史分位 9.7%，较恒玄 52.24 折价约 34%），对 2026E 净利增速 17%-42% 分歧区间对应 <b>PEG 1.2-2.0</b>，对公司激励目标隐含的个位数增速并不便宜；三情景目标价 29.4 / 42.4 / 71.5 元，现价 41.25 元处中性情景附近（隐含涨幅仅 +3%）。<b>目标买入 29 元、目标卖出 70 元，当前观望</b>；回落至 29-32 元区间可转逢低关注。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 3. 四大师评分卡 ═══════════ -->
+  <section id="masters">
+    <span class="sec-no">02 / Four Masters Scorecard</span>
+    <h2 class="sec-title">四大师综合评分卡</h2>
+    <p class="sec-desc">巴菲特（能力圈/护城河）、段永平（生意模式/本分诚信）、芒格（反向检查清单）、李录（历史类比与时间框架）。综合分由系统按 composite.ts 权重计算，不人工填写。</p>
+    <div class="grid grid-2">
+      <div class="card">
+        <h3>能力圈 · 巴菲特 <span class="star-rating"><span class="on">★★★</span><span class="on">☆</span><span class="off">✩</span></span> <span class="tag">7.0/10</span></h3>
+        <p class="note">生意本质清晰（低功耗AIoT音频SoC + Fabless，"CPU+DSP+NPU+CIM"架构），但 CIM 技术路线与端侧 AI 竞争格局需持续跟踪，技术深度要求高。</p>
+      </div>
+      <div class="card">
+        <h3>护城河 · 巴菲特 <span class="star-rating"><span class="on">★★★</span><span class="on">☆</span><span class="off">✩</span></span> <span class="tag">6.5/10</span></h3>
+        <p class="note">毛利率 51.15% 差异化 + 哈曼/索尼一线品牌绑定（多方最强论点，置信度 9）；但恒玄 6nm 代差、中低端价格战，护城河中等偏窄。</p>
+      </div>
+      <div class="card">
+        <h3>生意模式 · 段永平 <span class="star-rating"><span class="on">★★★</span><span class="on">☆</span><span class="off">✩</span></span> <span class="tag">7.0/10</span></h3>
+        <p class="note">轻资产 Fabless、净现金 16.6 亿、OCF/NI 三年 &gt;1、高毛利 51%，好生意；客户集中 55.65% / 供应商集中 79.90% 是瑕疵。</p>
+      </div>
+      <div class="card">
+        <h3>管理层诚信（本分）· 段永平 <span class="star-rating"><span class="on">★★★★</span><span class="off">✩</span></span> <span class="tag">8.0/10</span></h3>
+        <p class="note">三年审计标准无保留、预告与实际高度一致、重大不利变化主动披露；2024 关联方销售 6,619 万身份未披露为扣分项，🟢 诚实。</p>
+      </div>
+      <div class="card">
+        <h3>反向检查清单 · 芒格 <span class="star-rating"><span class="on">★★★</span><span class="off">✩✩</span></span> <span class="tag">6.0/10</span></h3>
+        <p class="note">风险识别全面但暴露度中高（25Q4 增速 +8.12%、硅基通胀、激励目标 +2.2% vs 券商 +32%、低税率 0.15% 不可持续）。</p>
+      </div>
+      <div class="card">
+        <h3>历史类比与时间框架 · 李录 <span class="star-rating"><span class="on">★★★</span><span class="off">✩✩</span></span> <span class="tag">6.0/10</span></h3>
+        <p class="note">恒玄 2024 +272%→2025 +29%→2026Q1 -53.26% 的脉冲回落先例；端侧 AI 渗透率提升是结构性机会但行业周期波动大。</p>
+      </div>
+    </div>
+    <p class="footnote">星级：★=1分 ☆=0.5分 ✩=0分 · 十分制 = 星级 × 2 · 综合分由系统加权计算</p>
+  </section>
+
+  <!-- ═══════════ 4. 估值快照 ═══════════ -->
+  <section id="snapshot">
+    <span class="sec-no">03 / Valuation Snapshot</span>
+    <h2 class="sec-title">估值与股价快照（数据时点 2026-08-16）</h2>
+    <div class="grid grid-4">
+      <div class="card"><h3>最新股价</h3><div class="num">41.25<small> 元</small></div><div class="tag">历史分位 9.7%（近250日）</div><div class="note">区间 34.99 ~ 59.32 元下沿附近</div></div>
+      <div class="card"><h3>PE-TTM</h3><div class="num">34.27<small> ×</small></div><div class="tag">中性偏贵</div><div class="note">vs 恒玄 52.24（折价约 34%）</div></div>
+      <div class="card"><h3>PB-MRQ / PS-TTM</h3><div class="num">3.47<small> / 7.50</small></div><div class="tag">PB 与恒玄相当</div><div class="note">PCF-TTM 35.79，不便宜</div></div>
+      <div class="card"><h3>总市值</h3><div class="num">≈70.25<small> 亿元</small></div><div class="tag">总股本约 1.70 亿股</div><div class="note">分红+回购占归母 41.98%</div></div>
+    </div>
+    <table style="margin-top:20px">
+      <thead><tr><th>估值方法</th><th>假设条件</th><th>目标价区间（元）</th><th>当前价对比</th><th>置信度</th></tr></thead>
+      <tbody>
+        <tr><td>PE 估值法</td><td>2026E 归母 2.0-3.8 亿 × 25-32x</td><td class="num-cell">29.4 - 71.5</td><td>当前处中下部</td><td>中</td></tr>
+        <tr><td>PB 估值法</td><td>合理 PB 3.0-3.5x（ROE 10.5% 支撑）</td><td class="num-cell">35 - 41</td><td>当前 3.47 合理</td><td>低</td></tr>
+        <tr><td><b>综合目标区间</b></td><td>—</td><td class="num-cell"><b>29.4 - 71.5</b></td><td>当前 41.25 处中下部</td><td>中</td></tr>
+      </tbody>
+    </table>
+    <div class="verdict" style="margin-top:16px"><strong>称重机视角：</strong>PE-TTM 34.27 低于同业恒玄 52.24、股价处历史分位 9.7%，市场已部分消化 2026 减速预期；但绝对估值对公司激励目标隐含的个位数增速（2026 营收仅 +2.2%）并不便宜——中性情景合理市值约 72 亿（42.4 元/股），与当前价基本持平，<strong>安全边际不足</strong>。需等待 2026 半年报（8-25）验证增速换挡幅度后再决策。</div>
+  </section>
+
+  <!-- ═══════════ 5. 三情景估值 ═══════════ -->
+  <section id="scenarios">
+    <span class="sec-no">04 / Valuation Scenarios</span>
+    <h2 class="sec-title">三情景估值与目标价（安全边际视角）</h2>
+    <div class="grid grid-3" style="margin-bottom:20px">
+      <div class="card"><h3>悲观 · 目标市值 50 亿</h3><div class="num">29.4<small> 元/股</small></div><div class="tag">隐含 -29%</div><div class="note">2026E 归母 2.0 亿 × PE 25x（激励触发路径下限 + 毛利承压）</div></div>
+      <div class="card"><h3>中性 · 目标市值 72 亿</h3><div class="num">42.4<small> 元/股</small></div><div class="tag">隐含 +3%</div><div class="note">2026E 归母 2.4 亿 × PE 30x（激励目标路径 + AI 占比提升）</div></div>
+      <div class="card"><h3>乐观 · 目标市值 122 亿</h3><div class="num">71.5<small> 元/股</small></div><div class="tag">隐含 +73%</div><div class="note">2027E 归母 3.8 亿 × PE 32x（第二代 CIM 2027 规模化导入兑现）</div></div>
+    </div>
+    <div class="chart-card">
+      <h4>三情景目标价 vs 当前价</h4>
+      <div id="chart-valuation" class="chart-container"></div>
+      <div class="chart-source">数据来源：公司笔记估值区间（2026-08-16）| 预测主体：本系统按公司激励路径 + 券商口径综合 | 当前价 41.25 元为 2026-08-16 收盘</div>
+    </div>
+    <div class="verdict"><strong>目标买入价 29 元</strong>（悲观情景下沿，安全边际买入）· <strong>目标卖出价 70 元</strong>（乐观估值上沿，高估卖出）· <strong>当前操作建议：观望</strong>（估值不算贵但无足够安全边际；回落至 29-32 元区间可转逢低关注）</div>
+    <p class="footnote">Forward PE ≈ 29.3x（2026E 归母 2.4 亿中性口径，介于公司激励隐含 2.1-2.4 亿与券商 2.9 亿之间）</p>
+  </section>
+
+  <!-- ═══════════ 6. 财务趋势 ═══════════ -->
+  <section id="financials">
+    <span class="sec-no">05 / Financial Trends</span>
+    <h2 class="sec-title">三年财务趋势（2023-2025，年报口径）</h2>
+    <div class="chart-card">
+      <h4>营收 / 归母净利润 / 毛利率</h4>
+      <div id="chart-financial" class="chart-container"></div>
+      <div class="chart-source">数据来源：2023/2024/2025 年报"主要会计数据" | 毛利率 2026Q1 为 49.47%（一季报，最新观察点）</div>
+    </div>
+    <div class="grid grid-4" style="margin-top:16px">
+      <div class="card"><h3>营收（2025）</h3><div class="num">9.22<small> 亿元</small></div><div class="tag up">+41.50%</div><div class="note">三年 5.20→6.52→9.22 亿，加速</div></div>
+      <div class="card"><h3>归母净利（2025）</h3><div class="num">2.05<small> 亿元</small></div><div class="tag up">+91.95%</div><div class="note">扣非占 93.97%，主业驱动</div></div>
+      <div class="card"><h3>ROE（2025）</h3><div class="num">10.46<small> %</small></div><div class="tag">三年 3.64%→5.83%→10.46%</div><div class="note">净利率+周转率双驱动，几乎无杠杆</div></div>
+      <div class="card"><h3>OCF/NI（2025）</h3><div class="num">1.24<small> ×</small></div><div class="tag">三年均 &gt;1</div><div class="note">现金收入比 1.07，真金白银</div></div>
+    </div>
+    <div class="chart-card" style="margin-top:16px">
+      <h4>2025 年分季度营收（万元）vs 2026Q1</h4>
+      <div id="chart-quarterly" class="chart-container"></div>
+      <div class="chart-source">数据来源：2025 年报分季度数据（Q4 同比 +8.12% 为增速换挡信号）| 2026Q1 一季报 23,751.92 万（+23.74%）</div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 7. 分产品结构 ═══════════ -->
+  <section id="products">
+    <span class="sec-no">06 / Product Mix</span>
+    <h2 class="sec-title">分产品结构与第二曲线</h2>
+    <div class="split">
+      <div class="chart-card" style="margin:0">
+        <h4>2025 年分产品收入结构</h4>
+        <div id="chart-products" class="chart-container"></div>
+        <div class="chart-source">数据来源：2025 年报 P32 分产品表（万元）</div>
+      </div>
+      <div class="card" style="margin:0">
+        <h3>端侧 AI 处理器 · 第二曲线验证</h3>
+        <table>
+          <thead><tr><th>年份</th><th>收入（万元）</th><th>同比</th><th>销量（万颗）</th></tr></thead>
+          <tbody>
+            <tr><td>2023</td><td class="num-cell">3,401.08</td><td class="num-cell">+30.8%</td><td class="num-cell">771.66</td></tr>
+            <tr><td>2024</td><td class="num-cell">8,199.26</td><td class="num-cell up">+141.08%</td><td class="num-cell">1,187.26</td></tr>
+            <tr><td>2025</td><td class="num-cell">15,748.21</td><td class="num-cell up">+92.07%</td><td class="num-cell">2,042.80</td></tr>
+            <tr><td colspan="4" class="dim">三年 CAGR 115.2% · 2026H1 AI 赋能产品营收占比 &gt;25%（2026-07-21 公告）</td></tr>
+          </tbody>
+        </table>
+        <p class="note" style="margin-top:12px">第二代 CIM（目标 300GOPS、7.8TOPS/W、支持 Transformer）2026 年流片、预计 2027 年多品牌多品类规模化导入——技术护城河持续性与 2026-2027 年增速的验证点。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 8. 同业对比 ═══════════ -->
+  <section id="peers">
+    <span class="sec-no">07 / Peer Comparison</span>
+    <h2 class="sec-title">同业对比（2025FY）</h2>
+    <div class="chart-card">
+      <h4>毛利率 / 净利率 / PE-TTM：炬芯 vs 恒玄 vs 中科蓝讯 vs 杰理</h4>
+      <div id="chart-peers" class="chart-container"></div>
+      <div class="chart-source">数据来源：2025 年报 + 潮电智库（2026-03）+ 估值快照（2026-08-16）| 中科蓝讯净利率含投资收益口径存差异，仅列毛利率</div>
+    </div>
+    <div class="verdict"><strong>裁决要点：</strong>炬芯毛利率 51.15% 高恒玄 12.5pp、高中科蓝讯 29pp，是<b>高端定位/品牌绑定优势</b>（多方，置信度 9）；但空方（置信度 7）指其为"定位优势非成本优势"，上游供应商前五 79.90% 议价权在对手侧，硅基通胀下 26Q1 已回落至 49.47%——<b>护城河中等偏窄、暂未变窄（49.47% 仍高于 2024 全年 48.17%），顶部承压</b>。PE 34.27 较恒玄 52.24 折价 34%，但恒玄为业绩暴跌后的"贵"，不构成炬芯便宜的充分参照。</div>
+  </section>
+
+  <!-- ═══════════ 9. 多空裁决 ═══════════ -->
+  <section id="bull-bear">
+    <span class="sec-no">08 / Bull vs Bear Verdict</span>
+    <h2 class="sec-title">多空辩论与综合裁决</h2>
+    <p class="sec-desc">基于多空辩手并行独立产出（bull.md / bear.md），结合产业理解、行业周期、国际形势、政策形势综合裁决；分歧点显式标注。</p>
+    <div class="split">
+      <div class="card bull">
+        <h3>🟢 多方最强论点</h3>
+        <ul>
+          <li><b>端侧 AI 三年 CAGR 115.2% + 2026H1 AI 占比 &gt;25%</b>，第二曲线从故事变收入 <span class="strength dim">· 强 · 置信度 9</span></li>
+          <li><b>毛利率 51.15% 差异化定价力</b>（vs 恒玄 38.69%、中科蓝讯 22.10%）<span class="strength dim">· 强 · 置信度 9</span></li>
+          <li><b>盈利质量真金白银</b>：OCF/NI&gt;1、扣非占 93.97%、净现金 16.6 亿 <span class="strength dim">· 强 · 置信度 9</span></li>
+          <li><b>估值处历史分位 9.7%</b>、PE 34.27 低于恒玄 52.24、forward PE ≈25x、PEG 0.6-0.86 <span class="strength dim">· 中偏强 · 置信度 7</span></li>
+          <li><b>端侧 AI 渗透率 CAGR 58% 结构性 Beta + 国产替代政策顺风</b> <span class="strength dim">· 中 · 置信度 7-8</span></li>
+        </ul>
+      </div>
+      <div class="card bear">
+        <h3>🔴 空方最强论点</h3>
+        <ul>
+          <li><b>增长引擎过峰换挡</b>：25Q4 +8.12%、26Q1 净利 +17.49%、恒玄 26Q1 -53.26%、行业 Beta 转负 <span class="strength dim">· 强 · 置信度 8</span></li>
+          <li><b>估值与公司内部预期脱节</b>：2026 激励营收目标 9.42 亿（仅 +2.2%）vs 券商 12.2 亿（+32%）<span class="strength dim">· 强 · 置信度 8</span></li>
+          <li><b>硅基通胀成本挤压</b>：26Q1 毛利率 49.47%、OCF -1,578 万、存货 +21.85% <span class="strength dim">· 强 · 置信度 8</span></li>
+          <li><b>三重集中度 + 关联方销售阴影</b>（客户 55.65%/供应商 79.90%/应收 77.82%）<span class="strength dim">· 中强 · 置信度 7</span></li>
+          <li><b>低税率 0.15% 不可持续</b>，净利率 ~2pp 隐性回落 <span class="strength dim">· 中强 · 置信度 7</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <h3 style="margin:24px 0 12px;font-size:16px">多空分歧综合裁决（结合外围因素）</h3>
+    <table>
+      <thead><tr><th>维度</th><th>🟢 多方</th><th>🔴 空方</th><th>综合裁决</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><b>增长</b></td>
+          <td>结构性渗透（端侧 AI CAGR 58%）<span class="dim">· 置信度 9</span></td>
+          <td>高基数换挡 + 行业 Beta 转负 <span class="dim">· 置信度 8</span></td>
+          <td><b>采纳空方"节奏性回落"、否决空方"增长证伪"</b>：端侧 AI 为结构性渗透但 2025-2026 存在高基数换挡（周期节奏）；2026 增速按 10-25% 区间定价，8-25 半年报为裁决窗口</td>
+        </tr>
+        <tr>
+          <td><b>护城河</b></td>
+          <td>毛利率是定价权证据（51.15%）<span class="dim">· 置信度 9</span></td>
+          <td>定位优势非成本优势、顶部承压 <span class="dim">· 置信度 7</span></td>
+          <td><b>护城河中等偏窄、暂未变窄</b>：49.47% 仍高于 2024 年 48.17%；第二代 CIM 2026 流片/2027 导入为可持续性验证点</td>
+        </tr>
+        <tr>
+          <td><b>财务质量</b></td>
+          <td>OCF/NI&gt;1、无商誉、净现金 <span class="dim">· 置信度 9</span></td>
+          <td>26Q1 OCF 转负、低税率不可持续 <span class="dim">· 置信度 7</span></td>
+          <td><b>真金白银成立</b>；备货为涨价对冲的主动决策，低税率回归 15% 侵蚀净利约 2pp 已计入中性情景下限</td>
+        </tr>
+        <tr>
+          <td><b>估值</b></td>
+          <td>折价 34%、分位 9.7%、PEG&lt;1 <span class="dim">· 置信度 7</span></td>
+          <td>PEG≈1.96、按激励路径 PEG&gt;5 <span class="dim">· 置信度 8</span></td>
+          <td><b>现价 41.25 处中性情景附近，无足够安全边际</b>（PEG 1.2-2.0）；目标买入 29 元/卖出 70 元，观望</td>
+        </tr>
+        <tr>
+          <td><b>周期/政策/国际</b></td>
+          <td>自主可控 + "人工智能+"政策顺风 <span class="dim">· 置信度 7-8</span></td>
+          <td>硅基通胀逆风、国补退坡空窗、EDA/IP 地缘风险 <span class="dim">· 置信度 7-8</span></td>
+          <td><b>政策面利多（国产替代）× 成本面逆风（硅基通胀 2026 全行业）</b>；境外收入 42.2% 暴露汇率/地缘，已用远期/掉期对冲</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="verdict" style="margin-top:20px">
+      <strong>⚠️ 最大分歧点：2026 年增长预期（裁决理由）</strong><br>
+      公司股权激励营收考核目标 9.42 亿（较 2025 仅 +2.2%）vs 中邮证券 12.2 亿（+32%），相差约 30pp；对应归母 2.1-2.4 亿 vs 2.9 亿，PE 34.27 对两条路径的 PEG 分别 &gt;5 与 ≈0.6-0.9。<b>裁决：</b>①激励基数为三年均值平滑设计但绝对增速 +2.2% 确实显著低于券商预测，"管理层对 2026 增长无把握"解读权重更高；②行业 Beta 已转负（恒玄 -53.26%、耳机市场 -15.9%），券商 +32% 需 2026H2 大幅加速、兑现概率低；③但炬芯 26Q1 逆势 +23.74%（低基数 + 备货贡献）使 Alpha 持续性未证伪亦未证实——<b>采纳空方"节奏性回落"、否决"增长证伪"；多方"结构性成长"成立但需时间消化估值，以 2026 半年报（8-25）为裁决窗口</b>。
+    </div>
+  </section>
+
+  <!-- ═══════════ 10. 管理层与诚信 ═══════════ -->
+  <section id="management">
+    <span class="sec-no">09 / Management & Integrity</span>
+    <h2 class="sec-title">管理层与诚信（本分原则）</h2>
+    <div class="grid grid-2">
+      <div class="card">
+        <h3>审计与承诺兑现</h3>
+        <p class="note" style="margin-top:4px">
+          ✅ 2023/2024/2025 三年均为天健会计师事务所<b>标准无保留</b>（无强调事项段），内控审计标准无保留<br>
+          ✅ 业绩预告与实际几乎一致：2025 年预告 +41.44%/+91.40% → 实际 +41.50%/+91.95%<br>
+          ✅ 2026Q1 毛利率下滑主动披露归因；第二代 CIM 进度连续两年一致性披露<br>
+          ✅ 分红+回购占归母 41.98%，三年累计现金分红比例 95.9%，对老股东友好
+        </p>
+      </div>
+      <div class="card">
+        <h3>扣分项与待核实</h3>
+        <p class="note" style="margin-top:4px">
+          ⚠️ 2024 年前五客户含关联方销售 6,619.33 万（占 10.17%），身份以商业秘密豁免披露，2025 年已消失——<b>公允性待临时公告核实</b><br>
+          ⚠️ 客户/供应商名称豁免披露；2025 年"筹资负债变动表"短期借款现金 +1.32 亿 vs 现金流量表 1,832 万口径不一致（【低】勾稽断裂）<br>
+          ⚠️ 2026 年限制性股票激励营收目标值仅 +2.2%（福利型激励 vs 悲观信号之争）<br>
+          ✅ <b>一票否决项：无</b>（🟢 诚实）
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 11. 风险与跟踪 ═══════════ -->
+  <section id="risk">
+    <span class="sec-no">10 / Risks & Watchlist</span>
+    <h2 class="sec-title">风险提示（分级）与跟踪指标</h2>
+    <table>
+      <thead><tr><th>风险</th><th>级别</th><th>要点</th></tr></thead>
+      <tbody>
+        <tr><td>增速换挡风险</td><td class="num-cell up">高</td><td>25Q4 +8.12%、26Q1 净利 +17.49%、激励目标隐含全年 +2.2% vs 券商 +32%——PE 34x 对个位数增速不便宜</td></tr>
+        <tr><td>成本挤压风险</td><td class="num-cell up">中高</td><td>硅基通胀 Fabless 转嫁滞后 1-2 季（26Q1 毛利率 -1.71pp）；主动备货把上游风险转为自身存货风险</td></tr>
+        <tr><td>行业 Beta 转负</td><td class="num-cell up">中高</td><td>消费电子"价涨量缩"（26H1 耳机销量 -15.9%），恒玄 -53.26%、杰理 -10.13%</td></tr>
+        <tr><td>竞争与技术路线</td><td class="num-cell">中</td><td>恒玄 6nm 代差（2026-2027 无对标旗舰）、中低端价格战、第二代 CIM 流片/导入不确定性</td></tr>
+        <tr><td>集中度风险</td><td class="num-cell">中</td><td>前五客户 55.65%、前五供应商 79.90%、应收 77.82% 集中；2024 关联方销售身份未披露</td></tr>
+        <tr><td>低税率不可持续</td><td class="num-cell down">低</td><td>实际税率 0.15%，回归 15% 侵蚀净利率约 2pp</td></tr>
+        <tr><td>地缘与汇率</td><td class="num-cell down">低</td><td>境外收入 42.2%，EDA/IP 授权限制风险；H 股发行若落地将摊薄</td></tr>
+      </tbody>
+    </table>
+    <h3 style="margin:24px 0 12px;font-size:16px">核心跟踪指标（与投资论点直接挂钩）</h3>
+    <div class="track">
+      <div class="track-item"><b>① 2026 半年报（2026-08-25 预约）</b>营收增速是否 20%+、毛利率企稳 50%+、OCF 回正、存货增速回落、AI 占比精确口径——多空分歧裁决窗口</div>
+      <div class="track-item"><b>② 季度营收/净利增速</b>连续两季 &lt;15% 则"增速换挡"成立，估值按个位数增速重定价</div>
+      <div class="track-item"><b>③ 端侧 AI 处理器收入与占比</b>占比从 17% 向 25%+ 提升；第二代 CIM 流片（2026）/导入（2027）进度公告</div>
+      <div class="track-item"><b>④ 毛利率</b>跌破 48%（2024 水平）则"定价权"证据链削弱（每 -1pp 侵蚀归母约 900 万）</div>
+      <div class="track-item"><b>⑤ 硅基通胀传导</b>中芯/华虹 8 寸代工报价、存储合约价与公司提价转嫁节奏</div>
+      <div class="track-item"><b>⑥ 集中度与关联交易</b>前五客户/供应商占比变化；2024 关联方销售临时公告核验</div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 12. 质量筛查 + 10 项检查清单 ═══════════ -->
+  <section id="quality">
+    <span class="sec-no">11 / Quality Gate</span>
+    <h2 class="sec-title">质量筛查结论 + 财报精读 10 项检查清单</h2>
+    <div class="grid grid-4" style="margin-bottom:20px">
+      <div class="card"><h3>综合质量分</h3><div class="num">7.1<small> / 10</small></div><div class="tag">🟡 YELLOW</div><div class="note">无红牌 · 可标注「值得跟踪」</div></div>
+      <div class="card"><h3>现金流质量</h3><div class="num">10<small> / 10</small></div><div class="note">OCF/NI 1.24、现金收入比 1.07</div></div>
+      <div class="card"><h3>成长性</h3><div class="num">9<small> / 10</small></div><div class="note">营收 +41.5%、净利 +92.0%、端侧 AI CAGR 115.2%</div></div>
+      <div class="card"><h3>估值合理性</h3><div class="num">6<small> / 10</small></div><div class="tag">黄牌级 · 多空分歧核心</div><div class="note">PE 34.27 对 2026 激励目标隐含个位数增速不便宜</div></div>
+    </div>
+    <table>
+      <thead><tr><th style="width:60%">财报精读 10 项检查（evaluate.ts + document-reader）</th><th>结果</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>1. ROE ≥ 12%</td><td class="num-cell up">❌</td><td>10.46%（三年 3.64%→5.83%→10.46% 逐年抬升但未达良好线）</td></tr>
+        <tr><td>2. 经营现金流 ≥ 净利 × 0.8</td><td class="num-cell down">✅</td><td>OCF/NI 1.24（三年均 &gt;1）</td></tr>
+        <tr><td>3. 资产负债率 ≤ 60%</td><td class="num-cell down">✅</td><td>13.19%，净现金（16.6 亿 vs 有息负债 8,856 万）</td></tr>
+        <tr><td>4. 当期归母净利润为正</td><td class="num-cell down">✅</td><td>2.05 亿（2025FY）</td></tr>
+        <tr><td>5. 毛利率 ≥ 25%</td><td class="num-cell down">✅</td><td>51.15%，行业第一梯队</td></tr>
+        <tr><td>6. 营收趋势 ≥ 2 年连续稳健</td><td class="num-cell down">✅</td><td>5.20→6.52→9.22 亿，连续三年正增长且 2025 加速</td></tr>
+        <tr><td>7. 商誉 / 净资产 &lt; 30%</td><td class="num-cell down">✅</td><td>商誉为 0</td></tr>
+        <tr><td>8. 无大额资产减值（≥净利 30%）</td><td class="num-cell down">✅</td><td>2025 年资产减值 212.22 万，占归母 1.04%</td></tr>
+        <tr><td>9. 审计意见「标准无保留」</td><td class="num-cell down">✅</td><td>天健会计师事务所，连续三年（含内控）</td></tr>
+        <tr><td>10. MD&A 无重大风险提示隐瞒</td><td class="num-cell down">✅</td><td>13 项风险披露全面，2026Q1 成本压力主动归因，🟢 诚实</td></tr>
+      </tbody>
+    </table>
+    <p class="footnote">10 项中 ❌ = 1（ROE 未达 12%），其余全部通过。关注点：2026Q1 OCF 转负、存货 +21.85%、低税率 0.15% 不可持续（均非检查表硬指标）。</p>
+  </section>
+
+  <!-- ═══════════ 13. 附录 ═══════════ -->
+  <section id="appendix">
+    <span class="sec-no">12 / Appendix</span>
+    <h2 class="sec-title">附录：来源 / 验证 / 相关研究</h2>
+    <div class="card" style="margin-bottom:16px">
+      <h3>主要来源</h3>
+      <p class="note" style="margin-top:8px">
+        炬芯科技 2023/2024/2025 年度报告（天健标准无保留，195/219/229 页）· 2025 年半年度报告 · 2026Q1 报告 · 端侧 AI 芯片推广及研发进展公告（2026-07-21）· 2026 年限制性股票激励实施考核管理办法（2026-07-31）· 中邮证券 2026-05-09 / 东吴证券 2026-02-01 / 民生证券 2025-10-31 研报 · 洛图科技 / 潮电智库 / 集微咨询 / 博研咨询 / 金融界 / 电子工程专辑 / 芯智云 等外部信源（均见 bull/bear 证据日志，含 URL 时点）。
+      </p>
+    </div>
+    <div class="card" style="margin-bottom:16px">
+      <h3>验证与相关研究（知识库双链）</h3>
+      <p class="note" style="margin-top:8px">
+        [[炬芯科技-公司研究]] · [[2026-08-16-炬芯科技-deep-read]] · [[2026-08-16-炬芯科技-processed]] · [[2026-08-16-炬芯科技-bull]] · [[2026-08-16-炬芯科技-bear]] · [[2026-08-16-炬芯科技-validated]] · [[端侧AI芯片-行业分析]]（待建）· [[半导体-行业概览]]（待建）
+      </p>
+    </div>
+    <div class="card">
+      <h3>数据缺口与存疑项</h3>
+      <p class="note" style="margin-top:8px">
+        ⚠️ 估值快照为单源（evaluate.ts，置信度上限 6）· 2026 激励考核目标为单源（新浪财经转公告，置信度上限 6）· 2024 关联方销售身份待临时公告核实 · 2026 半年报（8-25）未披露 · 端侧 AI 处理器产品内部细分缺失 · 客户/供应商名称豁免披露（哈曼/中芯等为推断）。三年年报精读覆盖完整（2023/2024/2025），三年连贯性 ✅，管理层诚实 🟢 无红线。
+      </p>
+    </div>
+  </section>
+
+  <!-- ═══════════ 免责声明 ═══════════ -->
+  <div class="disclaimer">
+    <strong>免责声明</strong> · 本报告由投研 Agent 系统基于公开信息自动生成（taskId: deep-dive-炬芯科技-20260816-a8x2），仅供内部研究参考，不构成任何投资建议。数据时点：2026-08-16。报告中所有"观点"类论述均基于财报事实与公开研报推断并已显式标注；置信度 &lt;7 的内容已标注「存疑」。投资有风险，决策需独立判断。
+  </div>
+</div>
+
+<!-- ═══════════ ECharts ═══════════ -->
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js" onerror="window.__ECHARTS_FAIL=true"></script>
+<script>
+(function () {
+  if (window.__ECHARTS_FAIL) {
+    document.querySelectorAll("[id^='chart-']").forEach(function (el) {
+      el.innerHTML = '<div style="padding:16px;border:1px dashed #1a1a1a;border-radius:6px;color:#666;font-family:ui-monospace,monospace;font-size:12px;">图表加载失败（ECharts CDN 不可用），请查阅 Markdown 报告数据表。</div>';
+    });
+    return;
+  }
+  if (typeof echarts === "undefined") return;
+
+  /* Vercel Dark 主题基座（merge 到每个 setOption） */
+  var DARK_THEME_BASE = {
+    backgroundColor: "transparent",
+    textStyle: { color: "#a1a1a1", fontFamily: "Inter, -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif" },
+    color: ["#0070f3", "#ffffff", "#ee0000", "#16a34a", "#fbbf24", "#a1a1a1"],
+    tooltip: {
+      backgroundColor: "#111111", borderColor: "#1a1a1a", borderWidth: 1,
+      textStyle: { color: "#ffffff", fontSize: 12 },
+      axisPointer: { lineStyle: { color: "#1a1a1a" } }
+    },
+    legend: { textStyle: { color: "#a1a1a1", fontSize: 12 }, itemWidth: 14, itemHeight: 8, top: 0 },
+    grid: { left: 48, right: 20, top: 44, bottom: 36 },
+    xAxis: {
+      axisLine: { lineStyle: { color: "#1a1a1a" } },
+      axisTick: { show: false },
+      axisLabel: { color: "#a1a1a1", fontSize: 12 },
+      splitLine: { show: false }
+    },
+    yAxis: {
+      axisLine: { show: false },
+      axisTick: { show: false },
+      axisLabel: { color: "#666666", fontSize: 11 },
+      splitLine: { lineStyle: { color: "#1a1a1a" } }
+    }
+  };
+
+  function mergeBase(opt) {
+    var out = JSON.parse(JSON.stringify(DARK_THEME_BASE));
+    ["xAxis", "yAxis", "grid", "tooltip", "legend", "textStyle", "color", "backgroundColor"].forEach(function (k) {
+      if (opt[k] !== undefined) {
+        out[k] = Array.isArray(opt[k]) ? opt[k] : Object.assign({}, out[k], opt[k]);
+      }
+    });
+    for (var k in opt) if (["xAxis", "yAxis", "grid", "tooltip", "legend", "textStyle", "color", "backgroundColor"].indexOf(k) < 0) out[k] = opt[k];
+    return out;
+  }
+
+  /* ── 图 1：三年财务趋势（营收/归母柱 + 毛利率线） ── */
+  var el1 = document.getElementById("chart-financial");
+  if (el1) {
+    var c1 = echarts.init(el1);
+    c1.setOption(mergeBase({
+      tooltip: { trigger: "axis" },
+      legend: { data: ["营收（亿元）", "归母净利（亿元）", "毛利率（%）"] },
+      xAxis: { type: "category", data: ["2023", "2024", "2025", "2026Q1"], axisLabel: { color: "#a1a1a1" } },
+      yAxis: [
+        { type: "value", name: "亿元", nameTextStyle: { color: "#666666", fontSize: 11 } },
+        { type: "value", name: "%", nameTextStyle: { color: "#666666", fontSize: 11 }, min: 30, max: 60 }
+      ],
+      series: [
+        { name: "营收（亿元）", type: "bar", data: [5.20, 6.52, 9.22, 2.38], barWidth: 22, itemStyle: { color: "#0070f3" }, label: { show: true, position: "top", color: "#ffffff", fontSize: 11 } },
+        { name: "归母净利（亿元）", type: "bar", data: [0.65, 1.07, 2.05, 0.49], barWidth: 22, itemStyle: { color: "#fbbf24" }, label: { show: true, position: "top", color: "#ffffff", fontSize: 11 } },
+        { name: "毛利率（%）", type: "line", yAxisIndex: 1, data: [43.69, 48.17, 51.15, 49.47], smooth: true, lineStyle: { color: "#ee0000", width: 2 }, itemStyle: { color: "#ee0000" }, symbolSize: 7, label: { show: true, color: "#ee0000", fontSize: 11 } }
+      ]
+    }));
+  }
+
+  /* ── 图 2：2025 分产品结构（饼图） ── */
+  var el2 = document.getElementById("chart-products");
+  if (el2) {
+    var c2 = echarts.init(el2);
+    c2.setOption(mergeBase({
+      tooltip: { trigger: "item", formatter: "{b}<br/>{c} 万元（{d}%）" },
+      legend: { bottom: 0, left: "center" },
+      series: [{
+        type: "pie", radius: ["42%", "68%"], center: ["50%", "46%"],
+        label: { color: "#a1a1a1", fontSize: 12, formatter: "{b}\n{d}%" },
+        itemStyle: { borderColor: "#000000", borderWidth: 2 },
+        data: [
+          { value: 68239.28, name: "智能无线音频 SoC（74.0%）", itemStyle: { color: "#0070f3" } },
+          { value: 15748.21, name: "端侧 AI 处理器（17.1%）", itemStyle: { color: "#fbbf24" } },
+          { value: 8165.51, name: "便携式音视频 SoC（8.9%）", itemStyle: { color: "#666666" } }
+        ]
+      }]
+    }));
+  }
+
+  /* ── 图 3：三情景估值 vs 当前价 ── */
+  var el3 = document.getElementById("chart-valuation");
+  if (el3) {
+    var c3 = echarts.init(el3);
+    c3.setOption(mergeBase({
+      tooltip: { trigger: "axis" },
+      legend: { data: ["目标价（元）"] },
+      xAxis: { type: "category", data: ["悲观情景", "中性情景", "乐观情景"], axisLabel: { color: "#a1a1a1" } },
+      yAxis: { type: "value", name: "元/股", nameTextStyle: { color: "#666666", fontSize: 11 }, min: 0 },
+      series: [{
+        name: "目标价（元）", type: "bar", barWidth: 48,
+        data: [
+          { value: 29.4, itemStyle: { color: "#16a34a" }, label: { show: true, position: "top", color: "#ffffff", fontSize: 12, formatter: "29.4 元" } },
+          { value: 42.4, itemStyle: { color: "#0070f3" }, label: { show: true, position: "top", color: "#ffffff", fontSize: 12, formatter: "42.4 元" } },
+          { value: 71.5, itemStyle: { color: "#ee0000" }, label: { show: true, position: "top", color: "#ffffff", fontSize: 12, formatter: "71.5 元" } }
+        ],
+        markLine: {
+          symbol: "none", data: [{ yAxis: 41.25, name: "当前价" }],
+          lineStyle: { color: "#ffffff", type: "dashed", width: 1 },
+          label: { formatter: "当前价 41.25 元", color: "#ffffff", fontSize: 11, position: "end" }
+        }
+      }]
+    }));
+  }
+
+  /* ── 图 4：同业对比（毛利率/净利率/PE） ── */
+  var el4 = document.getElementById("chart-peers");
+  if (el4) {
+    var c4 = echarts.init(el4);
+    c4.setOption(mergeBase({
+      tooltip: { trigger: "axis" },
+      legend: { data: ["毛利率（%）", "净利率（%）", "PE-TTM（右轴）"] },
+      xAxis: { type: "category", data: ["炬芯科技", "恒玄科技", "中科蓝讯", "杰理科技"], axisLabel: { color: "#a1a1a1" } },
+      yAxis: [
+        { type: "value", name: "%", nameTextStyle: { color: "#666666", fontSize: 11 }, max: 60 },
+        { type: "value", name: "PE-TTM", nameTextStyle: { color: "#666666", fontSize: 11 } }
+      ],
+      series: [
+        { name: "毛利率（%）", type: "bar", data: [51.15, 38.69, 22.10, 30.74], barWidth: 20, itemStyle: { color: "#0070f3" }, label: { show: true, position: "top", color: "#ffffff", fontSize: 11 } },
+        { name: "净利率（%）", type: "bar", data: [22.18, 16.85, null, null], barWidth: 20, itemStyle: { color: "#fbbf24" }, label: { show: true, position: "top", color: "#ffffff", fontSize: 11 } },
+        { name: "PE-TTM（右轴）", type: "bar", yAxisIndex: 1, data: [34.27, 52.24, null, null], barWidth: 20, itemStyle: { color: "#a1a1a1" }, label: { show: true, position: "top", color: "#a1a1a1", fontSize: 11 } }
+      ]
+    }));
+  }
+
+  /* ── 图 5：2025 分季度营收 + 2026Q1 ── */
+  var el5 = document.getElementById("chart-quarterly");
+  if (el5) {
+    var c5 = echarts.init(el5);
+    c5.setOption(mergeBase({
+      tooltip: { trigger: "axis" },
+      legend: { data: ["营收（亿元）"] },
+      xAxis: { type: "category", data: ["25Q1", "25Q2", "25Q3", "25Q4", "26Q1"] },
+      yAxis: { type: "value", name: "亿元", nameTextStyle: { color: "#666666", fontSize: 11 } },
+      series: [{
+        name: "营收（亿元）", type: "bar", barWidth: 36,
+        data: [
+          { value: 1.92, itemStyle: { color: "#0070f3" } },
+          { value: 2.57, itemStyle: { color: "#0070f3" } },
+          { value: 2.73, itemStyle: { color: "#0070f3" } },
+          { value: 2.00, itemStyle: { color: "#ee0000" }, label: { show: true, position: "top", color: "#ee0000", fontSize: 11, formatter: "25Q4 同比 +8.12%" } },
+          { value: 2.38, itemStyle: { color: "#fbbf24" }, label: { show: true, position: "top", color: "#ffffff", fontSize: 11, formatter: "同比 +23.74%" } }
+        ],
+        label: { show: true, position: "top", color: "#a1a1a1", fontSize: 11 },
+        markLine: {
+          symbol: "none", data: [{ yAxis: 1.92 }],
+          lineStyle: { color: "#666666", type: "dashed", width: 1 },
+          label: { formatter: "25Q1 基数（全年最低季）", color: "#666666", fontSize: 10, position: "insideEndTop" }
+        }
+      }]
+    }));
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,73 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "deep-dive-三生国健-20260816-4f2a",
+  "origin": "process-improvement",
+  "command": "deep-dive 三生国健",
+  "status": "success",
+  "issues": [
+    {
+      "problemCode": "evaluate-oneshot-income-distortion",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "symptom": "evaluate.ts 估值快照对含大额一次性损益的标的给出误导性评价，且同比数据存在单位错误：三生国健 2025 年 28 亿辉瑞 BD 一次性收入计入经常性损益（占营收 67.29%），脚本仍输出『PE-TTM 14.58 便宜』『PEG 0.00 有吸引力』『PE-TTM vs 净利同比 14.58 vs 31149.46%』，其中营收同比输出 25181.21%、净利同比输出 31149.46%（正确值 251.81%/311.49%，数据放大百倍）；『便宜』结论与真实 Forward PE 47-54 倍严重背离",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-16 运行 evaluate.ts --code 688336：输出『营收同比 25181.21%』『净利同比 31149.46%』（正确为 251.81%/311.49%，对照年报 P10 与公开解读），PE-TTM 14.58 标注『便宜』、PEG 0.00 标注『有吸引力』；经 deep-read 精读核实 28 亿辉瑞首付款为一次性 BD 收入，2026 券商一致预期净利 -78%，Forward PE 47-54 倍" }
+      ],
+      "rootCauseHypothesis": "①hithink API 返回的同比增速存在单位/口径错误（百分比被放大百倍）且无合理性校验；②估值快照无一次性损益识别能力，PE-TTM/PEG 直接使用含一次性收入的 TTM 净利，对 license-out 等一次性 BD 驱动的利润结构会系统性给出『便宜』误导结论",
+      "goal": "evaluate.ts 增加同比数据合理性校验（|同比|>1000% 时提示核实或降级处理），并在估值快照输出一次性损益警告（检测到净利/毛利率异常抬升或营收同比极端值时提示『净利含大额一次性收入，PE-TTM 失真，请用正常化盈利』）；将『三生国健 688336』作为回归样例",
+      "severity": "high",
+      "confidence": 0.9,
+      "benefit": "估值快照是 Phase 4 入库与报告估值章节的直接数据源，失真会传导至 quality-screen 与投资清单扫描；修复后一次性 BD 类公司（创新药 license-out、资产处置收益等）的估值判断不再被误导",
+      "risk": "同比合理性阈值可能误伤高增长成长股（如从低基数暴增的真实高增长），需设计为『警告而非硬改』并允许人工覆盖",
+      "acceptance": "对 688336 运行 evaluate.ts 时：同比输出 251.81%/311.49%（或显式标注数据异常），估值快照出现『含一次性损益、PE-TTM 失真』提示；'便宜'评价不再出现在含一次性 BD 的标的上"
+    },
+    {
+      "problemCode": "quality-screen-oneshot-greening",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "quality-screen 自动化评分被一次性 BD 收入美化：三生国健输出 GREEN 7.9/10，其中估值合理性 10 分（PE-TTM 14.58<15）、成长性 9 分（净利 +311.49%）、盈利质量 8.4 分，与 deep-read『虚胖型增长、主业 -8.01% 首次负增长、ROE 41.32% 不可持续、2026 净利 -78%』的中性精读结论严重矛盾；GREEN 结论若被直接采纳将把一次性收入驱动的高分当作『值得跟踪』依据",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-16 运行 quality-screen.ts --mode report --file 三生国健-公司研究.md 输出 7.9/10 GREEN（估值 10/成长 9/ROE 41.32% 高分均源自 28 亿辉瑞一次性收入），而 deep-read 9.1 节结论为『表面逐年向好，实质主业走弱』；编排器须人工纠正后方可入库，纠正过程记录在公司笔记『质量筛查结论』段落" }
+      ],
+      "rootCauseHypothesis": "quality-screen 的 8 项财务红牌与 7 项质量评分全部基于单期报表数据，无一次性损益/非经常性项目修正通道；license-out 首付款计入经常性损益后，ROE/PE/净利增速全部失真，自动化 GREEN 与基本面真相脱节",
+      "goal": "quality-screen 增加一次性损益修正输入（如 --nonrecurring-net-profit 或支持从笔记 frontmatter 读取『剔除一次性后主业盈利』），当净利含大额一次性收入时输出显式警告并下调估值/成长维度得分或标注失真；与 evaluate 的一次性损益识别共用判定逻辑",
+      "severity": "high",
+      "confidence": 0.85,
+      "benefit": "质量筛查是 Phase 4 入库门禁（红牌 ≥2 不得标值得跟踪），失真 GREEN 会绕过该门禁；修复后一次性损益类标的的入库判断回归真实基本面",
+      "risk": "需避免对正常高增长股误判为一次性损益；建议以『非经常性损益/归母净利 >30%』或『一次性收入/营收 >20%』为触发条件并允许人工覆盖",
+      "acceptance": "对三生国健笔记运行 quality-screen 时输出一次性损益失真警告，估值/成长维度不再因 BD 收入给满分，GREEN 结论附带『剔除一次性后 2026 净利 -78%』提示"
+    },
+    {
+      "problemCode": "checklist-auto-negation-context",
+      "targetKind": "script",
+      "targetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "symptom": "investment-checklist-auto #30 大额减值项误报：三生国健扫描输出『#30 大额减值 >30% 净利 ❌ 检测到大额减值警示』，实际 2025 年资产减值损失为转回 +48.80 万、开发支出未计提减值（审计关键事项确认无减值），属关键词无否定语境判定导致的误报；与 20260816 三环集团 review 记录的 checklist-auto-year-ambiguity 同根因（关键词误命中）复现",
+      "evidence": [
+        { "grade": "C", "detail": "2026-08-16 运行 investment-checklist-auto.ts 扫描三生国健报告与笔记：#30 命中『减值』关键词判为警示，人工核验年报 P120/P112 确认资产减值损失为转回、开发支出未减值；同型误报已在 deep-dive-三环集团-20260816-3a7k 记录（medium，三环集团 3 项误报），本次为又一实例" }
+      ],
+      "rootCauseHypothesis": "扫描正则对『减值』等关键词无否定语境排除（『无减值/未减值/转回/通过』不应命中警示）；与 checklist-auto-year-ambiguity 同根因，跨任务复现进一步佐证",
+      "goal": "对减值/商誉等关键词做否定语境判定：命中『无减值/未计提/转回/通过』时不得判为警示；修复与 checklist-auto-year-ambiguity 合并处理",
+      "severity": "medium",
+      "confidence": 0.8,
+      "benefit": "50 项投资决策清单 AUTO 扫描结论可信度提升，减少人工逐项核实成本（本次 #30 误报需人工排除）",
+      "risk": "否定词表扩充可能引入新误判，需测试覆盖",
+      "acceptance": "对三生国健报告扫描时 #30 不再误报（命中『转回/未减值』语境判为通过）"
+    },
+    {
+      "problemCode": "subagent-type-mapping-for-research-agents",
+      "targetKind": "process",
+      "targetPath": ".trae/commands/deep-dive.md",
+      "symptom": "投研自定义子 Agent（document-reader/bull-advocate/bear-advocate/info-alchemist）无法以 Task 工具 subagent_type 直启，须将 .trae/agents/*.md 角色定义整体嵌入 general_purpose_task 上下文执行；本次三生国健 deep-dive 第 2 次复现（首见 deep-dive-三环集团-20260816-3a7k）",
+      "evidence": [
+        { "grade": "C", "detail": "2026-08-16 三生国健 deep-dive 沿用 general_purpose_task + 内嵌 document-reader.md / bull-advocate.md / bear-advocate.md / info-alchemist.md 角色定义方式执行，产物满足各 agent 定义质量标准（deep-read 含 9 大目标与三年年报覆盖、bull/bear 含原文引用与互驳、processed 含扣非维度），为 subagent-type-mapping-for-research-agents 问题提供第二次 C 级证据" }
+      ],
+      "rootCauseHypothesis": "deep-dive / research 命令文档未说明投研自定义子 Agent 在 Task 工具下的运行方式，执行者需自行摸索 general_purpose_task 承载角色定义的调用模式（同三环集团 review 结论）",
+      "goal": "deep-dive / research 命令或 AGENTS.md 补充说明：自定义投研 Agent 以 general_purpose_task 启动并内嵌 .trae/agents/*.md 角色定义与质量标准；或在工具支持自定义 subagent_type 后改回直调",
+      "severity": "low",
+      "confidence": 0.7,
+      "benefit": "减少编排器首次执行的试错成本，统一投研子 Agent 调用契约（两次复现，可转 candidate）",
+      "risk": "文档改动需与工具能力现状一致，避免过时指引",
+      "acceptance": "命令文档明确投研子 Agent 的启动方式，后续 deep-dive 执行无需再次摸索"
+    }
+  ]
+}

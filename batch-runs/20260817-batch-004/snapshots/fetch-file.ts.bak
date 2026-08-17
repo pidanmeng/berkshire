@@ -1,0 +1,423 @@
+import { processPdf } from "@firecrawl/pdf-inspector";
+import { createHash } from "node:crypto";
+import { lookup } from "node:dns/promises";
+import { existsSync } from "node:fs";
+import { isIP } from "node:net";
+import { mkdir, mkdtemp, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
+import { basename, extname, isAbsolute, join, resolve } from "node:path";
+import { tmpdir } from "node:os";
+import { pathToFileURL } from "node:url";
+
+const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
+const PDF_MAGIC = Buffer.from("%PDF-");
+const MAX_FILENAME_LENGTH = 120;
+const MAX_REMOTE_BYTES = 50 * 1024 * 1024;
+const MAX_REDIRECTS = 5;
+const RESERVED_NAMES = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i;
+// OCR 页占比 ≤5% 时，配合 --allow-ocr-pages 以占位符降级产出 Markdown（含扫描封面页的年报场景）
+const OCR_PAGE_RATIO_LIMIT = 0.05;
+
+export function redactUrl(input: string): string {
+  try {
+    const url = new URL(input);
+    for (const key of [...url.searchParams.keys()]) {
+      if (/(token|secret|password|passwd|api[-_]?key|access[-_]?key|signature|sig|auth|credential)/i.test(key)) {
+        url.searchParams.set(key, "[REDACTED]");
+      }
+    }
+    if (url.username) url.username = "[REDACTED]";
+    if (url.password) url.password = "[REDACTED]";
+    return url.toString();
+  } catch {
+    return "[invalid-url]";
+  }
+}
+
+function isPrivateAddress(address: string): boolean {
+  if (isIP(address) === 4) {
+    const [a, b] = address.split(".").map(Number);
+    return a === 10 || a === 127 || a === 0 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168);
+  }
+  if (isIP(address) === 6) {
+    const normalized = address.toLowerCase();
+    return normalized === "::1" || normalized === "::" || normalized.startsWith("fc") || normalized.startsWith("fd") || normalized.startsWith("fe8") || normalized.startsWith("fe9") || normalized.startsWith("fea") || normalized.startsWith("feb");
+  }
+  return false;
+}
+
+export async function validateRemoteUrl(input: string, resolveHostname: (hostname: string) => Promise<string[]> = async (hostname) => (await lookup(hostname, { all: true })).map((entry) => entry.address)): Promise<URL> {
+  const url = new URL(input);
+  if (!/^https?:$/.test(url.protocol) || url.username || url.password) throw new IngestionError("仅支持不含凭据的 HTTP(S) URL", 2);
+  const host = url.hostname.replace(/^\[|\]$/g, "");
+  if (host === "localhost" || host.endsWith(".localhost") || isPrivateAddress(host)) throw new IngestionError("拒绝访问本地或私有网络地址", 2);
+  const addresses = isIP(host) ? [host] : await resolveHostname(host);
+  if (addresses.length === 0 || addresses.some(isPrivateAddress)) throw new IngestionError("拒绝访问解析到本地或私有网络的地址", 2);
+  return url;
+}
+
+type PdfResult = ReturnType<typeof processPdf>;
+type FilenameSource = "pdf_title" | "explicit_name" | "content_disposition" | "source_basename" | "default";
+type InputKind = "url" | "local";
+
+export interface CliOptions {
+  input: string;
+  output: string;
+  name?: string;
+  pdfMarkdown: boolean;
+  /** 允许 OCR 页占比 ≤5% 时降级产出 Markdown（以占位符标记 OCR 页，frontmatter 记录 pages_needing_ocr） */
+  allowOcrPages?: boolean;
+}
+
+export interface IngestionResult {
+  outputPath: string;
+  sourceHash: string;
+  filenameSource: FilenameSource;
+  titleFallbackReason?: string;
+}
+
+export interface IngestionDependencies {
+  fetch: typeof fetch;
+  processPdf: (buffer: Buffer) => PdfResult;
+  now: () => Date;
+  tempRoot: string;
+  resolveHostname: (hostname: string) => Promise<string[]>;
+  writeFile: (path: string, data: string | Buffer) => Promise<void>;
+}
+
+export class IngestionError extends Error {
+  constructor(message: string, public readonly exitCode: number, public readonly retainedPdfPath?: string) {
+    super(message);
+    this.name = "IngestionError";
+  }
+}
+
+const defaultDependencies: IngestionDependencies = {
+  fetch,
+  processPdf,
+  now: () => new Date(),
+  tempRoot: tmpdir(),
+  resolveHostname: async (hostname) => (await lookup(hostname, { all: true })).map((entry) => entry.address),
+  writeFile,
+};
+
+export function parseCliArgs(args: string[]): CliOptions {
+  if (args.length === 0 || args.includes("--help") || args.includes("-h")) {
+    throw new IngestionError("用法: bun run .trae/scripts/file-ingestion/fetch-file.ts <url-or-local-path> --pdf-markdown --output <dir> [--name <可读标题>]", 2);
+  }
+
+  const input = args[0];
+  if (!input || input.startsWith("--")) throw new IngestionError("缺少 URL 或本地 PDF 路径", 2);
+  if (!args.includes("--pdf-markdown")) throw new IngestionError("缺少必需参数 --pdf-markdown", 2);
+
+  const output = optionValue(args, "--output");
+  if (!output) throw new IngestionError("缺少必需参数 --output <dir>", 2);
+  const name = optionValue(args, "--name");
+  if (args.includes("--name") && !name) throw new IngestionError("--name 缺少参数值", 2);
+  if (name && (name !== basename(name) || name.includes(".."))) throw new IngestionError("--name 不得包含路径或路径穿越片段", 2);
+
+  return { input, output, name, pdfMarkdown: true, allowOcrPages: args.includes("--allow-ocr-pages") };
+}
+
+function optionValue(args: string[], option: string): string | undefined {
+  const index = args.indexOf(option);
+  return index >= 0 ? args[index + 1] : undefined;
+}
+
+export function classifyInput(input: string): InputKind {
+  if (/^https?:\/\//i.test(input)) return "url";
+  if (/^[a-z][a-z\d+.-]*:\/\//i.test(input)) throw new IngestionError("仅支持 HTTP(S) URL 或本地 PDF 路径", 2);
+  return "local";
+}
+
+export function validatePdfTitle(title: string | undefined): { valid: boolean; reason?: string } {
+  const value = title?.trim() ?? "";
+  if (!value) return { valid: false, reason: "empty" };
+  if (/^\d+$/.test(value)) return { valid: false, reason: "numeric_only" };
+  if (value.length < 3) return { valid: false, reason: "too_short" };
+  if (/^(untitled|document|unknown|无标题)$/i.test(value)) return { valid: false, reason: "generic" };
+  const replacementCount = (value.match(/[�□]/g) ?? []).length;
+  if (replacementCount > 0 || /(?:\?{3,}|ï¿½)/i.test(value)) return { valid: false, reason: "garbled" };
+  if (!sanitizeFilename(value)) return { valid: false, reason: "empty_after_sanitize" };
+  return { valid: true };
+}
+
+export function sanitizeFilename(value: string): string {
+  let cleaned = value
+    .replace(/\.pdf$/i, "")
+    .replace(/[<>:"/\\|?*\u0000-\u001f]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/[. ]+$/g, "")
+    .slice(0, MAX_FILENAME_LENGTH)
+    .replace(/[. ]+$/g, "");
+  if (RESERVED_NAMES.test(cleaned)) cleaned = `_${cleaned}`;
+  return cleaned;
+}
+
+export function sourceHash(source: string): string {
+  return createHash("sha256").update(source).digest("hex").slice(0, 12);
+}
+
+export function selectFilename(input: {
+  pdfTitle?: string;
+  explicitName?: string;
+  contentDispositionName?: string;
+  sourceBasename?: string;
+}): { stem: string; source: FilenameSource; titleFallbackReason?: string } {
+  const validation = validatePdfTitle(input.pdfTitle);
+  // 显式 --name 最优先：用户指定了可读名称（如「2025年年度报告」）时，即使 PDF 内嵌标题为空或不同也以用户为准
+  const candidates: Array<[string | undefined, FilenameSource]> = [
+    [input.explicitName, "explicit_name"],
+    [validation.valid ? input.pdfTitle : undefined, "pdf_title"],
+    [input.contentDispositionName, "content_disposition"],
+    [input.sourceBasename, "source_basename"],
+    ["document", "default"],
+  ];
+
+  for (const [candidate, source] of candidates) {
+    const stem = sanitizeFilename(candidate ?? "");
+    if (stem) return { stem, source, titleFallbackReason: source === "explicit_name" ? undefined : (validation.valid ? undefined : validation.reason) };
+  }
+  return { stem: "document", source: "default", titleFallbackReason: validation.reason };
+}
+
+export function parseContentDispositionFilename(header: string | null): string | undefined {
+  if (!header) return undefined;
+  const encoded = header.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+  if (encoded) {
+    try {
+      return decodeURIComponent(encoded.replace(/^"|"$/g, ""));
+    } catch {
+      return undefined;
+    }
+  }
+  return header.match(/filename\s*=\s*"([^"]+)"/i)?.[1] ?? header.match(/filename\s*=\s*([^;]+)/i)?.[1]?.trim();
+}
+
+function isPdf(buffer: Buffer): boolean {
+  return buffer.subarray(0, PDF_MAGIC.length).equals(PDF_MAGIC);
+}
+
+async function ensureOutputDirectory(output: string): Promise<string> {
+  const outputPath = resolve(output);
+  if (existsSync(outputPath) && !(await stat(outputPath)).isDirectory()) {
+    throw new IngestionError(`输出路径不是目录: ${outputPath}`, 2);
+  }
+  await mkdir(outputPath, { recursive: true });
+  return outputPath;
+}
+
+function sourceBasename(input: string, kind: InputKind): string {
+  if (kind === "local") return basename(input);
+  try {
+    return basename(decodeURIComponent(new URL(input).pathname));
+  } catch {
+    return "";
+  }
+}
+
+function yamlString(value: string): string {
+  return JSON.stringify(value);
+}
+
+export function buildMarkdown(input: {
+  source: string;
+  kind: InputKind;
+  originalFilename: string;
+  pdfTitle?: string;
+  filenameSource: FilenameSource;
+  titleFallbackReason?: string;
+  result: PdfResult;
+  fetchedAt: string;
+  hash: string;
+}): string {
+  const lines = [
+    "---",
+    `source: ${yamlString(input.kind === "url" ? redactUrl(input.source) : input.source)}`,
+    `source_type: ${input.kind}`,
+    `original_filename: ${yamlString(input.originalFilename)}`,
+    `pdf_title: ${yamlString(input.pdfTitle ?? "")}`,
+    `filename_source: ${input.filenameSource}`,
+    `title_fallback_reason: ${yamlString(input.titleFallbackReason ?? "")}`,
+    `page_count: ${input.result.pageCount}`,
+    `pdf_type: ${input.result.pdfType}`,
+    `parse_confidence: ${input.result.confidence}`,
+    `pages_with_tables: [${input.result.pagesWithTables.join(", ")}]`,
+    `pages_needing_ocr: [${input.result.pagesNeedingOcr.join(", ")}]`,
+    `has_encoding_issues: ${input.result.hasEncodingIssues}`,
+    `fetched_at: ${yamlString(input.fetchedAt)}`,
+    `source_hash: ${input.hash}`,
+    "---",
+    "",
+    input.result.markdown ?? "",
+  ];
+  // OCR 页降级：内容缺失页以占位符标记（仅 --allow-ocr-pages 且占比 ≤5% 时才会带 pagesNeedingOcr 走到此处）
+  if (input.result.pagesNeedingOcr.length > 0) {
+    lines.push("", "> ⚠️ OCR 页占位：以下页面为扫描页（OCR 未执行），正文内容缺失，请人工核验：", `> pages_needing_ocr = [${input.result.pagesNeedingOcr.join(", ")}]`);
+  }
+  return `${lines.join("\n").trimEnd()}\n`;
+}
+
+async function chooseOutputPath(outputDir: string, stem: string, hash: string): Promise<string> {
+  const preferred = join(outputDir, `${stem}.md`);
+  if (!existsSync(preferred)) return preferred;
+  const existing = await readFile(preferred, "utf8");
+  if (existing.includes(`source_hash: ${hash}`)) return preferred;
+  return join(outputDir, `${stem}-${hash}.md`);
+}
+
+async function retainFailedRemote(tempPdfPath: string, outputDir: string, originalFilename: string, hash: string): Promise<string> {
+  const failedDir = join(outputDir, "failed");
+  await mkdir(failedDir, { recursive: true });
+  const stem = sanitizeFilename(originalFilename) || "document";
+  const retainedPath = join(failedDir, `${stem}-${hash}.pdf`);
+  await rm(retainedPath, { force: true });
+  await rename(tempPdfPath, retainedPath);
+  return retainedPath;
+}
+
+/** 是否允许 OCR 页降级：需显式 --allow-ocr-pages 且 OCR 页占比 ≤5%（有可用的正文 Markdown） */
+export function allowOcrDegrade(result: PdfResult, options: Pick<CliOptions, "allowOcrPages">): boolean {
+  if (options.allowOcrPages !== true) return false;
+  if (!result.markdown?.trim()) return false;
+  if (result.pagesNeedingOcr.length === 0) return true;
+  const ratio = result.pageCount > 0 ? result.pagesNeedingOcr.length / result.pageCount : 1;
+  return ratio <= OCR_PAGE_RATIO_LIMIT;
+}
+
+async function readLimitedResponse(response: Response): Promise<Buffer> {
+  const declaredLength = Number(response.headers.get("content-length"));
+  if (Number.isFinite(declaredLength) && declaredLength > MAX_REMOTE_BYTES) throw new IngestionError(`远程 PDF 超过 ${MAX_REMOTE_BYTES} 字节限制`, 3);
+  if (!response.body) return Buffer.alloc(0);
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > MAX_REMOTE_BYTES) {
+      await reader.cancel();
+      throw new IngestionError(`远程 PDF 超过 ${MAX_REMOTE_BYTES} 字节限制`, 3);
+    }
+    chunks.push(value);
+  }
+  return Buffer.concat(chunks);
+}
+
+async function fetchRemotePdf(input: string, dependencies: IngestionDependencies): Promise<Response> {
+  let current = await validateRemoteUrl(input, dependencies.resolveHostname);
+  for (let redirects = 0; redirects <= MAX_REDIRECTS; redirects += 1) {
+    const response = await dependencies.fetch(current, {
+      headers: { "User-Agent": UA },
+      redirect: "manual",
+      signal: AbortSignal.timeout(60000),
+    });
+    if (![301, 302, 303, 307, 308].includes(response.status)) return response;
+    if (redirects === MAX_REDIRECTS) throw new IngestionError(`重定向次数超过 ${MAX_REDIRECTS} 次`, 3);
+    const location = response.headers.get("location");
+    if (!location) throw new IngestionError("重定向响应缺少 Location", 3);
+    current = await validateRemoteUrl(new URL(location, current).toString(), dependencies.resolveHostname);
+  }
+  throw new IngestionError("远程 PDF 下载失败", 3);
+}
+
+export async function ingestPdf(options: CliOptions, overrides: Partial<IngestionDependencies> = {}): Promise<IngestionResult> {
+  const dependencies = { ...defaultDependencies, ...overrides };
+  const kind = classifyInput(options.input);
+  const normalizedSource = kind === "local" ? resolve(options.input) : new URL(options.input).toString();
+  const persistedSource = kind === "url" ? redactUrl(normalizedSource) : normalizedSource;
+  const hash = sourceHash(persistedSource);
+  let outputDir: string | undefined;
+  let tempDirectory: string | undefined;
+  let tempPdfPath: string | undefined;
+  let buffer: Buffer;
+  let dispositionName: string | undefined;
+  let originalFilename = sourceBasename(options.input, kind) || "document.pdf";
+
+  try {
+    if (kind === "url") {
+      const response = await fetchRemotePdf(options.input, dependencies);
+      if (!response.ok) throw new IngestionError(`下载失败: HTTP ${response.status} ${response.statusText}`, 3);
+      const contentType = response.headers.get("content-type")?.toLowerCase() ?? "";
+      if (!contentType.includes("application/pdf")) throw new IngestionError(`响应 Content-Type 不是 PDF: ${contentType || "缺失"}`, 3);
+      dispositionName = parseContentDispositionFilename(response.headers.get("content-disposition"));
+      originalFilename = dispositionName ?? originalFilename;
+      buffer = await readLimitedResponse(response);
+      if (!isPdf(buffer)) throw new IngestionError("输入不符合 PDF 魔数校验", 3);
+      tempDirectory = await mkdtemp(join(dependencies.tempRoot, "file-ingestion-"));
+      const downloadedPdfPath = join(tempDirectory, "download.pdf");
+      tempPdfPath = downloadedPdfPath;
+      await dependencies.writeFile(downloadedPdfPath, buffer);
+    } else {
+      const localPath = resolve(options.input);
+      const localStat = await stat(localPath).catch(() => undefined);
+      if (!localStat?.isFile()) throw new IngestionError(`本地输入不是文件: ${localPath}`, 2);
+      buffer = await readFile(localPath);
+    }
+
+    if (!isPdf(buffer)) throw new IngestionError("输入不符合 PDF 魔数校验", 3);
+
+    let result: PdfResult;
+    try {
+      result = dependencies.processPdf(buffer);
+    } catch (error) {
+      throw new IngestionError(`PDF 解析失败: ${(error as Error).message}`, 4);
+    }
+
+    if (!result.markdown?.trim() || (result.pagesNeedingOcr.length > 0 && !allowOcrDegrade(result, options))) {
+      throw new IngestionError(`PDF 需要 OCR，涉及页面: ${result.pagesNeedingOcr.join(", ") || "全部"}`, 4);
+    }
+
+    const selected = selectFilename({
+      pdfTitle: result.title,
+      explicitName: options.name,
+      contentDispositionName: dispositionName,
+      sourceBasename: sourceBasename(options.input, kind),
+    });
+    outputDir = await ensureOutputDirectory(options.output);
+    const outputPath = await chooseOutputPath(outputDir, selected.stem, hash);
+    const markdown = buildMarkdown({
+      source: persistedSource,
+      kind,
+      originalFilename,
+      pdfTitle: result.title,
+      filenameSource: selected.source,
+      titleFallbackReason: selected.titleFallbackReason,
+      result,
+      fetchedAt: dependencies.now().toISOString(),
+      hash,
+    });
+    try {
+      await dependencies.writeFile(outputPath, markdown);
+    } catch (error) {
+      throw new IngestionError(`Markdown 写入失败: ${(error as Error).message}`, 5);
+    }
+    return { outputPath, sourceHash: hash, filenameSource: selected.source, titleFallbackReason: selected.titleFallbackReason };
+  } catch (error) {
+    const ingestionError = error instanceof IngestionError ? error : new IngestionError((error as Error).message, 5);
+    if (kind === "url" && tempPdfPath && existsSync(tempPdfPath) && ingestionError.exitCode === 4) {
+      outputDir ??= await ensureOutputDirectory(options.output);
+      const retainedPdfPath = await retainFailedRemote(tempPdfPath, outputDir, originalFilename, hash);
+      throw new IngestionError(ingestionError.message, ingestionError.exitCode, retainedPdfPath);
+    }
+    throw ingestionError;
+  } finally {
+    if (tempDirectory) await rm(tempDirectory, { recursive: true, force: true });
+  }
+}
+
+async function main(): Promise<void> {
+  try {
+    const options = parseCliArgs(process.argv.slice(2));
+    const result = await ingestPdf(options);
+    console.log(`Markdown 已保存: ${result.outputPath}`);
+  } catch (error) {
+    const ingestionError = error instanceof IngestionError ? error : new IngestionError((error as Error).message, 1);
+    console.error(ingestionError.message);
+    if (ingestionError.retainedPdfPath) console.error(`原始 PDF 已保留: ${ingestionError.retainedPdfPath}`);
+    process.exitCode = ingestionError.exitCode;
+  }
+}
+
+if (import.meta.main) await main();

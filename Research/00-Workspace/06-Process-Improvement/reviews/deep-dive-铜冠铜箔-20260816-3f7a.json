@@ -1,0 +1,85 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "deep-dive-铜冠铜箔-20260816-3f7a",
+  "origin": "process-improvement",
+  "command": "deep-dive",
+  "status": "success",
+  "issues": [
+    {
+      "problemCode": "quality-screen-annual-value-regex",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "对三年时间序列表格（如 2023/2024/2025 三列财务数据表）做 report 模式扫描时，正则优先匹配到最早年份数值：资产负债率取到 2023 年 19.61%（2025 年实际 29.59%）；商誉/净资产被误读为 30.00%（实际商誉=0）；营收/净利同比增速判为 N/A",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "2026-08-16 铜冠铜箔 deep-dive：bun run quality-screen.ts --mode report --file 铜冠铜箔-公司研究.md 输出中『资产负债率 19.61%』『商誉/净资产 30.00%』与 2025 年报实际值（29.59%、0）不符；growth 两项为 N/A 而笔记中实含三年营收/净利数据"
+        }
+      ],
+      "rootCauseHypothesis": "正则从公司笔记 Markdown 表格逐行匹配首个符合模式的数值，而时间序列表首列是最早年份；未优先取最近一期（表格末列），也未从 frontmatter 结构化块（financials/scores）读取",
+      "goal": "report 模式对时间序列指标优先取最近一期数值（表格末列或 frontmatter financials 块），历史年份仅作参考；商誉类指标按『商誉=0 时不得触发 30% 警示』逻辑处理",
+      "severity": "medium",
+      "confidence": 7,
+      "benefit": "消除质量筛查对历史年份数值的误判，提高 RED/GREEN 判定的口径准确性",
+      "risk": "改动正则可能影响其他存量笔记的扫描结果，需回归验证",
+      "acceptance": "对含三年财务表的标准公司笔记，资产负债率/毛利率/ROE 均取到最近财年数值；商誉=0 时商誉项不触发警示"
+    },
+    {
+      "problemCode": "checklist-auto-negative-value-regex",
+      "targetKind": "script",
+      "targetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "symptom": "AUTO 扫描把 OCF/NI=-2.74 读为 2.74 且判为 ✅≥0.8 通过（负号丢失，实际应判 ❌）；#15 商誉警示误报（实际商誉=0）；#8 财报 PDF 下载记录未识别（实际已下载三年年报）",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "2026-08-16 铜冠铜箔 deep-dive：investment-checklist-auto.ts 输出 '#25 OCF/NI=2.74 ✅ ≥0.8' 与财报原文（OCF/NI=-2.74）相反；'#15 商誉/净资产 ≥30% 警示'为误报"
+        }
+      ],
+      "rootCauseHypothesis": "数值捕获正则未保留负号前缀（[-+]? 缺失或取绝对值）；关键词（商誉、财报 PDF）匹配范围过宽导致误命中其他章节文本",
+      "goal": "负数指标保留符号并按阈值正确判定；商誉/财报下载等关键词仅从结构化章节（财报精读清单/数据来源）匹配，避免跨章节误报",
+      "severity": "medium",
+      "confidence": 7,
+      "benefit": "CRITICAL 项判定准确率提升，避免流动性红线与盈利质量检查被漏报/误报",
+      "risk": "阈值与负号处理逻辑改动需配套测试用例回归",
+      "acceptance": "OCF/NI 为负时判为未通过；商誉=0 不触发警示；已下载三年年报的笔记能识别 #8"
+    },
+    {
+      "problemCode": "stock-category-filter-ineffective",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/stock-data/stock.ts",
+      "symptom": "--category yjyg 查询业绩预告时返回 181 条全量公告（含换届/独董/职工代表董事等治理公告），类别过滤未生效或口径与公告实际分类不一致，需人工翻找业绩预告",
+      "evidence": [
+        {
+          "grade": "C",
+          "detail": "2026-08-16 铜冠铜箔 deep-dive 单次观察：stock.ts --code 301217 --announcements --category yjyg --days 500 输出『共 181 条』且列表前 20 条全部为治理类公告，业绩预告需另行用 --days 10 翻找"
+        }
+      ],
+      "rootCauseHypothesis": "巨潮公告类别字段与本地 yjyg 映射不一致，或过滤器在部分数据源分支未透传",
+      "goal": "--category 过滤按公告实际类别正确返回，业绩预告/快报等公告可直接定位",
+      "severity": "low",
+      "confidence": 5,
+      "benefit": "减少采集阶段人工翻找成本，提升业绩预告定位效率",
+      "risk": "需要多任务复现确认是否为单次数据源问题",
+      "acceptance": "以 yjyg 类别查询时仅返回业绩预告/快报类公告"
+    },
+    {
+      "problemCode": "deep-dive-bear-research-collection-gap",
+      "targetKind": "command",
+      "targetPath": ".trae/commands/deep-dive.md",
+      "symptom": "命令要求采集『至少 1 篇看多 + 1 篇看空/谨慎研报，如有』，但 stock.ts --reports 仅返回东财研报源（本次 5 篇全部看多），空方观点需编排器额外 WebSearch 补齐，命令内未内置空方观点采集步骤",
+      "evidence": [
+        {
+          "grade": "C",
+          "detail": "2026-08-16 铜冠铜箔 deep-dive 单次观察：--reports 返回国金×4+中邮×1 全部为买入评级，空方论点依赖 WebSearch 获取外部观点（雪球/东财财富号/新浪），多空辩论的『空方』输入主要为外部媒体而非研报"
+        }
+      ],
+      "rootCauseHypothesis": "研报数据源单一（东财）且覆盖多头偏好，命令未定义空方观点获取的兜底路径",
+      "goal": "在命令流程中补充『若研报无看空覆盖，则显式走 WebSearch 采集空方/谨慎观点』的兜底步骤并记录来源时点",
+      "severity": "low",
+      "confidence": 4,
+      "benefit": "保证多空辩论输入双侧均衡，避免空方论证依赖单一媒体来源",
+      "risk": "新增步骤增加采集成本，需权衡",
+      "acceptance": "多空辩论输入同时包含研报观点与外部空方观点，且均标注来源与时点"
+    }
+  ]
+}

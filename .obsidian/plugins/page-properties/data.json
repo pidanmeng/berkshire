@@ -1,0 +1,12 @@
+{
+  "fieldsAreInnerLinks": true,
+  "autolinkPatterns": [
+    {
+      "field": "github",
+      "prefix": "https://github.com/{0}"
+    }
+  ],
+  "hideInReaderMode": [
+    "public"
+  ]
+}

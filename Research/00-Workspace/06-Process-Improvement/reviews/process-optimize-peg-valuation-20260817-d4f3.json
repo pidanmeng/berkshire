@@ -1,0 +1,195 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "process-optimize-peg-valuation-20260817-d4f3",
+  "origin": "process-improvement",
+  "command": "/process-optimize 引入 PEG估值方式，对不同的品种采用不同的估值模型",
+  "status": "success",
+  "startedAt": "2026-08-17T08:45:00.000Z",
+  "endedAt": "2026-08-17T09:10:00.000Z",
+  "artifacts": [
+    {
+      "path": "Research/00-Workspace/06-Process-Improvement/reviews/process-optimize-peg-valuation-20260817-d4f3.json",
+      "type": "review-json",
+      "status": "created",
+      "exists": true
+    },
+    {
+      "path": "Research/00-Workspace/06-Process-Improvement/reviews/process-optimize-peg-valuation-20260817-d4f3.md",
+      "type": "review-md",
+      "status": "created",
+      "exists": true
+    },
+    {
+      "path": ".trae/documents/process-optimize-peg-valuation-routing.md",
+      "type": "plan",
+      "status": "created",
+      "exists": true
+    }
+  ],
+  "issues": [
+    {
+      "problemCode": "valuation-routing-by-type",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "symptom": "evaluate.ts 现有估值方法路由表仅包含金融/周期/资源/控股集团/一般工商 5 类，缺少高成长（growth）与亏损（lossmaking）品类；自动判定逻辑缺失；PEG 仅采用单年净利同比口径，未优先使用预测期增速（--forward-growth），易受一次性损益/周期波动扭曲，影响成长股估值合理性",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "用户 2026-08-17 明确要求引入 PEG 估值方式并按品种路由估值模型，此需求为功能增强请求，直接需求"
+        }
+      ],
+      "rootCauseHypothesis": "evaluate.ts 路由表设计较早，未覆盖高成长与亏损两类典型标的；PEG 设计时未考虑预测期增速优先需求",
+      "goal": "扩展 evaluate.ts 企业类型路由表至 7 类（financial/cyclical/resource/conglomerate/growth/general/lossmaking）；添加自动判定逻辑；PEG 计算口径改为「显式 --forward-growth 优先 → 单年同比回退（受 suspiciousYoy/oneshot 守卫）」；估值快照与目标价指引按品种输出主估值锚",
+      "severity": "high",
+      "confidence": 1.0,
+      "benefit": "高成长公司估值更合理（PEG 匹配成长价值创造机制），亏损企业有匹配估值路径，覆盖全市场主要类型",
+      "risk": "自动判定逻辑需边界测试，新增类型不影响既有手动 --type 指定",
+      "acceptance": "7 类完整路由表，PEG 计算优先 --forward-growth，兼容既有用法，输出清晰标注品种与主估值锚"
+    },
+    {
+      "problemCode": "quality-screen-growth-valuation-bias",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "quality-screen 估值维度按 PE 绝对值区间评分（PE>50→2 分），高 PE 高增长成长股系统性低分；PE>40 黄牌已带 hasHighGrowth 豁免，但评分逻辑仍未调整；与 investment-checklist-auto 高增长豁免规则不一致；新易盛/天孚通信实例已验证",
+      "evidence": [
+        {
+          "grade": "C",
+          "detail": "2026-08-17 quality-screen.ts --mode report 对天孚通信输出估值维度 2/10（PE-TTM 142.99 >40），综合 6.5/10 YELLOW，唯一黄牌级拖累为估值；同任务 investment-checklist-auto.ts #31『PE>40 无高增长』判定为通过（净利 +50.1% ≥25% 高增长豁免），两套评分逻辑不一致",
+          "taskId": "deep-dive-天孚通信-20260817-4f2a"
+        },
+        {
+          "grade": "C",
+          "detail": "2026-08-17 quality-screen.ts --mode report 对新易盛输出估值维度 2/10（PE-TTM 58.22 >40），综合 6.2/10 YELLOW，估值维度为综合分主要拖累；同任务 investment-checklist-auto.ts #31『PE>40 无高增长』判定为通过（净利 +235.9% ≥25% 高增长豁免），两套评分逻辑不一致；与天孚通信跨任务复现",
+          "taskId": "deep-dive-新易盛-20260817-3f9a"
+        },
+        {
+          "grade": "A",
+          "detail": "用户 2026-08-17 要求改进成长股估值评分，本问题为既有 candidate，与本次 PEG 增强目标一致，合并入本批次",
+          "taskId": "process-optimize-peg-valuation-20260817-d4f3"
+        }
+      ],
+      "rootCauseHypothesis": "估值维度评分仅按 PE 绝对值区间，未结合增速/PEG 判断成长股合理性，导致高 PE 高成长优质成长股被系统性低估评分",
+      "goal": "quality-screen 估值维度评分：命中高成长（earningsGrowth≥25%）或 --peg<1.5 时不再机械低分，改按 PEG 分档评分（PEG<1→9 / 1-1.5→7 / 1.5-2→5 / >2→3），与 PE>40 黄牌 hasHighGrowth 豁免规则对齐；报告输出注明估值模型（按品种）",
+      "severity": "low",
+      "confidence": 0.8,
+      "benefit": "成长股质量筛查结论更贴近业务实质，减少人工修正成本，与投资清单自动规则一致",
+      "risk": "PEG<1.5 豁免阈值设计需避免过度放宽，保留高 PEG 低分机制",
+      "acceptance": "PE>40 但净利增速≥25%（或 PEG<1.5）的成长股估值维度不再机械给 0-2 分，评分逻辑与 investment-checklist-auto 对齐"
+    },
+    {
+      "problemCode": "peg-fields-template",
+      "targetKind": "template",
+      "targetPath": "Research/99-Templates/company-template.md",
+      "symptom": "公司笔记 frontmatter 无 valuation_type（品种分类）与 peg 结构化字段，导致 valuation-tracker 无法解析与展示品种分类与 PEG 估值数据",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "用户 2026-08-17 要求全链路落地分品种估值，模板需新增对应 frontmatter 字段"
+        }
+      ],
+      "rootCauseHypothesis": "模板设计早于品种分类与 PEG 增强需求，未预留对应字段",
+      "goal": "在 forward_pe 紧邻后新增 valuation_type（品种枚举）与 peg（值/增速口径/基准期）frontmatter 字段，格式与 forward_pe 一致",
+      "severity": "high",
+      "confidence": 1.0,
+      "benefit": "新品种信息能通过 backfill 回填并被 valuation-tracker 消费，全链路一致",
+      "risk": "增量字段不影响既有笔记，backfill 会跳过已存在字段（人工维护优先）",
+      "acceptance": "模板 frontmatter 包含 valuation_type 与 peg 两级字段，注释说明枚举值与用途"
+    },
+    {
+      "problemCode": "peg-fields-backfill",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/valuation/backfill.ts",
+      "symptom": "backfill.ts 无 valuation_type 与 peg 字段的解析/回填逻辑，新建笔记模板虽有字段，但存量笔记无法批量回填，新增公司需人工填写",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "backfill 需为 valuation-tracker 回填所有结构化字段，新字段缺失回填逻辑"
+        }
+      ],
+      "rootCauseHypothesis": "backfill 设计早于新品种与 PEG 字段，未包含对应逻辑",
+      "goal": "backfill.ts 新增解析/回填逻辑：解析 valuation_type（默认 general，financials.net_profit_yoy≥25 提示 growth）；回填 peg：仅当 frontmatter 已有 forward_pe.value + base_net_profit_yi 且 financials.net_profit_yi 可用时，隐含增速 = base_net_profit_yi / net_profit_yi − 1，peg = forward_pe.value ÷ (隐含增速 × 100)；增速≤0 或无数据时跳过；peg/valuation_type 加入 skipExistingKeys（人工维护优先）",
+      "severity": "high",
+      "confidence": 0.9,
+      "benefit": "存量笔记可通过 backfill 自动补全 peg/valuation_type，减少人工填写工作量",
+      "risk": "计算逻辑仅为起步参考，最终仍需人工确认，不覆盖已有值",
+      "acceptance": "backfill 能自动回填 peg 与 valuation_type 且不覆盖人工填写的值，兼容既有笔记"
+    },
+    {
+      "problemCode": "peg-tracker-server-parse",
+      "targetKind": "script",
+      "targetPath": "valuation-tracker/server/lib/research.ts",
+      "symptom": "valuation-tracker server 端解析公司笔记 frontmatter 不包含 valuationType 与 peg 字段，无法传递给前端展示",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "全链路落地需要 server 解析新字段，否则前端无法消费"
+        }
+      ],
+      "rootCauseHypothesis": "research.ts 设计早于新字段需求，未包含解析逻辑",
+      "goal": "CompanyNote 类型增加 valuationType（string | undefined）与 peg（{value: number; growthBasis: string; basePeriod: string} | undefined）字段；解析逻辑与 forwardPe 同模式（从 frontmatter 提取）",
+      "severity": "high",
+      "confidence": 1.0,
+      "benefit": "server 能正确解析新字段并通过 API 返回给前端",
+      "risk": "增量字段不影响既有解析，缺少字段时为 undefined，兼容存量笔记",
+      "acceptance": "解析含新字段的 frontmatter 能正确提取值，不含新字段的存量笔记正常解析"
+    },
+    {
+      "problemCode": "peg-tracker-frontend-types",
+      "targetKind": "script",
+      "targetPath": "valuation-tracker/lib/api.ts",
+      "symptom": "前端 CompanyItem 类型缺少 valuationType 与 peg 字段，类型不匹配 server 返回",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "全链路类型一致需要前端类型同步新增字段"
+        }
+      ],
+      "rootCauseHypothesis": "api.ts 类型定义早于新字段需求，未同步更新",
+      "goal": "CompanyItem 类型增加 valuationType 与 peg 字段，与 server 端 CompanyNote 对齐",
+      "severity": "high",
+      "confidence": 1.0,
+      "benefit": "全链路类型一致，TypeScript 编译无错误",
+      "risk": "增量字段可选（undefined），不影响既有代码",
+      "acceptance": "bunx tsc --noEmit 无类型错误"
+    },
+    {
+      "problemCode": "peg-tracker-frontend-display",
+      "targetKind": "component",
+      "targetPath": "valuation-tracker/components/CompanyDashboard.tsx",
+      "symptom": "CompanyDashboard 详情页不展示品种分类与 PEG 值，用户无法在 valuation-tracker 看到新增估值信息",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "前端展示是全链路落地的必要环节，用户需要在看板看到品种与 PEG"
+        }
+      ],
+      "rootCauseHypothesis": "组件设计早于新字段需求，未包含展示逻辑",
+      "goal": "在 Forward PE 区块旁增加「品种」标签展示 + PEG 值及判读；使用现有 Tailwind 工具类，不新增自定义 CSS；CompareTable 不新增列（避免展示面过度扩散）",
+      "severity": "high",
+      "confidence": 0.9,
+      "benefit": "用户能在估值看板直接看到品种分类与 PEG 值，信息完整",
+      "risk": "布局调整不影响既有展示区块，新增内容在现有区块旁",
+      "acceptance": "品种标签与 PEG 正确展示，样式与现有页面一致，Tailwind 工具类符合项目约定"
+    },
+    {
+      "problemCode": "peg-docs-agents",
+      "targetKind": "document",
+      "targetPath": "AGENTS.md",
+      "symptom": "AGENTS.md 共享脚本用法表 evaluate.ts / quality-screen.ts 行未更新 PEG 口径与 --type 7 值说明，用户查阅文档时信息不完整",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "文档需要同步更新新功能说明，保持契约一致"
+        }
+      ],
+      "rootCauseHypothesis": "文档未同步脚本新增功能",
+      "goal": "AGENTS.md 共享脚本用法表中 evaluate.ts 行补充 PEG 口径与 --type 枚举说明；quality-screen.ts 行补充 --type/--peg 参数说明",
+      "severity": "medium",
+      "confidence": 1.0,
+      "benefit": "文档与代码实现一致，用户能正确查阅用法",
+      "risk": "仅文档更新，不影响代码运行",
+      "acceptance": "AGENTS.md 包含 PEG 与 --type 新用法说明，与实现一致"
+    }
+  ],
+  "reviewStatus": "succeeded"
+}

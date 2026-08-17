@@ -1,0 +1,73 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "deep-dive-生益科技-20260816-3d9a",
+  "origin": "process-improvement",
+  "command": "deep-dive 生益科技",
+  "status": "success",
+  "issues": [
+    {
+      "problemCode": "qs-report-regex-range-misparse",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "quality-screen report 模式从公司笔记正则提取数据失真（与 20260816 国际复材深调同型）：生益科技笔记误取 ROE=8.57%（2023 年值，正确 2025FY 21.25%）、净利率=59.00%（误命中生益电子分项行）、商誉/净资产=30.00%（误取阈值文本『<30%』）、现金收入比=74.80（未除 100），导致 RED 误判（正确 auto 模式 YELLOW 5.9/10）",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-16 运行 quality-screen --mode report --file 生益科技-公司研究.md 输出综合分 1.5/10 RED，与 auto 模式（YELLOW 5.9/10 无红牌）矛盾；逐项核对为正则命中三年对照表首行（2023）与阈值文本所致" }
+      ],
+      "rootCauseHypothesis": "report 模式按正则从 Markdown 表格提取首个匹配百分数，优先命中三年对照表首行（2023）或阈值表述（<30%），未按最新财年与单一数值约束取值；此前国际复材已报同型问题，属同一根因复发",
+      "goal": "report 模式仅提取最新财年单一数值并排除带阈值/带区间文本误命中；已列入改进池的修复优先落地并回归多公司笔记",
+      "severity": "medium",
+      "confidence": 0.85,
+      "benefit": "质量筛查结论可信度提升，避免 RED/YELLOW 结论因数值提取失真而误导 Phase 4 入库门禁",
+      "risk": "修改正则需回归测试，可能影响其他公司笔记提取",
+      "acceptance": "report 模式对生益科技笔记输出 ROE=21.25%（2025FY）、净利率正确值、商誉 0，结论 YELLOW 与 auto 模式一致"
+    },
+    {
+      "problemCode": "checklist-auto-year-ambiguity",
+      "targetKind": "script",
+      "targetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "symptom": "investment-checklist-auto 扫描误判（与 20260816 国际复材深调同型）：生益科技 5 项误报（#8/#11/#15/#26/#30），根因同为从三年对照表取首行（2023）数值或误取阈值文本",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-16 运行 investment-checklist-auto.ts 扫描生益科技报告与笔记：5 项 IMPORTANT/NORMAL 误报经原文核验全部排除；唯一真实警示 #31 PE-TTM 66.97>40 与高估判断一致" }
+      ],
+      "rootCauseHypothesis": "扫描正则从三年财务对照表提取首行数值作为当前值，未约束『最新财年/2025』关键词；与 qs-report 同根因",
+      "goal": "AUTO 扫描按最新财年取值；修复与 qs-report 复用同一『最新财年取值』公共逻辑",
+      "severity": "medium",
+      "confidence": 0.8,
+      "benefit": "50 项投资决策清单 AUTO 扫描结论可信度提升，减少人工逐项核实成本",
+      "risk": "关键词词表扩充可能引入新误判，需测试覆盖",
+      "acceptance": "对生益科技笔记扫描输出 ROE=21.25%（2025FY）且无误报项"
+    },
+    {
+      "problemCode": "fetch-file-ocr-fails-annual-report",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/file-ingestion/fetch-file.ts",
+      "symptom": "fetch-file.ts 对含少量 OCR 页（2023 年报仅 107/109 两页扫描页）的 PDF 直接判失败（exit 4）并保留源文件，深调流程三年年报覆盖受阻，需人工编写临时脚本走 extractPagesMarkdown 占位降级",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-16 生益科技 2023 年报（260 页）仅 2 页需 OCR 即整体失败；临时脚本用 extractPagesMarkdown 逐页提取并以占位符标记 OCR 页后成功产出，深调未受阻但增加人工环节" }
+      ],
+      "rootCauseHypothesis": "fetch-file.ts 将 pagesNeedingOcr.length>0 视为硬失败，未提供『OCR 页占位降级』选项；年报大量为文本层+少量扫描页混合型，混合型处理策略缺失",
+      "goal": "新增可选参数（如 --allow-ocr-pages）在 OCR 页占比低于阈值时以占位符标记并产出 Markdown，frontmatter 记录 pages_needing_ocr 供下游降权使用",
+      "severity": "low",
+      "confidence": 0.7,
+      "benefit": "减少深调流程对含扫描页年报的人工干预，保证三年年报覆盖自动化",
+      "risk": "占位内容可能被下游误用，需在 frontmatter 与文档内显式标记",
+      "acceptance": "对含 ≤5% OCR 页的 PDF，加 --allow-ocr-pages 后正常产出 Markdown 并在 frontmatter 标注 OCR 页清单"
+    },
+    {
+      "problemCode": "industry-dir-concurrency-overlap",
+      "targetKind": "process",
+      "targetPath": "Research/10-Knowledge/04-电子/",
+      "symptom": "同一工作日内 04-电子 目录存在并行深调（华正新材）产物：00-行业概览/覆铜板-行业概览.md 与 01-细分行业/AI高速覆铜板-行业分析.md 与本任务新建的 电子-行业概览.md、覆铜板-行业分析.md 语义重叠，形成『双行业概览』，knowledge-architect 已保守保留未合并",
+      "evidence": [
+        { "grade": "B", "detail": "2026-08-16 knowledge-architect 入库时发现 04-电子 目录已有华正新材任务产物（引用 [[2026-08-16-华正新材-processed]]），与本任务文件不冲突但语义重叠，需人工裁决" }
+      ],
+      "rootCauseHypothesis": "三段式目录以行业首写命名（04-电子），同日多任务并行深调同行业时无目录级互斥或合并策略",
+      "goal": "同行业并行深调时，行业概览/细分行业层文件合并写入同一文件或按主题拆分命名，避免语义重复节点",
+      "severity": "low",
+      "confidence": 0.5,
+      "benefit": "知识库避免重复节点与双链混乱",
+      "risk": "合并策略需人工裁决主题归属",
+      "acceptance": "04-电子 目录行业概览/细分行业层无重复语义文件"
+    }
+  ]
+}

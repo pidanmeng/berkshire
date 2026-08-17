@@ -1,0 +1,105 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "deep-dive-新易盛-20260817-3f9a",
+  "origin": "process-improvement",
+  "command": "deep-dive 新易盛",
+  "status": "success",
+  "issues": [
+    {
+      "problemCode": "evaluate-yoy-metric-misparse",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "symptom": "evaluate.ts 输出新易盛营收同比『存疑（接口异常，以年报为准）』、净利同比 23588.97%（疑失真），实际 2025 年报营收 +187.29%、归母净利 +235.89%；接口同比字段口径错误，需 document-reader 从年报原文人工纠偏",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-17 evaluate.ts --code 300502 输出『营收同比 存疑（接口异常，以年报为准）』『净利同比 23588.97%（⚠️ 同比存疑，以年报为准）』，明显偏离年报原文（营收 +187.29%、归母净利 +235.89%，2025 年报 p.6-7）；document-reader 精读年报『主要会计数据』确认真实值；与天孚通信（deep-dive-天孚通信-20260817-4f2a）、长电科技（deep-dive-长电科技-20260817-7k2m）、中石科技（deep-dive-中石科技-20260817-cd4f）同型，跨任务第四次复现" }
+      ],
+      "rootCauseHypothesis": "evaluate.ts 同比字段来自同花顺 hithink API 同比接口，对 2025 年报口径取数错误；该字段被 quality-screen/估值判断直接消费，属数据源口径问题而非公司业务事实",
+      "goal": "evaluate.ts 同比字段改以年报原文口径核验（或标注接口同比存疑并强制引导以财报为准）；quality-screen 等下游在同比异常（|同比|>500%）时显式拦截而非自动触发一次性损益判定",
+      "severity": "high",
+      "confidence": 0.9,
+      "benefit": "估值快照与自动化质量筛查结论正确性提升，避免误导多空论证与估值判断",
+      "risk": "修改取数逻辑需回归测试其他公司",
+      "acceptance": "evaluate.ts --code 300502 输出营收同比 +187.29%、归母净利同比 +235.89%，且不再输出 23588.97% 类异常值"
+    },
+    {
+      "problemCode": "evaluate-nonrecurring-warning-false-positive",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "symptom": "evaluate.ts 对新易盛输出『⚠️ 净利可能含大额一次性收入（BD/license-out/资产处置等），PE-TTM 与 PEG 失真，请用正常化盈利』，但 document-reader 精读 2025 年报非经常性损益明细核实归母-扣非差额仅 2461 万元（占归母 0.26%），政府补助 3022 万为主，利润 100% 为经常性损益——警告由异常同比误触发，对真实高质量公司造成误导性提示",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-17 evaluate.ts --code 300502 输出非经常性损益失真警告；document-reader 精读 2025 年报非经常性损益表 p.167（政府补助 +3022 万、公允价值变动 -770 万、营业外净额 +648 万、资产处置 -3 万、所得税影响 -435 万 = 差额 2461 万，占归母 0.26%）与 2026H1 业绩预告（非经常性损益影响约 1900 万），判定『利润完全由经常性主业驱动』，与脚本警告矛盾；警告由同比接口异常（23588.97%）驱动，属误触发" }
+      ],
+      "rootCauseHypothesis": "evaluate.ts 在同比异常（|同比|>500%）时自动追加『大额一次性收入』警示，未区分同比异常的真实原因（接口取数错误 vs 真实一次性损益），导致对利润 100% 经常性的公司产生误报",
+      "goal": "evaluate.ts 的一次性损益警示改为基于非经常性损益明细数据触发（或仅在扣非/归母缺口 >10% 时触发），同比异常单独标注而不直接联动一次性损益判定",
+      "severity": "medium",
+      "confidence": 0.8,
+      "benefit": "减少对高质量盈利公司的误导性估值警示，降低 Agent 人工核验成本",
+      "risk": "改动需保证真实一次性损益公司仍能触发警示",
+      "acceptance": "evaluate.ts --code 300502 不再输出一次性损益失真警告（或输出基于非经常性明细的准确判断）"
+    },
+    {
+      "problemCode": "deep-dive-bear-report-coverage-gap",
+      "targetKind": "process",
+      "targetPath": "deep-dive 流程·步骤 2.4（研报采集）",
+      "symptom": "新易盛近 200 天 6 篇研报全部为买入/买进类（华鑫/群益/山西/国金/开源），仅国金『买入但谨慎』（1Q 物料与汇兑承压）提供谨慎视角，无真正看空研报；多空论证 Bear Case 主要依赖 document-reader 自建（大客户集中 72.34%/上游芯片双垄断/1.6T 价格拐点 2027Q2/估值透支/CPO 重构），缺独立卖方看空观点交叉验证",
+      "evidence": [
+        { "grade": "C", "detail": "2026-08-17 stock.ts --code 300502 --reports --days 200 返回 6 条研报（华鑫 2026-07-26/群益 2026-07-20/山西 2026-05-27/国金 2026-04-26/开源 2026-04-26/群益 2026-02-02），全为买入/买进，无看空评级；空方论点主要由 document-reader 从财报原文+外部行业证据（800G 价格 $1200→$350-400、CPO 量产、产能过剩 30-40%）自建；与天孚通信（deep-dive-天孚通信-20260817-4f2a）、长电科技（deep-dive-长电科技-20260817-7k2m）同型，跨任务第三次复现" }
+      ],
+      "rootCauseHypothesis": "A 股研报市场整体偏多（卖方鲜少看空），stock.ts 未提供跨券商补充检索或『谨慎评级』定向筛选；导致深度调研的多空论证空方缺乏外部佐证",
+      "goal": "研报采集在卖方看空稀缺时，补充检索中性/谨慎评级或负面观点新闻作为空方外部证据源；多空论证标注『空方外部佐证缺失』",
+      "severity": "medium",
+      "confidence": 0.65,
+      "benefit": "多空论证外部证据链更完整，减少单边依赖",
+      "risk": "增加采集步骤耗时；负面观点信源质量参差需人工甄别",
+      "acceptance": "多空论证空方至少 1 条外部佐证（或显式标注缺失原因）"
+    },
+    {
+      "problemCode": "deep-dive-no-cross-validator",
+      "targetKind": "process",
+      "targetPath": "deep-dive 流程·步骤 4（结构化提取与质量筛查）",
+      "symptom": "deep-dive 命令流程步骤 4 仅含 info-alchemist + quality-screen，无 /research 流程的 Phase 3 cross-validator 阶段；document-reader 提出的存疑项（预计负债 8.16 亿性质、2025 年报『调整后』比较期 ROE 口径、泰国产能自媒体数据、1.6T 份额第三方口径等）直接透传到 processed/知识笔记与报告，无独立多源交叉验证环节",
+      "evidence": [
+        { "grade": "C", "detail": "2026-08-17 deep-dive 新易盛执行中，document-reader 回报『存疑项已交 CrossValidator 复核』（含预计负债 8.16 亿性质待半年报核实、2025 年报调整后 ROE 21.66%/5.25% vs 当年 41.00%/13.36% 口径差异、泰国产能与份额自媒体数据置信度≤6），但命令流程步骤 4 未定义 cross-validator 阶段，存疑点由 info-alchemist/knowledge-architect/report-writer 直接承接，未独立验证；与天孚通信（deep-dive-天孚通信-20260817-4f2a）、长电科技（deep-dive-长电科技-20260817-7k2m）同型，跨任务复现" }
+      ],
+      "rootCauseHypothesis": "deep-dive 命令为单公司简版流程，精简了 cross-validator 阶段，但 document-reader 定义仍以『交 CrossValidator』为存疑点出口，二者衔接存在真空",
+      "goal": "deep-dive 命令在步骤 4 明确存疑点处理路径（或由编排器对存疑点做轻量多源核验后放行，或显式标注存疑点未验证）",
+      "severity": "low",
+      "confidence": 0.6,
+      "benefit": "存疑点处理路径清晰，避免『交 CrossValidator』后无承接方",
+      "risk": "轻量核验增加编排器负担",
+      "acceptance": "deep-dive 命令文档明确存疑点承接方与处理规则"
+    },
+    {
+      "problemCode": "quality-screen-growth-valuation-bias",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "quality-screen 估值维度对高 PE 高增长成长股机械低分：新易盛 PE-TTM 58.22（>40 触发红牌档）但净利 +235.89% 高增长，估值维度仅 2/10，综合 6.2/10 YELLOW 的核心下拉项；checklist-auto #31 已有『PE>40 高增长豁免』规则，quality-screen 无对应豁免，需人工结合增速判断估值合理性",
+      "evidence": [
+        { "grade": "C", "detail": "2026-08-17 quality-screen.ts --mode report 对新易盛输出估值维度 2/10（PE-TTM 58.22 >40），综合 6.2/10 YELLOW，估值维度为综合分主要拖累；同任务 investment-checklist-auto.ts #31『PE>40 无高增长』判定为通过（净利 +235.9% ≥25% 高增长豁免），两套评分逻辑不一致；与天孚通信（deep-dive-天孚通信-20260817-4f2a 估值维度 2/10 同型）跨任务复现" }
+      ],
+      "rootCauseHypothesis": "quality-screen 估值维度按 PE 绝对值区间评分（>40 低分），未结合增速/PEG 做成长股豁免，与 investment-checklist-auto 的高增长豁免规则不一致",
+      "goal": "quality-screen 估值维度对 PE>40 但净利增速 ≥25%（或 PEG<1）的高增长股给与豁免或提示，减少成长股系统性低分",
+      "severity": "low",
+      "confidence": 0.6,
+      "benefit": "成长股质量筛查结论更贴近业务实质，减少人工修正成本",
+      "risk": "豁免阈值设计需避免过度放宽，需与 checklist 规则对齐",
+      "acceptance": "quality-screen 对高 PE 高增长股（净利增速≥25%）估值维度不再机械给 0-2 分，或输出豁免提示"
+    },
+    {
+      "problemCode": "investment-checklist-interest-debt-parse-gap",
+      "targetKind": "script",
+      "targetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "symptom": "checklist-auto #28『有息负债/OCF 流动性红线』对零有息负债公司无法自动解析：报告/笔记明确『短期借款 0、长期借款 0』，但正则仅匹配『有息负债』+数字，未识别『0/无/不存在』语境，输出『未解析到有息负债/经营现金流金额，需人工核验』，实际比值≈0 无风险",
+      "evidence": [
+        { "grade": "C", "detail": "2026-08-17 investment-checklist-auto.ts 扫描新易盛报告+笔记输出 #28『未解析到有息负债/经营现金流金额，需人工核验有息负债÷OCF 比值（>5 为红线）』，而笔记明确零有息负债（短期借款 0、长期借款 0、货币资金 81.56 亿），人工核验比值≈0；单任务单次观察，未跨任务确认" }
+      ],
+      "rootCauseHypothesis": "investment-checklist-auto.ts #28 的正则解析要求『有息负债』后紧跟数字金额，未覆盖『0/无/不存在』等零负债表述，对零负债优质公司产生不必要的待人工核验标记",
+      "goal": "checklist-auto #28 支持零有息负债表述识别（0/无/不存在/无有息负债），零负债公司直接判定通过",
+      "severity": "low",
+      "confidence": 0.5,
+      "benefit": "减少零负债公司的无效人工核验标记，输出更贴合实际",
+      "risk": "正则改动需避免误判有负债公司为无负债",
+      "acceptance": "checklist-auto 对『零有息负债』表述的公司 #28 直接判定通过（不再要求人工核验）"
+    }
+  ]
+}

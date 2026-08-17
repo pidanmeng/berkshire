@@ -1,0 +1,24 @@
+{
+  "id": "conv-1785668713893-t871qmznx",
+  "providerId": "opencode",
+  "title": "根据猪周期的调研报告，生成一个HTML格式的报告，其中，所有图表使用外链 Echarts 实现",
+  "titleGenerationStatus": "failed",
+  "createdAt": 1785668713893,
+  "updatedAt": 1785669015364,
+  "lastResponseAt": 1785669015364,
+  "sessionId": "ses_03dd9ae11ffewMt7m2vZWuACEb",
+  "selectedModel": "opencode:deepseek/deepseek-v4-flash",
+  "providerState": {
+    "databasePath": "C:\\Users\\Administrator.DESKTOP-TOIASJ8\\AppData\\Roaming\\opencode\\opencode.db"
+  },
+  "usage": {
+    "cacheCreationInputTokens": 0,
+    "cacheReadInputTokens": 72576,
+    "contextTokens": 72784,
+    "contextWindow": 1000000,
+    "contextWindowIsAuthoritative": true,
+    "inputTokens": 208,
+    "model": "opencode:deepseek/deepseek-v4-flash",
+    "percentage": 7
+  }
+}

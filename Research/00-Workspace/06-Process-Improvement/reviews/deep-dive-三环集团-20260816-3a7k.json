@@ -1,0 +1,57 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "deep-dive-三环集团-20260816-3a7k",
+  "origin": "process-improvement",
+  "command": "deep-dive 三环集团",
+  "status": "success",
+  "issues": [
+    {
+      "problemCode": "qs-report-regex-range-misparse",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "quality-screen report 模式从公司笔记正则提取数据失真（与 20260816 生益科技、国际复材深调同型，第三次复现）：三环集团笔记首次运行误取 ROE=8.95%（2023 年值，正确 2025FY 12.62%）、资产负债率=15.65%（2023 年值，正确 18.27%）、营收/净利同比 N/A，导致综合分 2.3/10 RED 误判；补充『quality-screen 输入（最新财年）』字段块后修正为 YELLOW 6.0/10，与 auto 模式一致",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-16 运行 quality-screen --mode report --file 三环集团-公司研究.md 首次输出综合分 2.3/10 RED（ROE=8.95%/负债率=15.65% 为三年对照表首行 2023 值），与 auto 模式 YELLOW 6.0/10 无红牌矛盾；在笔记财务数据表前插入『ROE: 12.62% | 毛利率: 42.14% | …』最新财年输入块后 rerun 输出 YELLOW 6.0/10，正则按首个匹配命中插入块。证明根因为正则取首个匹配百分数且未约束最新财年" }
+      ],
+      "rootCauseHypothesis": "report 模式按正则从 Markdown 表格提取首个匹配百分数，优先命中三年对照表首行（2023）或阈值文本（<30%），未按最新财年与单一数值约束取值；生益科技、国际复材、三环集团三次复现同一根因，修复优先级应上调",
+      "goal": "report 模式仅提取最新财年单一数值并排除带阈值/带区间文本误命中；已在笔记内通过插入最新财年输入块规避，但应从脚本侧根治并回归多公司笔记",
+      "severity": "medium",
+      "confidence": 0.9,
+      "benefit": "质量筛查结论可信度提升，避免 RED/YELLOW 结论因数值提取失真而误导 Phase 4 入库门禁；三次复现后修复收益明确",
+      "risk": "修改正则需回归测试，可能影响其他公司笔记提取",
+      "acceptance": "report 模式对三环集团笔记输出 ROE=12.62%（2025FY）、资产负债率=18.27%、营收/净利同比正确值，结论 YELLOW 与 auto 模式一致，且无需依赖人工插入输入块"
+    },
+    {
+      "problemCode": "checklist-auto-year-ambiguity",
+      "targetKind": "script",
+      "targetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "symptom": "investment-checklist-auto 扫描误判（与 20260816 生益科技、国际复材深调同型）：三环集团 4 项 IMPORTANT 未通过中 3 项为误报——#26 ROE 提取 8.9%（2023 值，2025FY 实为 12.62%）、#15 商誉/净资产误命中阈值文本『<30%』、#30 大额减值误命中『存货跌价/无商誉减值』关键词；唯一真实警示 #31 PE-TTM 89.6>40 与估值判断一致",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-16 运行 investment-checklist-auto.ts 扫描三环集团报告与笔记：4 项 IMPORTANT 未通过经人工核验 3 项为正则误报（ROE 取首行 2023 值、商誉/减值关键词误命中），1 项（#31 估值）为真警示；CRITICAL 2 项（OCF/NI、有息负债）全部通过" }
+      ],
+      "rootCauseHypothesis": "扫描正则从三年财务对照表提取首行数值作为当前值、且对『商誉减值/存货跌价』等关键词无否定语境排除；与 qs-report-regex-range-misparse 同根因（最新财年取值缺失），三次复现",
+      "goal": "AUTO 扫描按最新财年取值，并对减值/商誉等关键词做语境判定（『无减值/未减值/通过』不应命中警示）；修复与 qs-report 复用同一『最新财年取值』公共逻辑",
+      "severity": "medium",
+      "confidence": 0.85,
+      "benefit": "50 项投资决策清单 AUTO 扫描结论可信度提升，减少人工逐项核实成本",
+      "risk": "关键词词表扩充可能引入新误判，需测试覆盖",
+      "acceptance": "对三环集团笔记扫描输出 ROE=12.62%（2025FY）、商誉/减值项不再误报"
+    },
+    {
+      "problemCode": "subagent-type-mapping-for-research-agents",
+      "targetKind": "process",
+      "targetPath": ".trae/commands/deep-dive.md",
+      "symptom": "编排器 Task 工具仅支持 subagent_type 为 search / general_purpose_task 两类，deep-dive 命令中 document-reader / bull-advocate / bear-advocate / info-alchemist 等自定义投研子 Agent 无法直接以子代理类型启动（首次调用报『subagent_type is not a valid value』），须将 .trae/agents/*.md 角色定义整体嵌入 general_purpose_task 的任务上下文执行",
+      "evidence": [
+        { "grade": "C", "detail": "2026-08-16 首次以 subagent_type=document-reader 调用 Task 工具失败；改用 general_purpose_task + 携带 document-reader.md 角色定义后成功，后续 bull/bear/info-alchemist 均采用同法，未发现质量损失（产物满足 agent 定义质量标准）" }
+      ],
+      "rootCauseHypothesis": "命令/编排文档未说明投研自定义子 Agent 的运行方式（Task 工具与 OpenCode subagent 机制不同），执行者需自行摸索 general_purpose_task 承载角色定义的调用模式",
+      "goal": "deep-dive / research 命令或 AGENTS.md 中补充说明：自定义投研 Agent 以 general_purpose_task 启动并内嵌 .trae/agents/*.md 角色定义与质量标准；或在任务工具支持自定义 subagent_type 后改回直调",
+      "severity": "low",
+      "confidence": 0.6,
+      "benefit": "减少编排器首次执行的试错成本，统一投研子 Agent 调用契约",
+      "risk": "文档改动需与工具能力现状一致，避免过时指引",
+      "acceptance": "命令文档明确投研子 Agent 的启动方式，后续 deep-dive 执行无需再次摸索"
+    }
+  ]
+}

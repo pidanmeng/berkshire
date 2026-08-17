@@ -1,0 +1,14 @@
+{
+  "id": "conv-1785668675752-6btplk5j8",
+  "providerId": "opencode",
+  "title": "根据猪周期的调研报告，生成一个HTML格式的报告",
+  "titleGenerationStatus": "failed",
+  "createdAt": 1785668675752,
+  "updatedAt": 1785668683294,
+  "lastResponseAt": 1785668680659,
+  "sessionId": "ses_03dda4646ffeOEviM6lHC0K2jY",
+  "selectedModel": "opencode:deepseek/deepseek-v4-flash",
+  "providerState": {
+    "databasePath": "C:\\Users\\Administrator.DESKTOP-TOIASJ8\\AppData\\Roaming\\opencode\\opencode.db"
+  }
+}

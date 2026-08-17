@@ -1,0 +1,73 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "deep-dive-思瑞浦-20260817-8472",
+  "origin": "process-improvement",
+  "command": "deep-dive 思瑞浦",
+  "status": "success",
+  "issues": [
+    {
+      "problemCode": "evaluate-yoy-metric-misparse",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "symptom": "evaluate.ts 输出净利同比 18771.65% 且营收同比『存疑（接口异常）』（实际 2025 年报：营收 +75.65%、归母净利由 -1.97 亿扭亏至 +1.73 亿无合理同比），接口同比字段口径错误；脚本虽自标『同比存疑，以年报为准』，但误导 PE-TTM/PEG 失真判定与估值判断，需人工纠偏",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-17 evaluate.ts --code 688536 输出『PE-TTM vs 净利同比 152.10 vs 18771.65%（⚠️ 同比存疑，以年报为准）』，与年报原文（2025 营收 +75.65%、扭亏）明显偏离；document-reader 精读 2025 年报『主要会计数据』及中邮/国信研报交叉确认真实值；与长电科技 review（deep-dive-长电科技-20260817-7k2m）、中石科技 review（deep-dive-中石科技-20260817-cd4f #evaluate-yoy-metric-misparse）同型，第三次跨任务复现" }
+      ],
+      "rootCauseHypothesis": "evaluate.ts 同比字段来自同花顺 hithink API 同比接口，对 2025 年报口径取数错误；该字段被 PE-TTM/PEG 失真判定与估值判断直接消费，属数据源口径问题而非公司业务事实",
+      "goal": "evaluate.ts 同比字段改以年报原文口径核验（或标注接口同比存疑并强制引导以财报为准）；quality-screen 等下游在同比异常（|同比|>500%）时显式拦截而非自动触发一次性损益判定",
+      "severity": "high",
+      "confidence": 0.9,
+      "benefit": "估值快照与自动化质量筛查结论正确性提升，避免误导多空论证与估值判断",
+      "risk": "修改取数逻辑需回归测试其他公司",
+      "acceptance": "evaluate.ts --code 688536 不再输出 18771.65% 类异常同比，扭亏公司显式标注『扭亏无同比』"
+    },
+    {
+      "problemCode": "quality-screen-report-growth-misparse",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "quality-screen --mode report 对扭亏公司误判净利同比：思瑞浦 2025 年归母净利 -1.97→+1.73 亿（扭亏，无合理同比），financials 块未提供 net_profit_yoy 时，脚本经财务表『归母净利润』行以 growth 模式将 2025 列主数值 1.73 解析为净利同比 173.00%，输出『净利增长 173.0%』绿牌，成长性维度失真",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-17 quality-screen.ts --mode report --file 思瑞浦草稿：首次 financials.net_profit_yoy=0.0 输出净利同比 0.00%（成长 6 分）；删除该字段后改从财务表『归母净利润（亿元）| -0.35 | -1.97 | 1.73 | V 型扭亏』行按 growth 模式提取主数值 1.73 得 173.00%，误标『净利增长 173.0%，利润增长强劲』绿牌；两次运行均未反映扭亏无同比的事实（parseCellValue 在 preferGrowth 时无括号同比则回退主数值）" }
+      ],
+      "rootCauseHypothesis": "quality-screen report 模式 parseCellValue 在 preferGrowth=true 且单元格无括号同比时回退取主数值，将绝对数值当同比百分比；扭亏/亏损转正公司无合理净利同比，脚本未对此类口径显式拦截",
+      "goal": "growth 字段提取仅接受括号内同比或带 % 数值，无同比时置 null 并标注『扭亏/无同比』；避免把归母净利绝对值 1.73 解析为 173%",
+      "severity": "medium",
+      "confidence": 0.85,
+      "benefit": "扭亏/亏损转正公司的质量筛查成长性维度不再失真，绿牌/黄牌判定可信",
+      "risk": "改动集中在 parseCellValue/tableValue 取值逻辑，需回归常规公司（有同比的）筛查",
+      "acceptance": "quality-screen --mode report 对无 net_profit_yoy 的扭亏公司输出『净利同比：N/A（扭亏）』而非 173.00%"
+    },
+    {
+      "problemCode": "deep-dive-bear-report-coverage-gap",
+      "targetKind": "process",
+      "targetPath": "deep-dive 流程·步骤 2.4（研报采集）",
+      "symptom": "思瑞浦近 1100 天 35 篇研报全部为买入/增持/优于大市，无看空或谨慎评级研报；多空论证 Bear Case 主要依赖 document-reader 从财报原文自建 + 外部第三方谨慎观点（证券之星『股价偏高』、财股邦衰退信号），缺独立卖方看空观点交叉验证",
+      "evidence": [
+        { "grade": "C", "detail": "2026-08-17 stock.ts --code 688536 --reports --days 1100 返回 35 条研报（国信/民生/中邮/华安/开源/华鑫/东莞/中邮）均为正面评级，无看空；编排器额外 WebSearch 外部谨慎观点（证券之星 2026-08-16 相对估值 204.77-226.32 元『股价偏高』、财股邦 5 条衰退信号）补足空方外部佐证；与长电科技/中石科技 review（#deep-dive-bear-report-coverage-gap）同型，第三次跨任务复现" }
+      ],
+      "rootCauseHypothesis": "A 股研报市场整体偏多（卖方鲜少看空），stock.ts 未提供跨券商补充检索或『谨慎评级』定向筛选；导致深度调研的多空论证空方缺乏独立卖方佐证，依赖人工外部检索",
+      "goal": "研报采集在卖方看空稀缺时，补充检索中性/谨慎评级或负面观点新闻作为空方外部证据源；多空论证标注『空方外部佐证来源』",
+      "severity": "medium",
+      "confidence": 0.65,
+      "benefit": "多空论证外部证据链更完整，减少单边依赖",
+      "risk": "增加采集步骤耗时；负面观点信源质量参差需人工甄别",
+      "acceptance": "多空论证空方至少 1 条外部佐证（或显式标注缺失原因）"
+    },
+    {
+      "problemCode": "deep-dive-no-cross-validator",
+      "targetKind": "process",
+      "targetPath": "deep-dive 流程·步骤 4（结构化提取与质量筛查）",
+      "symptom": "deep-dive 命令流程步骤 4 仅含 info-alchemist + quality-screen，无 /research 流程的 Phase 3 cross-validator 阶段；document-reader 提出的存疑点（2024 年股份支付异常 265 万、创芯微承诺口径 8752.8 万 vs 报表 8185 万、预付款项 +424.75% 长协性质、外部测算应收/利润 185.85% 口径）直接透传知识笔记与报告『交 CrossValidator』，无独立多源交叉验证环节",
+      "evidence": [
+        { "grade": "C", "detail": "2026-08-17 deep-dive 思瑞浦执行中，document-reader 回报『存疑点交 CrossValidator』（2024 年股份支付异常等 4 项），deep-read 第十二章列 12 条待核实事项；但命令流程步骤 4 未定义 cross-validator 阶段，存疑点由 knowledge-architect/report-writer 直接承接，未独立验证；与长电科技 review（deep-dive-长电科技-20260817-7k2m #deep-dive-no-cross-validator）同型，第二次跨任务复现" }
+      ],
+      "rootCauseHypothesis": "deep-dive 命令为单公司简版流程，精简了 cross-validator 阶段，但 document-reader 定义仍以『交 CrossValidator』为存疑点出口，二者衔接存在真空",
+      "goal": "deep-dive 命令在步骤 4 明确存疑点处理路径（或由编排器对存疑点做轻量多源核验后放行，或显式标注存疑点未验证）",
+      "severity": "low",
+      "confidence": 0.6,
+      "benefit": "存疑点处理路径清晰，避免『交 CrossValidator』后无承接方",
+      "risk": "轻量核验增加编排器负担",
+      "acceptance": "deep-dive 命令文档明确存疑点承接方与处理规则"
+    }
+  ]
+}

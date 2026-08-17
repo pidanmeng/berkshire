@@ -1,0 +1,2350 @@
+{
+  "schemaVersion": "1.0",
+  "updatedAt": "2026-08-17T11:01:52.391Z",
+  "items": [
+    {
+      "problemCode": "qs-report-regex-range-misparse",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "quality-screen report 模式从公司笔记正则提取数据失真（与 20260816 国际复材、生益科技深调同型，第三次复发）：风华高科笔记误取 ROE=3.00%（应为 2025FY 2.29%）、OCF/NI=0.80（应为 1.49）、净利同比=+16.00%（应为 -16.02%）、商誉/净资产=30.00%（误取阈值文本『<30%』），导致 report 模式结果与 auto 模式（1.3/10 RED）口径不一致",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "2026-08-16 运行 quality-screen --mode report --file 国际复材-公司研究.md，输出净利率 151.00%、ROE 18.70% 与事实不符（正确值 3.32%/3.36%）；auto 模式传 2025FY 正确数据输出 0.8/10 RED",
+          "taskId": "deep-dive-国际复材-20260816-9f2c"
+        },
+        {
+          "grade": "A",
+          "detail": "2026-08-16 运行 quality-screen --mode report --file 生益科技-公司研究.md 输出综合分 1.5/10 RED，与 auto 模式（YELLOW 5.9/10 无红牌）矛盾；逐项核对为正则命中三年对照表首行（2023）与阈值文本所致",
+          "taskId": "deep-dive-生益科技-20260816-3d9a"
+        },
+        {
+          "grade": "A",
+          "detail": "2026-08-16 运行 quality-screen --mode report --file 鼎泰高科-公司研究.md 输出综合分 2.2/10，ROE=9.63%、负债率=27.1%（均为 2023 值）；改用 --mode auto 传入 2025FY 指标后综合分 3.9/10，ROE=16.53%、负债率=41.63%。逐项核对为正则命中三年对照表首行（2023）所致",
+          "taskId": "deep-dive-鼎泰高科-20260816-a3f2"
+        },
+        {
+          "grade": "B",
+          "detail": "此前同日国际复材、生益科技两次深调已报同型问题（生益科技误取 ROE=8.57% 2023 值），鼎泰高科为同根因第三次复现，跨 3 个 taskId",
+          "taskId": "deep-dive-鼎泰高科-20260816-a3f2"
+        },
+        {
+          "grade": "A",
+          "detail": "2026-08-16 运行 quality-screen --mode report --file 三环集团-公司研究.md 首次输出综合分 2.3/10 RED（ROE=8.95%/负债率=15.65% 为三年对照表首行 2023 值），与 auto 模式 YELLOW 6.0/10 无红牌矛盾；在笔记财务数据表前插入『ROE: 12.62% | 毛利率: 42.14% | …』最新财年输入块后 rerun 输出 YELLOW 6.0/10，正则按首个匹配命中插入块。证明根因为正则取首个匹配百分数且未约束最新财年",
+          "taskId": "deep-dive-三环集团-20260816-3a7k"
+        },
+        {
+          "grade": "A",
+          "detail": "2026-08-16 运行 quality-screen --mode report --file 盛科通信-公司研究.md 输出 ROE=2.23%、毛利率=40.00%、净利率=1.88%、资产负债率=24.67%（均为三年对照表 2023 首行或分项行）；auto 模式 --mode auto --roe=-0.065 --net-margin=-0.1303 --debt=0.1195 输出正确值 0.0/10 RED。逐项核对为正则命中三年对照表首行所致",
+          "taskId": "deep-dive-盛科通信-20260816-7c2e"
+        },
+        {
+          "grade": "A",
+          "detail": "2026-08-16 运行 quality-screen --mode report --file 风华高科-公司研究.md 输出 ROE=3.00%、OCF/NI=0.80、商誉/净资产=30.00%，逐项与 auto 模式（ROE 2.29%、OCF/NI 1.49、商誉 0）核对不符；与生益科技（ROE 误取 8.57% 2023 值）同根因",
+          "taskId": "deep-dive-风华高科-20260816-4821"
+        }
+      ],
+      "rootCauseHypothesis": "report 模式按正则从 Markdown 表格提取首个匹配百分数，优先命中三年对照表首行（2023）或阈值表述（<30%）或合计行，未按最新财年与单一数值约束取值；已在国际复材、生益科技两次报告同型，属同一根因跨任务复发",
+      "goal": "report 模式仅提取最新财年单一数值并排除带阈值/带区间文本误命中；修复落地后回归多公司笔记（含三年对照表格式）",
+      "severity": "medium",
+      "confidence": 0.95,
+      "benefit": "质量筛查结论可信度提升，避免 RED/YELLOW 结论因数值提取失真误导 Phase 4 入库门禁与报告附录",
+      "risk": "修改正则需回归测试，可能影响其他公司笔记提取",
+      "acceptance": "report 模式对风华高科笔记输出 ROE=2.29%（2025FY）、OCF/NI=1.49、商誉 0，结论与 auto 模式一致（RED）",
+      "fingerprint": "f8e54e1adec09df9e593",
+      "canonicalTargetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "status": "verified",
+      "taskIds": [
+        "deep-dive-国际复材-20260816-9f2c",
+        "deep-dive-生益科技-20260816-3d9a",
+        "deep-dive-鼎泰高科-20260816-a3f2",
+        "deep-dive-三环集团-20260816-3a7k",
+        "deep-dive-盛科通信-20260816-7c2e",
+        "deep-dive-风华高科-20260816-4821"
+      ],
+      "occurrenceCount": 6,
+      "highestSeverity": "medium",
+      "firstSeenAt": "2026-08-16T02:36:00.891Z",
+      "lastSeenAt": "2026-08-16T03:26:52.465Z",
+      "batchIds": [
+        "20260816-batch-001"
+      ]
+    },
+    {
+      "problemCode": "checklist-auto-year-ambiguity",
+      "targetKind": "script",
+      "targetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "symptom": "investment-checklist-auto 扫描误判（与 20260816 国际复材、生益科技深调同型，复发）：风华高科 #15 商誉高警示（实际商誉为 0，误取阈值/警示措辞）、#11/#26 ROE=3.0%（三年表首行 2023 值，正确 2025FY 2.29%）、#25 OCF/NI=1.00（正确 1.49）、#29 营收=18.9%（取 2026Q1 而非 2025 年报 16.54%）",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "2026-08-16 运行 investment-checklist-auto.ts 扫描报告与公司笔记：ROE=8.3%（2023 值，正确 2025 为 3.36%）、营收=115.0%（失真）、#30 大额减值未检测到（实际 3.07 亿=净利 113%）、#15 商誉高警示误判",
+          "taskId": "deep-dive-国际复材-20260816-9f2c"
+        },
+        {
+          "grade": "A",
+          "detail": "2026-08-16 运行 investment-checklist-auto.ts 扫描生益科技报告与笔记：5 项 IMPORTANT/NORMAL 误报经原文核验全部排除；唯一真实警示 #31 PE-TTM 66.97>40 与高估判断一致",
+          "taskId": "deep-dive-生益科技-20260816-3d9a"
+        },
+        {
+          "grade": "A",
+          "detail": "2026-08-16 运行 investment-checklist-auto.ts 扫描鼎泰高科报告与笔记：5 项 IMPORTANT/NORMAL 误报经 deep-read 原文核验全部排除；真实未通过仅 #25 CRITICAL（OCF/NI=0.67）与 #31（PE 305x）",
+          "taskId": "deep-dive-鼎泰高科-20260816-a3f2"
+        },
+        {
+          "grade": "B",
+          "detail": "同日国际复材、生益科技两次深调已报同型误报（生益科技 5 项误报），鼎泰高科为同根因第三次复现",
+          "taskId": "deep-dive-鼎泰高科-20260816-a3f2"
+        },
+        {
+          "grade": "A",
+          "detail": "2026-08-16 运行 investment-checklist-auto.ts 扫描三环集团报告与笔记：4 项 IMPORTANT 未通过经人工核验 3 项为正则误报（ROE 取首行 2023 值、商誉/减值关键词误命中），1 项（#31 估值）为真警示；CRITICAL 2 项（OCF/NI、有息负债）全部通过",
+          "taskId": "deep-dive-三环集团-20260816-3a7k"
+        },
+        {
+          "grade": "A",
+          "detail": "2026-08-16 运行 investment-checklist-auto.ts 扫描盛科通信报告与笔记：4 项 IMPORTANT/NORMAL 误报经 deep-read/processed 原文核验全部排除；真实未通过仅 #26 ROE=-6.5%（<12%），CRITICAL 项 0 未通过，综合结论仍为放行，但人工逐项澄清成本高",
+          "taskId": "deep-dive-盛科通信-20260816-7c2e"
+        },
+        {
+          "grade": "A",
+          "detail": "2026-08-16 运行 investment-checklist-auto.ts 扫描风华高科报告与笔记：5 项 IMPORTANT/NORMAL 误报（#15/#11/#26/#25/#29）经原文核验全部与最新财年值不符；#30 减值、#31 PE>40 真实警示与 quality-screen RED 一致",
+          "taskId": "deep-dive-风华高科-20260816-4821"
+        }
+      ],
+      "rootCauseHypothesis": "扫描正则从三年财务对照表提取首行数值作为当前值，未约束『最新财年/2025』关键词；与 qs-report 同根因，且对含警示措辞（『商誉/净资产 <30%』）的文本误触发",
+      "goal": "AUTO 扫描按最新财年取值，排除警示措辞误命中；修复与 qs-report 复用同一『最新财年取值』公共逻辑",
+      "severity": "medium",
+      "confidence": 0.85,
+      "benefit": "50 项投资决策清单 AUTO 扫描结论可信度提升，减少人工逐项核实成本",
+      "risk": "关键词词表扩充可能引入新误判，需测试覆盖",
+      "acceptance": "对风华高科笔记扫描输出 ROE=2.29%（2025FY）、OCF/NI=1.49 且 #15 商誉项通过",
+      "fingerprint": "17ed133b9065d252ae4e",
+      "canonicalTargetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "status": "verified",
+      "taskIds": [
+        "deep-dive-国际复材-20260816-9f2c",
+        "deep-dive-生益科技-20260816-3d9a",
+        "deep-dive-鼎泰高科-20260816-a3f2",
+        "deep-dive-三环集团-20260816-3a7k",
+        "deep-dive-盛科通信-20260816-7c2e",
+        "deep-dive-风华高科-20260816-4821"
+      ],
+      "occurrenceCount": 6,
+      "highestSeverity": "medium",
+      "firstSeenAt": "2026-08-16T02:36:00.891Z",
+      "lastSeenAt": "2026-08-16T03:26:52.465Z",
+      "batchIds": [
+        "20260816-batch-001"
+      ]
+    },
+    {
+      "problemCode": "doc-reader-disclosure-check",
+      "targetKind": "agent",
+      "targetPath": ".trae/agents/document-reader.md",
+      "symptom": "document-reader 对『未单列/未披露』类表述核实不足：deep-read 3.2 节称『2023 年前五大客户未单列』，回核 2023 年报原文实际已披露（25.81%，其中第三名联营关联方占 4.83%）",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "2026-08-16 info-alchemist 回核 2023 年报原文，修正 deep-read 表述；processed 文件已采用原文数据 25.81% 并列入待验证点",
+          "taskId": "deep-dive-国际复材-20260816-9f2c"
+        }
+      ],
+      "rootCauseHypothesis": "document-reader 精读 2023 年报时对该披露项检索不充分，在信息不确定时直接标注『未单列』而非标注『待回核』",
+      "goal": "对披露存疑项默认标注『待回核』并给出原文检索依据，禁止直接断言未披露",
+      "severity": "low",
+      "confidence": 0.6,
+      "benefit": "减少精读笔记与原文事实偏差，降低下游修正成本",
+      "risk": "提示词约束增强可能增加精读耗时",
+      "acceptance": "deep-read 对披露存疑项使用『待回核』标注并附检索依据",
+      "fingerprint": "4c9f25fdc9ffac3123c5",
+      "canonicalTargetPath": ".trae/agents/document-reader.md",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-国际复材-20260816-9f2c"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "low",
+      "firstSeenAt": "2026-08-16T02:36:00.891Z",
+      "lastSeenAt": "2026-08-16T02:36:00.891Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "fetch-file-ocr-fails-annual-report",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/file-ingestion/fetch-file.ts",
+      "symptom": "fetch-file.ts 对含少量 OCR 页的 PDF 直接判失败（exit 4）并保留源文件：风华高科 2024 年报（213 页）、2025 年报（221 页）均仅封面页 1 需 OCR 即整体中止，深调流程三年年报覆盖需人工编写临时 salvage 脚本（processPdf 占位跳过 OCR 页）抢救正文",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "2026-08-16 生益科技 2023 年报（260 页）仅 2 页需 OCR 即整体失败；临时脚本用 extractPagesMarkdown 逐页提取并以占位符标记 OCR 页后成功产出，深调未受阻但增加人工环节",
+          "taskId": "deep-dive-生益科技-20260816-3d9a"
+        },
+        {
+          "grade": "A",
+          "detail": "2026-08-16 风华高科 2024/2025 年报各仅 1 页（封面）需 OCR 即失败；临时脚本 salvage-ocr.ts（processPdf + 保留 pages_needing_ocr=[1] frontmatter）成功产出正文 Markdown；生益科技 2023 年报（2 页 OCR）同型已报，属跨任务复发",
+          "taskId": "deep-dive-风华高科-20260816-4821"
+        }
+      ],
+      "rootCauseHypothesis": "fetch-file.ts 将 pagesNeedingOcr.length>0 视为硬失败，未提供『OCR 页占位降级』选项；年报为文本层+封面扫描页混合型，混合型处理策略缺失",
+      "goal": "新增可选参数（如 --allow-ocr-pages）在 OCR 页占比低于阈值（如 ≤5%）时以占位符标记并产出 Markdown，frontmatter 记录 pages_needing_ocr 供下游降权使用",
+      "severity": "low",
+      "confidence": 0.8,
+      "benefit": "减少深调流程对含扫描页年报的人工干预（本次 2 份年报需临时脚本），保证三年年报覆盖自动化",
+      "risk": "占位内容可能被下游误用，需在 frontmatter 与文档内显式标记",
+      "acceptance": "对含 ≤5% OCR 页的 PDF，加 --allow-ocr-pages 后正常产出 Markdown 并在 frontmatter 标注 OCR 页清单",
+      "fingerprint": "e58395d373320827faa3",
+      "canonicalTargetPath": ".trae/scripts/file-ingestion/fetch-file.ts",
+      "status": "verified",
+      "taskIds": [
+        "deep-dive-生益科技-20260816-3d9a",
+        "deep-dive-风华高科-20260816-4821"
+      ],
+      "occurrenceCount": 2,
+      "highestSeverity": "low",
+      "firstSeenAt": "2026-08-16T02:45:57.044Z",
+      "lastSeenAt": "2026-08-16T03:26:52.465Z",
+      "batchIds": [
+        "20260816-batch-001"
+      ]
+    },
+    {
+      "problemCode": "industry-dir-concurrency-overlap",
+      "targetKind": "process",
+      "targetPath": "Research/10-Knowledge/04-电子/",
+      "symptom": "同一工作日内 04-电子 目录存在并行深调（华正新材）产物：00-行业概览/覆铜板-行业概览.md 与 01-细分行业/AI高速覆铜板-行业分析.md 与本任务新建的 电子-行业概览.md、覆铜板-行业分析.md 语义重叠，形成『双行业概览』，knowledge-architect 已保守保留未合并",
+      "evidence": [
+        {
+          "grade": "B",
+          "detail": "2026-08-16 knowledge-architect 入库时发现 04-电子 目录已有华正新材任务产物（引用 [[2026-08-16-华正新材-processed]]），与本任务文件不冲突但语义重叠，需人工裁决",
+          "taskId": "deep-dive-生益科技-20260816-3d9a"
+        }
+      ],
+      "rootCauseHypothesis": "三段式目录以行业首写命名（04-电子），同日多任务并行深调同行业时无目录级互斥或合并策略",
+      "goal": "同行业并行深调时，行业概览/细分行业层文件合并写入同一文件或按主题拆分命名，避免语义重复节点",
+      "severity": "low",
+      "confidence": 0.5,
+      "benefit": "知识库避免重复节点与双链混乱",
+      "risk": "合并策略需人工裁决主题归属",
+      "acceptance": "04-电子 目录行业概览/细分行业层无重复语义文件",
+      "fingerprint": "7ab870c347cbcf302e2e",
+      "canonicalTargetPath": "Research/10-Knowledge/04-电子",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-生益科技-20260816-3d9a"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "low",
+      "firstSeenAt": "2026-08-16T02:45:57.044Z",
+      "lastSeenAt": "2026-08-16T02:45:57.044Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "task-subagent-type-unavailable",
+      "targetKind": "process",
+      "targetPath": "AGENTS.md",
+      "symptom": "AGENTS.md 与命令约定以专用 subagent_type（document-reader / bull-advocate / bear-advocate / info-alchemist / knowledge-architect / report-writer 等）触发投研子 Agent，但本运行环境 Task 工具仅接受 search 与 general_purpose_task 两种 subagent_type，直接传 document-reader 报错『subagent_type is not a valid value』，编排器须每次绕行：用 general_purpose_task 承载并让子 Agent 先 Read 自己的 .trae/agents/*.md 定义",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "2026-08-16 deep-dive 鼎泰高科 Step 3 调用 Task(subagent_type=document-reader) 立即失败『failed to call Task tool, subagent_type is not a valid value』；改用 general_purpose_task + 显式传定义路径后正常完成 document-reader / bull-advocate / bear-advocate / info-alchemist 四角色",
+          "taskId": "deep-dive-鼎泰高科-20260816-a3f2"
+        }
+      ],
+      "rootCauseHypothesis": "本系统原为 OpenCode 编排（支持任意 subagent_type），迁移至当前执行环境后 Task 工具暴露的 subagent_type 白名单受限，专用 agent 定义无法按原机制装载",
+      "goal": "明确专用 subagent_type 在当前环境的装载方式：或环境侧开放白名单，或在 AGENTS.md/命令中补充『general_purpose_task + 定义路径』的兜底用法说明，避免每次人工绕行",
+      "severity": "medium",
+      "confidence": 0.8,
+      "benefit": "减少编排器每次深调的手工适配成本，保证多 Agent 角色流程可复现",
+      "risk": "环境侧限制可能超出投研系统可控范围，需确认执行环境能力边界",
+      "acceptance": "deep-dive 命令的四个子 Agent 角色可无手工介入按统一约定装载",
+      "fingerprint": "1a30d42b8e68059b0044",
+      "canonicalTargetPath": "AGENTS.md",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-鼎泰高科-20260816-a3f2"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "medium",
+      "firstSeenAt": "2026-08-16T03:22:29.169Z",
+      "lastSeenAt": "2026-08-16T03:22:29.169Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "research-report-lack-bear-coverage",
+      "targetKind": "process",
+      "targetPath": "Research/00-Workspace/02-Processing/pdf-texts/鼎泰高科/研报集.md",
+      "symptom": "券商研报全部为看多/正面评级，无看空或谨慎评级（复用既有问题，第 2 例）：本次 13 篇研报（开源/太平洋/民生/国信/国元）全部为买入/增持，deep-dive『至少 1 篇看多 + 1 篇看空/谨慎（如有）』在看空侧缺失，空方论点只能由 bear-advocate 基于财报原文 + 编排器 WebSearch 外部媒体观点独立挖掘",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "2026-08-16 stock.ts --reports 返回 9 篇研报（东吴 4/上海 2/中银 1/中邮 1/其他），评级全部为买入；研报集显式标注『未检索到看空/谨慎研报』；bear-advocate 独立完成空方论证并声明不依赖卖方观点",
+          "taskId": "deep-dive-鼎泰高科-20260816-a3f2"
+        },
+        {
+          "grade": "C",
+          "detail": "看空观点通常出现在雪球/集思录/行业媒体而非券商研报，stock.ts --reports 仅覆盖东财研报中心",
+          "taskId": "deep-dive-鼎泰高科-20260816-a3f2"
+        },
+        {
+          "grade": "C",
+          "detail": "2026-08-16 stock.ts --reports --days 730 返回 13 篇研报全部看多，无看空/谨慎；编排器另行 WebSearch 补充空方观点（雪球/证券之星/东财股吧等，含 PE 99.77% 分位、毛利率下滑、Q4 魔咒、JDM 议价权等），bear-advocate 独立完成空方论证。与既有观察（鼎泰高科）同型，跨 2 个 taskId 复现",
+          "taskId": "deep-dive-锐捷网络-20260816-3847"
+        }
+      ],
+      "rootCauseHypothesis": "研报采集源单一（东财研报中心），券商对高景气赛道公司普遍只发买入研报，看空观点不进入研报体系",
+      "goal": "采集看空观点时扩展非研报源（负面新闻、减持公告、雪球看空长文）；研报侧无看空时显式标注并提示 bear-advocate 独立挖掘",
+      "severity": "low",
+      "confidence": 0.7,
+      "benefit": "多空辩论的证据对称性提升，避免多方单边叙事",
+      "risk": "非研报源信噪比低，需甄别来源可信度",
+      "acceptance": "研报集在看空缺失时自动补充非研报看空线索清单",
+      "fingerprint": "72ac4c8e1a1a6dca54e2",
+      "canonicalTargetPath": "Research/00-Workspace/02-Processing/pdf-texts/鼎泰高科/研报集.md",
+      "status": "verified",
+      "taskIds": [
+        "deep-dive-鼎泰高科-20260816-a3f2",
+        "deep-dive-锐捷网络-20260816-3847"
+      ],
+      "occurrenceCount": 2,
+      "highestSeverity": "low",
+      "firstSeenAt": "2026-08-16T03:22:29.169Z",
+      "lastSeenAt": "2026-08-16T15:41:47.583Z",
+      "batchIds": [
+        "20260816-batch-003"
+      ]
+    },
+    {
+      "problemCode": "subagent-type-mapping-for-research-agents",
+      "targetKind": "process",
+      "targetPath": ".trae/commands/deep-dive.md",
+      "symptom": "投研自定义子 Agent（document-reader/bull-advocate/bear-advocate/info-alchemist）无法以 Task 工具 subagent_type 直启，须将 .trae/agents/*.md 角色定义整体嵌入 general_purpose_task 上下文执行；本次三生国健 deep-dive 第 2 次复现（首见 deep-dive-三环集团-20260816-3a7k）",
+      "evidence": [
+        {
+          "grade": "C",
+          "detail": "2026-08-16 首次以 subagent_type=document-reader 调用 Task 工具失败；改用 general_purpose_task + 携带 document-reader.md 角色定义后成功，后续 bull/bear/info-alchemist 均采用同法，未发现质量损失（产物满足 agent 定义质量标准）",
+          "taskId": "deep-dive-三环集团-20260816-3a7k"
+        },
+        {
+          "grade": "C",
+          "detail": "2026-08-16 三生国健 deep-dive 沿用 general_purpose_task + 内嵌 document-reader.md / bull-advocate.md / bear-advocate.md / info-alchemist.md 角色定义方式执行，产物满足各 agent 定义质量标准（deep-read 含 9 大目标与三年年报覆盖、bull/bear 含原文引用与互驳、processed 含扣非维度），为 subagent-type-mapping-for-research-agents 问题提供第二次 C 级证据",
+          "taskId": "deep-dive-三生国健-20260816-4f2a"
+        }
+      ],
+      "rootCauseHypothesis": "deep-dive / research 命令文档未说明投研自定义子 Agent 在 Task 工具下的运行方式，执行者需自行摸索 general_purpose_task 承载角色定义的调用模式（同三环集团 review 结论）",
+      "goal": "deep-dive / research 命令或 AGENTS.md 补充说明：自定义投研 Agent 以 general_purpose_task 启动并内嵌 .trae/agents/*.md 角色定义与质量标准；或在工具支持自定义 subagent_type 后改回直调",
+      "severity": "low",
+      "confidence": 0.7,
+      "benefit": "减少编排器首次执行的试错成本，统一投研子 Agent 调用契约（两次复现，可转 candidate）",
+      "risk": "文档改动需与工具能力现状一致，避免过时指引",
+      "acceptance": "命令文档明确投研子 Agent 的启动方式，后续 deep-dive 执行无需再次摸索",
+      "fingerprint": "e8a75ac6b1f86f6d2857",
+      "canonicalTargetPath": ".trae/commands/deep-dive.md",
+      "status": "verified",
+      "taskIds": [
+        "deep-dive-三环集团-20260816-3a7k",
+        "deep-dive-三生国健-20260816-4f2a"
+      ],
+      "occurrenceCount": 2,
+      "highestSeverity": "low",
+      "firstSeenAt": "2026-08-16T03:23:48.929Z",
+      "lastSeenAt": "2026-08-16T09:15:27.025Z",
+      "batchIds": [
+        "20260816-batch-002"
+      ]
+    },
+    {
+      "problemCode": "quality-screen-annual-value-regex",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "对三年时间序列表格（如 2023/2024/2025 三列财务数据表）做 report 模式扫描时，正则优先匹配到最早年份数值：资产负债率取到 2023 年 19.61%（2025 年实际 29.59%）；商誉/净资产被误读为 30.00%（实际商誉=0）；营收/净利同比增速判为 N/A",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "2026-08-16 铜冠铜箔 deep-dive：bun run quality-screen.ts --mode report --file 铜冠铜箔-公司研究.md 输出中『资产负债率 19.61%』『商誉/净资产 30.00%』与 2025 年报实际值（29.59%、0）不符；growth 两项为 N/A 而笔记中实含三年营收/净利数据",
+          "taskId": "deep-dive-铜冠铜箔-20260816-3f7a"
+        }
+      ],
+      "rootCauseHypothesis": "正则从公司笔记 Markdown 表格逐行匹配首个符合模式的数值，而时间序列表首列是最早年份；未优先取最近一期（表格末列），也未从 frontmatter 结构化块（financials/scores）读取",
+      "goal": "report 模式对时间序列指标优先取最近一期数值（表格末列或 frontmatter financials 块），历史年份仅作参考；商誉类指标按『商誉=0 时不得触发 30% 警示』逻辑处理",
+      "severity": "medium",
+      "confidence": 7,
+      "benefit": "消除质量筛查对历史年份数值的误判，提高 RED/GREEN 判定的口径准确性",
+      "risk": "改动正则可能影响其他存量笔记的扫描结果，需回归验证",
+      "acceptance": "对含三年财务表的标准公司笔记，资产负债率/毛利率/ROE 均取到最近财年数值；商誉=0 时商誉项不触发警示",
+      "fingerprint": "cb6408d6e39836c66fba",
+      "canonicalTargetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-铜冠铜箔-20260816-3f7a"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "medium",
+      "firstSeenAt": "2026-08-16T03:26:25.225Z",
+      "lastSeenAt": "2026-08-16T03:26:25.225Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "checklist-auto-negative-value-regex",
+      "targetKind": "script",
+      "targetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "symptom": "AUTO 扫描把 OCF/NI=-2.74 读为 2.74 且判为 ✅≥0.8 通过（负号丢失，实际应判 ❌）；#15 商誉警示误报（实际商誉=0）；#8 财报 PDF 下载记录未识别（实际已下载三年年报）",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "2026-08-16 铜冠铜箔 deep-dive：investment-checklist-auto.ts 输出 '#25 OCF/NI=2.74 ✅ ≥0.8' 与财报原文（OCF/NI=-2.74）相反；'#15 商誉/净资产 ≥30% 警示'为误报",
+          "taskId": "deep-dive-铜冠铜箔-20260816-3f7a"
+        }
+      ],
+      "rootCauseHypothesis": "数值捕获正则未保留负号前缀（[-+]? 缺失或取绝对值）；关键词（商誉、财报 PDF）匹配范围过宽导致误命中其他章节文本",
+      "goal": "负数指标保留符号并按阈值正确判定；商誉/财报下载等关键词仅从结构化章节（财报精读清单/数据来源）匹配，避免跨章节误报",
+      "severity": "medium",
+      "confidence": 7,
+      "benefit": "CRITICAL 项判定准确率提升，避免流动性红线与盈利质量检查被漏报/误报",
+      "risk": "阈值与负号处理逻辑改动需配套测试用例回归",
+      "acceptance": "OCF/NI 为负时判为未通过；商誉=0 不触发警示；已下载三年年报的笔记能识别 #8",
+      "fingerprint": "a75ac013a4a6b68f5c3b",
+      "canonicalTargetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-铜冠铜箔-20260816-3f7a"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "medium",
+      "firstSeenAt": "2026-08-16T03:26:25.225Z",
+      "lastSeenAt": "2026-08-16T03:26:25.225Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "stock-category-filter-ineffective",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/stock-data/stock.ts",
+      "symptom": "stock.ts --category yjyg（业绩预告）与 --category yjbb（业绩快报）过滤均未生效：返回 390 条全量公告（实际展示的均为限制性股票激励/员工持股计划等治理类公告，无一条业绩预告/快报），类别参数未起过滤作用",
+      "evidence": [
+        {
+          "grade": "C",
+          "detail": "2026-08-16 铜冠铜箔 deep-dive 单次观察：stock.ts --code 301217 --announcements --category yjyg --days 500 输出『共 181 条』且列表前 20 条全部为治理类公告，业绩预告需另行用 --days 10 翻找",
+          "taskId": "deep-dive-铜冠铜箔-20260816-3f7a"
+        },
+        {
+          "grade": "B",
+          "detail": "2026-08-16 两次独立查询（--category yjyg --days 1100、--category yjbb --days 1100）均返回相同 390 条全量公告列表且与类别无关；叠加既有观察 stock-category-filter-ineffective（yjyg 返回 181 条全量）与 stock-category-filter-noop，为跨任务复现",
+          "taskId": "deep-dive-炬芯科技-20260816-a8x2"
+        }
+      ],
+      "rootCauseHypothesis": "巨潮公告类别映射（yjyg/yjbb）在 stock.ts 中未正确传递给查询参数，或接口类别字段与本地映射表不一致，导致 category 参数被忽略",
+      "goal": "修复类别过滤，使 --category yjyg/yjbb 仅返回业绩预告/业绩快报公告",
+      "severity": "low",
+      "confidence": 5,
+      "benefit": "业绩预告/快报定位无需人工全量翻查，提升采集效率与准确性",
+      "risk": "类别映射调整可能影响其他公告类别查询，需回归测试",
+      "acceptance": "stock.ts --code 688049 --category yjyg --days 1100 返回结果全部为业绩预告类公告",
+      "fingerprint": "c5410c998978fa403abb",
+      "canonicalTargetPath": ".trae/scripts/stock-data/stock.ts",
+      "status": "verified",
+      "taskIds": [
+        "deep-dive-铜冠铜箔-20260816-3f7a",
+        "deep-dive-炬芯科技-20260816-a8x2"
+      ],
+      "occurrenceCount": 2,
+      "highestSeverity": "medium",
+      "firstSeenAt": "2026-08-16T03:26:25.225Z",
+      "lastSeenAt": "2026-08-16T09:30:08.793Z",
+      "batchIds": [
+        "20260816-batch-002"
+      ]
+    },
+    {
+      "problemCode": "deep-dive-bear-research-collection-gap",
+      "targetKind": "command",
+      "targetPath": ".trae/commands/deep-dive.md",
+      "symptom": "命令要求采集『至少 1 篇看多 + 1 篇看空/谨慎研报，如有』，但 stock.ts --reports 仅返回东财研报源（本次近 400 天 10 篇研报全部为买入/增持），看空侧缺失，空方观点需编排器额外 WebSearch 外部社区（雪球/东财财富号）补齐——跨任务第 2 例（首见铜冠铜箔 2026-08-16）",
+      "evidence": [
+        {
+          "grade": "C",
+          "detail": "2026-08-16 铜冠铜箔 deep-dive 单次观察：--reports 返回国金×4+中邮×1 全部为买入评级，空方论点依赖 WebSearch 获取外部观点（雪球/东财财富号/新浪），多空辩论的『空方』输入主要为外部媒体而非研报",
+          "taskId": "deep-dive-铜冠铜箔-20260816-3f7a"
+        },
+        {
+          "grade": "C",
+          "detail": "2026-08-17 华工科技 deep-dive：stock.ts --code 000988 --reports --days 400 返回 10 篇研报（太平洋/国金×4/开源/爱建/山西/国信/华鑫）全部买入评级；多空论证空方 Top 论点（云岭会计口径、Q2 减速、估值透支、价格战）全部来自外部媒体（雪球『轮动投研社』7/23 长文、东财财富号 7/8、同花顺诊股）而非研报；编排器已将空方素材整理为『空方观点与外部事件.md』供 document-reader 使用",
+          "taskId": "deep-dive-华工科技-20260817-7226"
+        }
+      ],
+      "rootCauseHypothesis": "研报数据源单一（东财研报中心）且券商对高景气 AI 赛道普遍只发买入研报，看空观点不进入研报体系；命令未定义空方观点获取的兜底路径",
+      "goal": "在命令流程中补充『若研报无看空覆盖，则显式走 WebSearch 采集空方/谨慎观点（外部媒体+雪球+公告负面）并记录来源时点』的兜底步骤，研报集在看空缺失时自动标注并附外部空方线索清单",
+      "severity": "low",
+      "confidence": 4,
+      "benefit": "多空论证输入双侧均衡，空方论证有外部佐证而非单边自建",
+      "risk": "外部信源信噪比低，需甄别来源可信度",
+      "acceptance": "多空论证空方至少 1 条外部佐证（或显式标注缺失原因）；研报集在看空缺失时输出外部空方线索清单",
+      "fingerprint": "adbe33c360205997e61d",
+      "canonicalTargetPath": ".trae/commands/deep-dive.md",
+      "status": "rejected",
+      "taskIds": [
+        "deep-dive-铜冠铜箔-20260816-3f7a",
+        "deep-dive-华工科技-20260817-7226"
+      ],
+      "occurrenceCount": 2,
+      "highestSeverity": "low",
+      "firstSeenAt": "2026-08-16T03:26:25.225Z",
+      "lastSeenAt": "2026-08-17T04:01:51.877Z",
+      "batchIds": [
+        "20260817-batch-005"
+      ]
+    },
+    {
+      "problemCode": "quality-screen-auto-unit-doc-missing",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "quality-screen --mode auto 输入单位约定易错（复用既有问题，第 2 例）：按百分比值传参（--roe 14.65 --debt 51.2）被脚本内部 ×100 放大（ROE 1465%、资产负债率 5120%），输出红牌判定失真（资产负债率被误判超 70% 红线）；需改传小数（0.1465/0.512）才正确",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "2026-08-16 风华高科首次按百分比传参输出 ROE=229.00%、资产负债率=2363.00% 明显失真；改传小数后输出正确。负值参数首次触发 ERR_PARSE_ARGS_INVALID_OPTION_VALUE，需 --x=-v 语法",
+          "taskId": "deep-dive-风华高科-20260816-4821"
+        },
+        {
+          "grade": "A",
+          "detail": "2026-08-16 首次按百分比传参运行 quality-screen.ts --mode auto --roe 14.65 --gross-margin 35.48 --debt 51.2，输出『高 ROE 1465.0%』『资产负债率 5120.0% 超 70% 红牌』明显失真；改传小数后输出正确（ROE 14.65%/负债率 51.2%，RED 0.7/10 主因应收红牌）。与既有观察（风华高科）同型，跨 2 个 taskId 复现",
+          "taskId": "deep-dive-锐捷网络-20260816-3847"
+        }
+      ],
+      "rootCauseHypothesis": "auto 模式 CLI 帮助与 AGENTS.md 用法表未明确『百分比类指标须传小数（0-1）』，编排器/Agent 按直觉传百分比导致数值放大 100 倍、红黄牌判定失真",
+      "goal": "脚本帮助文本与 AGENTS.md 用法表补充单位约定；或 auto 模式按传入值域自适应（≥1 视为百分数，<1 视为小数），消除歧义",
+      "severity": "medium",
+      "confidence": 0.75,
+      "benefit": "降低编排器与 Agent 误用概率，避免筛查结论失真",
+      "risk": "自适应逻辑可能改变既有调用行为，需测试覆盖",
+      "acceptance": "auto 模式按百分比传参也能输出正确数值，或帮助文本明确标注小数约定",
+      "state": "observing",
+      "fingerprint": "fc32477b72b5a7a8d669",
+      "canonicalTargetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "status": "verified",
+      "taskIds": [
+        "deep-dive-风华高科-20260816-4821",
+        "deep-dive-锐捷网络-20260816-3847"
+      ],
+      "occurrenceCount": 2,
+      "highestSeverity": "medium",
+      "firstSeenAt": "2026-08-16T03:26:52.465Z",
+      "lastSeenAt": "2026-08-16T15:41:47.583Z",
+      "batchIds": [
+        "20260816-batch-003"
+      ]
+    },
+    {
+      "problemCode": "evaluate-oneshot-income-distortion",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "symptom": "evaluate.ts 估值快照对含大额一次性损益的标的给出误导性评价，且同比数据存在单位错误：三生国健 2025 年 28 亿辉瑞 BD 一次性收入计入经常性损益（占营收 67.29%），脚本仍输出『PE-TTM 14.58 便宜』『PEG 0.00 有吸引力』『PE-TTM vs 净利同比 14.58 vs 31149.46%』，其中营收同比输出 25181.21%、净利同比输出 31149.46%（正确值 251.81%/311.49%，数据放大百倍）；『便宜』结论与真实 Forward PE 47-54 倍严重背离",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "2026-08-16 运行 evaluate.ts --code 688336：输出『营收同比 25181.21%』『净利同比 31149.46%』（正确为 251.81%/311.49%，对照年报 P10 与公开解读），PE-TTM 14.58 标注『便宜』、PEG 0.00 标注『有吸引力』；经 deep-read 精读核实 28 亿辉瑞首付款为一次性 BD 收入，2026 券商一致预期净利 -78%，Forward PE 47-54 倍",
+          "taskId": "deep-dive-三生国健-20260816-4f2a"
+        }
+      ],
+      "rootCauseHypothesis": "①hithink API 返回的同比增速存在单位/口径错误（百分比被放大百倍）且无合理性校验；②估值快照无一次性损益识别能力，PE-TTM/PEG 直接使用含一次性收入的 TTM 净利，对 license-out 等一次性 BD 驱动的利润结构会系统性给出『便宜』误导结论",
+      "goal": "evaluate.ts 增加同比数据合理性校验（|同比|>1000% 时提示核实或降级处理），并在估值快照输出一次性损益警告（检测到净利/毛利率异常抬升或营收同比极端值时提示『净利含大额一次性收入，PE-TTM 失真，请用正常化盈利』）；将『三生国健 688336』作为回归样例",
+      "severity": "high",
+      "confidence": 0.9,
+      "benefit": "估值快照是 Phase 4 入库与报告估值章节的直接数据源，失真会传导至 quality-screen 与投资清单扫描；修复后一次性 BD 类公司（创新药 license-out、资产处置收益等）的估值判断不再被误导",
+      "risk": "同比合理性阈值可能误伤高增长成长股（如从低基数暴增的真实高增长），需设计为『警告而非硬改』并允许人工覆盖",
+      "acceptance": "对 688336 运行 evaluate.ts 时：同比输出 251.81%/311.49%（或显式标注数据异常），估值快照出现『含一次性损益、PE-TTM 失真』提示；'便宜'评价不再出现在含一次性 BD 的标的上",
+      "fingerprint": "eda9adbff8be8a32dc97",
+      "canonicalTargetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "status": "verified",
+      "taskIds": [
+        "deep-dive-三生国健-20260816-4f2a"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "high",
+      "firstSeenAt": "2026-08-16T09:15:27.025Z",
+      "lastSeenAt": "2026-08-16T09:15:27.025Z",
+      "batchIds": [
+        "20260816-batch-002"
+      ]
+    },
+    {
+      "problemCode": "quality-screen-oneshot-greening",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "quality-screen 自动化评分被一次性 BD 收入美化：三生国健输出 GREEN 7.9/10，其中估值合理性 10 分（PE-TTM 14.58<15）、成长性 9 分（净利 +311.49%）、盈利质量 8.4 分，与 deep-read『虚胖型增长、主业 -8.01% 首次负增长、ROE 41.32% 不可持续、2026 净利 -78%』的中性精读结论严重矛盾；GREEN 结论若被直接采纳将把一次性收入驱动的高分当作『值得跟踪』依据",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "2026-08-16 运行 quality-screen.ts --mode report --file 三生国健-公司研究.md 输出 7.9/10 GREEN（估值 10/成长 9/ROE 41.32% 高分均源自 28 亿辉瑞一次性收入），而 deep-read 9.1 节结论为『表面逐年向好，实质主业走弱』；编排器须人工纠正后方可入库，纠正过程记录在公司笔记『质量筛查结论』段落",
+          "taskId": "deep-dive-三生国健-20260816-4f2a"
+        }
+      ],
+      "rootCauseHypothesis": "quality-screen 的 8 项财务红牌与 7 项质量评分全部基于单期报表数据，无一次性损益/非经常性项目修正通道；license-out 首付款计入经常性损益后，ROE/PE/净利增速全部失真，自动化 GREEN 与基本面真相脱节",
+      "goal": "quality-screen 增加一次性损益修正输入（如 --nonrecurring-net-profit 或支持从笔记 frontmatter 读取『剔除一次性后主业盈利』），当净利含大额一次性收入时输出显式警告并下调估值/成长维度得分或标注失真；与 evaluate 的一次性损益识别共用判定逻辑",
+      "severity": "high",
+      "confidence": 0.85,
+      "benefit": "质量筛查是 Phase 4 入库门禁（红牌 ≥2 不得标值得跟踪），失真 GREEN 会绕过该门禁；修复后一次性损益类标的的入库判断回归真实基本面",
+      "risk": "需避免对正常高增长股误判为一次性损益；建议以『非经常性损益/归母净利 >30%』或『一次性收入/营收 >20%』为触发条件并允许人工覆盖",
+      "acceptance": "对三生国健笔记运行 quality-screen 时输出一次性损益失真警告，估值/成长维度不再因 BD 收入给满分，GREEN 结论附带『剔除一次性后 2026 净利 -78%』提示",
+      "fingerprint": "8705451a11d6c539f9d5",
+      "canonicalTargetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "status": "verified",
+      "taskIds": [
+        "deep-dive-三生国健-20260816-4f2a"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "high",
+      "firstSeenAt": "2026-08-16T09:15:27.025Z",
+      "lastSeenAt": "2026-08-16T09:15:27.025Z",
+      "batchIds": [
+        "20260816-batch-002"
+      ]
+    },
+    {
+      "problemCode": "checklist-auto-negation-context",
+      "targetKind": "script",
+      "targetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "symptom": "investment-checklist-auto #30 大额减值项误报：三生国健扫描输出『#30 大额减值 >30% 净利 ❌ 检测到大额减值警示』，实际 2025 年资产减值损失为转回 +48.80 万、开发支出未计提减值（审计关键事项确认无减值），属关键词无否定语境判定导致的误报；与 20260816 三环集团 review 记录的 checklist-auto-year-ambiguity 同根因（关键词误命中）复现",
+      "evidence": [
+        {
+          "grade": "C",
+          "detail": "2026-08-16 运行 investment-checklist-auto.ts 扫描三生国健报告与笔记：#30 命中『减值』关键词判为警示，人工核验年报 P120/P112 确认资产减值损失为转回、开发支出未减值；同型误报已在 deep-dive-三环集团-20260816-3a7k 记录（medium，三环集团 3 项误报），本次为又一实例",
+          "taskId": "deep-dive-三生国健-20260816-4f2a"
+        }
+      ],
+      "rootCauseHypothesis": "扫描正则对『减值』等关键词无否定语境排除（『无减值/未减值/转回/通过』不应命中警示）；与 checklist-auto-year-ambiguity 同根因，跨任务复现进一步佐证",
+      "goal": "对减值/商誉等关键词做否定语境判定：命中『无减值/未计提/转回/通过』时不得判为警示；修复与 checklist-auto-year-ambiguity 合并处理",
+      "severity": "medium",
+      "confidence": 0.8,
+      "benefit": "50 项投资决策清单 AUTO 扫描结论可信度提升，减少人工逐项核实成本（本次 #30 误报需人工排除）",
+      "risk": "否定词表扩充可能引入新误判，需测试覆盖",
+      "acceptance": "对三生国健报告扫描时 #30 不再误报（命中『转回/未减值』语境判为通过）",
+      "fingerprint": "1cbbd227314f9d2cf768",
+      "canonicalTargetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-三生国健-20260816-4f2a"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "medium",
+      "firstSeenAt": "2026-08-16T09:15:27.025Z",
+      "lastSeenAt": "2026-08-16T09:15:27.025Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "fetch-file-ocr-ratio-limit-too-strict",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/file-ingestion/fetch-file.ts",
+      "symptom": "山金国际 2025 年年报（148 页）OCR 页占比 6.76%（10 页：封面/目录/重要提示/公司简介/MD&A54/附注65,71,73/尾页148），超过 --allow-ocr-pages 的 5% 硬限制，脚本仍判失败（exit 4）并保留源文件；实际正文已可提取 188KB，仅 10 页缺失。为覆盖三年年报需编写临时脚本绕过并手动拼装 frontmatter（易违反 --name 命名与 frontmatter 规范）",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "2026-08-16 运行 fetch-file.ts --allow-ocr-pages 对 000975 2025 年报输出 exit 4『PDF 需要 OCR，涉及页面: 1,2,3,5,7,54,65,71,73,148』；用临时脚本调用 processPdf 成功提取 188,359 字符正文，仅 10 页缺失。同型问题在 deep-dive-生益科技-20260816-3d9a review 已记录（fetch-file-ocr-fails-annual-report，已修复新增 --allow-ocr-pages），本次为阈值仍偏严的新变体",
+          "taskId": "deep-dive-山金国际-20260816-a3k9"
+        },
+        {
+          "grade": "B",
+          "detail": "年报为文本层+少量扫描页混合型 PDF 是常态；5% 阈值覆盖不了『10 页扫描封面/目录/声明』的合法年报",
+          "taskId": "deep-dive-山金国际-20260816-a3k9"
+        }
+      ],
+      "rootCauseHypothesis": "OCR_PAGE_RATIO_LIMIT=0.05 一刀切且无强制覆盖开关，未区分『扫描封面/目录/声明页』（可安全占位）与『正文关键页』；--allow-ocr-pages 已解决 0 页 OCR 但 5% 上限仍过严",
+      "goal": "放宽或参数化 OCR 页占比阈值（如默认 ≤10% 或允许 --ocr-ratio-limit N 覆盖），并在占位符中提示缺失页性质，保证三年年报覆盖自动化且符合 --name/frontmatter 规范",
+      "severity": "medium",
+      "confidence": 0.85,
+      "benefit": "减少深调流程对含少量扫描页年报的人工干预与临时脚本滥用，保证三年年报覆盖自动化与产物规范一致性",
+      "risk": "OCR 页占位内容可能被下游误用，需 frontmatter 显式记录 pages_needing_ocr 并降权 parse_confidence",
+      "acceptance": "对 OCR 页占比 ≤10% 的 PDF（如山金国际 2025 年报），传 --allow-ocr-pages 即正常产出 Markdown 并在 frontmatter 标注 OCR 页清单与 parse_confidence 降权",
+      "fingerprint": "d19d7f3d94031731a55f",
+      "canonicalTargetPath": ".trae/scripts/file-ingestion/fetch-file.ts",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-山金国际-20260816-a3k9"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "medium",
+      "firstSeenAt": "2026-08-16T09:20:10.751Z",
+      "lastSeenAt": "2026-08-16T09:20:10.751Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "evaluate-yoy-data-anomaly",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "symptom": "evaluate.ts --code 000988 输出『净利同比 2048.29%（⚠️ 同比存疑）』，与 2025 年报原文（归母净利 14.71 亿 +20.48%、扣非 +32.32%）相差百倍（复用既有问题，第 6 例）：营收同比列缺失、净利同比数量级放大，PE-TTM 66.41 被标注『净利可能含大额一次性收入』误导估值判断",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "2026-08-16 evaluate.ts 完整输出：营收同比 2585.98%、净利同比 3674.65%、PEG 0.01；对照 2025 年报原文营收 170.99 亿（+25.86%）、归母净利 29.72 亿（+36.75%），矛盾无法调和，判定为底层财务 API yoy 字段口径异常",
+          "taskId": "deep-dive-山金国际-20260816-a3k9"
+        },
+        {
+          "grade": "A",
+          "detail": "2026-08-16 运行 evaluate.ts --code 688049 输出营收同比 4149.62%、净利同比 9195.01%、PEG 0.00；对照 2025 年报主要会计数据（deep-read 核算）真实为 +41.50%/+91.95%，已在 processed/报告显式废弃 API 异常值。与既有候选 evaluate-yoy-data-anomaly（山金国际 2585.98%/3674.65%）、api-yoy-calculation-error、evaluate-ttm-yoy-anomaly 同根因多任务复现",
+          "taskId": "deep-dive-炬芯科技-20260816-a8x2"
+        },
+        {
+          "grade": "A",
+          "detail": "2026-08-16 运行 evaluate.ts --code 301165 --peer 600498，输出营收同比 2237.41%、净利同比 2129.80%、PE-TTM 170.77 标注疑似一次性损益；对照 2025 年报原文（+22.37%/+21.30%）矛盾，编排器与 document-reader 均以年报口径剔除 API 异常值后才进入 processed",
+          "taskId": "deep-dive-锐捷网络-20260816-3847"
+        },
+        {
+          "grade": "A",
+          "detail": "2026-08-17 evaluate.ts --code 000988 输出『PE-TTM 66.41 vs 净利同比 2048.29%（⚠️ 同比存疑，以年报为准）』并提示『净利可能含大额一次性收入（BD/license-out/资产处置等），PE-TTM 与 PEG 失真』；document-reader 精读 2025 年报第二节确认真实同比 +20.48%（扣非 +32.32%），2038/2048% 系 hithink API 同比字段口径异常；Forward PE 因该异常值无法自动递推。与既有候选 evaluate-yoy-data-anomaly（山金国际/炬芯科技/锐捷网络/吉比特/芭田股份，同根因 6+ 任务复现）指纹一致",
+          "taskId": "deep-dive-华工科技-20260817-7226"
+        }
+      ],
+      "rootCauseHypothesis": "hithink API 同比字段口径异常（对比基准期错位或单位放大百倍），evaluate.ts 未对 |同比|>500% 做合理性校验或回退到年报口径，直接透传至输出并误导下游估值/质量筛查判断",
+      "goal": "evaluate.ts 对同比类字段增加合理性校验（|同比|>300% 时标注『数据存疑，以年报为准』并停止 PEG/Forward PE 递推）；必要时回退到年报主要会计数据口径",
+      "severity": "high",
+      "confidence": 0.95,
+      "benefit": "估值快照与自动化质量筛查结论正确性提升，避免多空论证与估值判断被异常同比污染",
+      "risk": "修改需回归 evaluate.ts 全部输出段落，确认不影响正常同比展示",
+      "acceptance": "对 000988 运行 evaluate.ts 输出营收同比≈+22.59%、净利同比≈+20.48%（或显式标注数据存疑且不递推 Forward PE）",
+      "fingerprint": "36a6271497278a374a13",
+      "canonicalTargetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "status": "verified",
+      "taskIds": [
+        "deep-dive-山金国际-20260816-a3k9",
+        "deep-dive-炬芯科技-20260816-a8x2",
+        "deep-dive-锐捷网络-20260816-3847",
+        "deep-dive-华工科技-20260817-7226"
+      ],
+      "occurrenceCount": 4,
+      "highestSeverity": "high",
+      "firstSeenAt": "2026-08-16T09:20:10.751Z",
+      "lastSeenAt": "2026-08-17T04:01:51.877Z",
+      "batchIds": [
+        "20260816-batch-002"
+      ]
+    },
+    {
+      "problemCode": "checklist-auto-false-positives",
+      "targetKind": "script",
+      "targetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "symptom": "investment-checklist-auto.ts 扫描出现中文正则误报需逐项人工澄清（复用既有问题追加证据）：真实警示仅 #31 PE-TTM 170>40 与 #27 负债率约 63%，其余未通过项经原文核验为关键词/上下文误报",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "2026-08-16 运行 investment-checklist-auto.ts：输出 #4/#8/#30 未通过；经原文核实三项均为误报（见 deep-dive 报告附录 5 修正说明）。同型误报问题已在 deep-dive-生益科技-20260816-3d9a review 记录（checklist-auto-year-ambiguity），本次为新误报变体（上下文/关键词匹配）",
+          "taskId": "deep-dive-山金国际-20260816-a3k9"
+        },
+        {
+          "grade": "C",
+          "detail": "2026-08-16 report-writer 运行 investment-checklist-auto.ts 扫描锐捷网络报告与公司笔记：输出若干 IMPORTANT/NORMAL 未通过项，逐项澄清后仅 #31 估值与 #27 负债率为真实信号，其余为中文正则误报（同型问题已在 国际复材/生益科技/鼎泰高科/三环集团/盛科通信/风华高科 等多任务记录）",
+          "taskId": "deep-dive-锐捷网络-20260816-3847"
+        }
+      ],
+      "rootCauseHypothesis": "AUTO 扫描为关键词匹配、缺乏上下文语义与最新财年取值约束，对三年对照表首行、警示措辞、否定语境（无减值/转回）等误命中",
+      "goal": "AUTO 扫描增加上下文消歧与最新财年取值，降低误报率，减少人工逐项核实成本",
+      "severity": "medium",
+      "confidence": 0.8,
+      "benefit": "50 项投资决策清单 AUTO 扫描结论可信度提升，避免误报干扰放行决策",
+      "risk": "消歧规则复杂化可能引入漏报，需回归多公司样本测试",
+      "acceptance": "对锐捷网络报告扫描不再出现非真实警示的未通过项",
+      "fingerprint": "dbc1daf29fbb25a752de",
+      "canonicalTargetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "status": "verified",
+      "taskIds": [
+        "deep-dive-山金国际-20260816-a3k9",
+        "deep-dive-锐捷网络-20260816-3847"
+      ],
+      "occurrenceCount": 2,
+      "highestSeverity": "medium",
+      "firstSeenAt": "2026-08-16T09:20:10.751Z",
+      "lastSeenAt": "2026-08-16T15:41:47.583Z",
+      "batchIds": [
+        "20260816-batch-003"
+      ]
+    },
+    {
+      "problemCode": "pdf-inspector-parse-table-anomaly",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/file-ingestion/fetch-file.ts",
+      "symptom": "2023 年年报『主要矿产品种销售情况』表被上游 @firecrawl/pdf-inspector 解析为异常单位（销量 194.63 非吨），document-reader 无法直接采信 2023 年销量/均价，需人工按 2024/2025 年数据反推，标注推算值降档置信度",
+      "evidence": [
+        {
+          "grade": "C",
+          "detail": "2026-08-16 document-reader 精读 2023 年报时发现产销表格式解析异常（194.63 无法匹配吨单位口径），已在 deep-read 标注『2023 年销量/均价为推算值（产销表格式异常），置信度降档』",
+          "taskId": "deep-dive-山金国际-20260816-a3k9"
+        }
+      ],
+      "rootCauseHypothesis": "上游 pdf-inspector 对跨页/合并单元格复杂表格的数值-单位映射不稳定，单次观察未完成归因",
+      "goal": "对解析异常表格在 frontmatter 或文档内显式标记 parse_confidence 降档，并列入 pdf-inspector 上游兼容性观察项",
+      "severity": "low",
+      "confidence": 0.5,
+      "benefit": "下游精读对异常表格自动降权，减少推算值混入正式序列",
+      "risk": "上游修复不可控，仅能做检测与标记",
+      "acceptance": "解析异常表格在文档内显式标注且 parse_confidence 降档，后续如复现则升级为 candidate",
+      "fingerprint": "aa793b2d397323d76968",
+      "canonicalTargetPath": ".trae/scripts/file-ingestion/fetch-file.ts",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-山金国际-20260816-a3k9"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "low",
+      "firstSeenAt": "2026-08-16T09:20:10.751Z",
+      "lastSeenAt": "2026-08-16T09:20:10.751Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "knowledge-dir-number-collision",
+      "targetKind": "directory",
+      "targetPath": "Research/10-Knowledge",
+      "symptom": "新建行业目录使用了与既有目录重复的编号（05-农化 vs 05-医药生物），导致知识库目录编号不唯一，需手动迁移为 07-农化",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "deep-dive-芭田股份-20260816-8k3x 入库阶段 knowledge-architect 创建 05-农化 时未检测既有 05-医药生物，两个 05- 编号并存；编排器发现后手动复制迁移为 07-农化并删除旧目录",
+          "taskId": "deep-dive-芭田股份-20260816-8k3x"
+        }
+      ],
+      "rootCauseHypothesis": "knowledge-architect 创建行业目录时未扫描既有目录编号，缺少目录编号唯一性校验步骤",
+      "goal": "新建行业目录前自动检查编号唯一性，发现冲突时顺序取下一个可用编号",
+      "severity": "medium",
+      "confidence": 0.85,
+      "benefit": "避免知识库目录编号混乱，保障 Obsidian 与估值追踪系统的解析一致性",
+      "risk": "修改目录创建逻辑可能影响既有自动流程的路径假设",
+      "acceptance": "新建行业目录时不再产生编号冲突；knowledge-architect 提示词补充编号检查步骤",
+      "fingerprint": "57de040b4785631a2e6a",
+      "canonicalTargetPath": "Research/10-Knowledge",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-芭田股份-20260816-8k3x"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "medium",
+      "firstSeenAt": "2026-08-16T09:25:54.484Z",
+      "lastSeenAt": "2026-08-16T09:25:54.484Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "api-yoy-calculation-error",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "symptom": "evaluate.ts 输出的营收同比 5262.13%、净利同比 12279.10% 与财报原文（+52.62%/+122.79%）严重不符，属 API 同比计算口径异常",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "deep-dive-芭田股份-20260816-8k3x 中 document-reader 精读发现 evaluate.ts 同比数据与 2025 年报原文直接矛盾（数量级放大 100 倍），已按原文修正并记录",
+          "taskId": "deep-dive-芭田股份-20260816-8k3x"
+        }
+      ],
+      "rootCauseHypothesis": "hithink API 单期同比字段可能基于异常期初基数（如接近零）计算，产生数量级放大；evaluate.ts 未对异常同比做合理性校验",
+      "goal": "evaluate.ts 对 |同比|>500% 或极端值输出存疑标记，并提示人工与年报原文核对",
+      "severity": "medium",
+      "confidence": 0.75,
+      "benefit": "防止异常同比数据被下游直接消费导致判断错误",
+      "risk": "增加校验逻辑可能误标真实高增长公司（需阈值+人工确认兜底）",
+      "acceptance": "evaluate.ts 输出中对异常同比显式标注存疑；测试用例覆盖该场景",
+      "fingerprint": "51d92a65fe89de9b6250",
+      "canonicalTargetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-芭田股份-20260816-8k3x"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "medium",
+      "firstSeenAt": "2026-08-16T09:25:54.484Z",
+      "lastSeenAt": "2026-08-16T09:25:54.484Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "reader-figure-miscitation",
+      "targetKind": "agent",
+      "targetPath": ".trae/agents/document-reader.md",
+      "symptom": "deep-read 中 2023 年磷矿毛利率 65.79% 与年报原文 76.08% 不符，info-alchemist 交叉核对时发现并列入待验证点",
+      "evidence": [
+        {
+          "grade": "B",
+          "detail": "deep-dive-芭田股份-20260816-8k3x 中 deep-read 表述与年报原文数据矛盾，由 processed 阶段两独立来源比对定位（info-alchemist 待验证点 8）",
+          "taskId": "deep-dive-芭田股份-20260816-8k3x"
+        }
+      ],
+      "rootCauseHypothesis": "document-reader 在引用早期财年数据时依赖推算或记忆值而非直接回原文核对，缺少关键数字回原文核验步骤",
+      "goal": "document-reader 对三年年报关键数字（毛利率/净利/营收等）必须回原文核验并标注页码",
+      "severity": "medium",
+      "confidence": 0.7,
+      "benefit": "降低精读笔记数据引用错误率，减少下游返工",
+      "risk": "增加核验步骤会略增精读耗时",
+      "acceptance": "deep-read 关键数字与年报原文一致；自检脚本增加数字一致性抽查",
+      "fingerprint": "fe4932a70c719c5a1697",
+      "canonicalTargetPath": ".trae/agents/document-reader.md",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-芭田股份-20260816-8k3x"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "medium",
+      "firstSeenAt": "2026-08-16T09:25:54.484Z",
+      "lastSeenAt": "2026-08-16T09:25:54.484Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "evaluate-ttm-yoy-anomaly",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "symptom": "evaluate.ts 输出的同比增速字段异常：营收同比 6788.94%、净利同比 8982.21%、ROE 33.27%（单期/最新值口径），与财报原文（2025FY 营收 +67.89%、归母 +89.80%）严重不符；同时 Forward PE 计算行引用该异常增速（(1+8982%) 递推预测期净利），若编排器/下游脚本未人工核对易导致预测净利与目标市值系统性失真",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "2026-08-16 运行 evaluate.ts --code 603444 输出『营收同比 6788.94% / 净利同比 8982.21%』，与 2025 年报原文（营收 62.05 亿 +67.89%、归母 17.94 亿 +89.80%，毕马威审计）及 28 家券商一致预期（2026E +7.67%）矛盾；本次已由 document-reader 用年报原文核对后修正，未污染下游产物",
+          "taskId": "deep-dive-吉比特-20260816-9k2m"
+        }
+      ],
+      "rootCauseHypothesis": "hithink API 单期数据接口返回的同比基准期或 TTM 拼接口径异常（疑似最新单季数据与上年同期的错位或单位错误），evaluate.ts 未对同比字段做合理性校验（|同比|>500% 未告警），直接透传至输出",
+      "goal": "evaluate.ts 对同比类字段增加合理性校验（如 |同比|>300% 时标注『数据存疑，请以财报原文核对』）；Forward PE 计算禁用异常同比递推",
+      "severity": "medium",
+      "confidence": 0.9,
+      "benefit": "避免异常同比数据误导下游估值计算与报告引用；减少编排器人工核对成本",
+      "risk": "修改需回归 evaluate.ts 全部输出段落，确认不影响正常同比展示",
+      "acceptance": "对 603444 运行 evaluate.ts 输出营收同比≈+67.89%、净利同比≈+89.80% 或显式标注数据存疑",
+      "fingerprint": "4ee97ce4cd5da2379c59",
+      "canonicalTargetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-吉比特-20260816-9k2m"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "medium",
+      "firstSeenAt": "2026-08-16T09:27:09.327Z",
+      "lastSeenAt": "2026-08-16T09:27:09.327Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "stock-category-filter-noop",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/stock-data/stock.ts",
+      "symptom": "stock.ts --announcements --category yjyg 过滤业绩预告类别未生效：指定类别 yjyg（业绩预告）后仍返回全部 254 条公告（含董事会规则、信息披露管理办法等无关项），需人工从全量列表中筛选业绩预增公告，增加采集阶段人工成本",
+      "evidence": [
+        {
+          "grade": "C",
+          "detail": "2026-08-16 运行 stock.ts --code 603444 --announcements --category yjyg --days 900，输出 254 条未按类别过滤（包含『董事会提名委员会工作规则』『信息披露管理办法』等非 yjyg 公告）；本次通过人工定位 2026-07-14/2026-04-14 两条业绩预增公告",
+          "taskId": "deep-dive-吉比特-20260816-9k2m"
+        }
+      ],
+      "rootCauseHypothesis": "巨潮公告类别映射（category 参数 → 公告类别代码）可能未匹配 yjyg，或过滤在 API 响应组装后未生效；需复现确认是参数映射缺失还是过滤逻辑未执行",
+      "goal": "修复 stock.ts --category 过滤逻辑，使指定类别只返回该类公告；补充单测",
+      "severity": "low",
+      "confidence": 0.6,
+      "benefit": "公告采集阶段减少无关结果干扰，提升阶段效率",
+      "risk": "category 映射表改动可能影响其他类别过滤",
+      "acceptance": "对 603444 运行 --category yjyg 仅返回业绩预告类公告",
+      "fingerprint": "8ef3ee2ad808cf1fd029",
+      "canonicalTargetPath": ".trae/scripts/stock-data/stock.ts",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-吉比特-20260816-9k2m"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "low",
+      "firstSeenAt": "2026-08-16T09:27:09.327Z",
+      "lastSeenAt": "2026-08-16T09:27:09.327Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "orchestrator-dir-number-conflict",
+      "targetKind": "command",
+      "targetPath": "AGENTS.md",
+      "symptom": "编排器为知识库新行业目录分配编号时未先核查目录占用：任务上下文指定 05-游戏，但 05-医药生物 已占用（且 04 已被多次复用），knowledge-architect 运行时才发现冲突并自主改至 08-游戏，导致知识库目录编号与编排器认知不一致",
+      "evidence": [
+        {
+          "grade": "C",
+          "detail": "2026-08-16 deep-dive 吉比特 执行时，编排器指示写入 Research/10-Knowledge/05-游戏/，knowledge-architect 发现 05-医药生物 已存在（04 目录亦已复用三次），自主改用 08-游戏 并写入三份产物；最终知识库存在 04-电子/04-新材料/04-玻纤/05-医药生物/08-游戏 编号不连续",
+          "taskId": "deep-dive-吉比特-20260816-9k2m"
+        }
+      ],
+      "rootCauseHypothesis": "AGENTS.md 未定义行业目录编号分配规则（新增行业时如何编号），编排器凭现有 LS 快照推断编号，与磁盘实际目录脱节",
+      "goal": "在 AGENTS.md 目录约定中补充『新增一级行业目录编号规则』（如：取最大现存编号+1，或由 knowledge-architect 按磁盘实际分配并回报），并在编排器提示词中要求写入前核查目录占用",
+      "severity": "low",
+      "confidence": 0.7,
+      "benefit": "避免目录编号冲突与『指定路径 vs 实际路径』偏差，减少子任务自主决策偏差",
+      "risk": "仅文档与提示词变更，无代码风险",
+      "acceptance": "后续新增行业任务不再出现编号冲突",
+      "fingerprint": "a1622df663ba978b8122",
+      "canonicalTargetPath": "AGENTS.md",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-吉比特-20260816-9k2m"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "low",
+      "firstSeenAt": "2026-08-16T09:27:09.327Z",
+      "lastSeenAt": "2026-08-16T09:27:09.327Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "fetch-file-ocr-first-pass-fail",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/file-ingestion/fetch-file.ts",
+      "symptom": "fetch-file.ts 首次处理 2024 年报因 1 个扫描封面页触发『PDF 需要 OCR』退出码 4，需编排器重跑加 --allow-ocr-pages 才降级产出；流程体验上『年报下载首次必失败一次』，且失败 PDF 残留 failed/ 目录需人工清理",
+      "evidence": [
+        {
+          "grade": "C",
+          "detail": "2026-08-16 批量下载吉比特 2023/2024/2025 年报与 2026H1 中报，4 份首传全部因 1 页 OCR 失败（退出码 4），重跑加 --allow-ocr-pages 后成功；failed/ 目录残留 4 份原始 PDF",
+          "taskId": "deep-dive-吉比特-20260816-9k2m"
+        },
+        {
+          "grade": "C",
+          "detail": "2026-08-17 下载胜宏科技 2024 年报首传因 1 页 OCR 失败（exit 4），加 --allow-ocr-pages 重试成功；failed/ 目录残留 1222949182 原始 PDF，编排器手动 DeleteFile 清理；与既有观察（deep-dive-吉比特-20260816-9k2m fetch-file-ocr-first-pass-fail）同型，跨 2 个 taskId 复现",
+          "taskId": "deep-dive-胜宏科技-20260817-8f3a"
+        }
+      ],
+      "rootCauseHypothesis": "脚本默认策略对含 OCR 页的 PDF 直接失败，虽提供 --allow-ocr-pages 降级但未对『OCR 页占比 ≤5%』的常见年报场景自动降级；属设计取舍而非 bug",
+      "goal": "评估将 OCR 页占比 ≤5% 且无可用正文的情况改为默认降级（保留告警），或在 AGENTS.md 采集说明中注明『年报类 PDF 需附带 --allow-ocr-pages』以消除首传失败",
+      "severity": "low",
+      "confidence": 0.65,
+      "benefit": "减少采集阶段重复执行次数与 failed 目录残留",
+      "risk": "自动降级可能掩盖真实 OCR 异常页（占比 >5% 仍失败不受影响）",
+      "acceptance": "年报 PDF 单次调用即可产出 Markdown 或明确提示",
+      "fingerprint": "62b6bdd0d3b7e25ab4a3",
+      "canonicalTargetPath": ".trae/scripts/file-ingestion/fetch-file.ts",
+      "status": "verified",
+      "taskIds": [
+        "deep-dive-吉比特-20260816-9k2m",
+        "deep-dive-胜宏科技-20260817-8f3a"
+      ],
+      "occurrenceCount": 2,
+      "highestSeverity": "low",
+      "firstSeenAt": "2026-08-16T09:27:09.327Z",
+      "lastSeenAt": "2026-08-17T02:02:39.473Z",
+      "batchIds": [
+        "20260817-batch-004"
+      ]
+    },
+    {
+      "problemCode": "deep-read-raw-source-dangling-link",
+      "targetKind": "command",
+      "targetPath": "AGENTS.md",
+      "symptom": "deep-dive 流程不产生 raw 文件（01-Inbox 为空），但 document-reader 在 deep-read frontmatter 中填写 [[YYYY-MM-DD-公司名-raw]] 双链引用不存在的文件（胜宏科技 deep-read 填了 2026-08-16-胜宏科技-raw.md），形成悬空链接，编排器须手动修正为 pdf_texts 目录",
+      "evidence": [
+        {
+          "grade": "C",
+          "detail": "2026-08-16 deep-dive 吉比特：info-alchemist 汇报 raw 文件缺失（01-Inbox 目录为空），processed frontmatter 按惯例保留 [[2026-08-16-吉比特-raw]] 双链形成悬空链接；deep-dive 命令流程步骤 1-8 确实不含 InfoHunter/raw 产出阶段",
+          "taskId": "deep-dive-吉比特-20260816-9k2m"
+        },
+        {
+          "grade": "C",
+          "detail": "2026-08-17 检查胜宏科技 deep-read frontmatter 发现 raw_source 指向不存在的 2026-08-16-胜宏科技-raw.md（01-Inbox 无文件），编排器手动改为 pdf_texts 目录路径；与既有观察（deep-dive-吉比特-20260816-9k2m deep-read-raw-source-dangling-link）同型，跨 2 个 taskId 复现",
+          "taskId": "deep-dive-胜宏科技-20260817-8f3a"
+        }
+      ],
+      "rootCauseHypothesis": "deep-dive 命令复用标准流程的 frontmatter 模板（raw_source 必填），但命令本身跳过 Phase 1 raw 文件产出，模板未按命令类型差异化",
+      "goal": "deep-dive 流程的 frontmatter 模板允许 raw_source 置空或默认链接 pdf_texts 目录，避免悬空双链",
+      "severity": "low",
+      "confidence": 0.6,
+      "benefit": "消除知识库断链告警，提高图谱整洁度",
+      "risk": "无",
+      "acceptance": "deep-dive 产出笔记无指向不存在 raw 文件的断链",
+      "fingerprint": "72ffcb7c933d9625a3c2",
+      "canonicalTargetPath": "AGENTS.md",
+      "status": "verified",
+      "taskIds": [
+        "deep-dive-吉比特-20260816-9k2m",
+        "deep-dive-胜宏科技-20260817-8f3a"
+      ],
+      "occurrenceCount": 2,
+      "highestSeverity": "low",
+      "firstSeenAt": "2026-08-16T09:27:09.327Z",
+      "lastSeenAt": "2026-08-17T02:02:39.473Z",
+      "batchIds": [
+        "20260817-batch-004"
+      ]
+    },
+    {
+      "problemCode": "task-subagent-type-unavailable",
+      "targetKind": "agent",
+      "targetPath": "AGENTS.md",
+      "symptom": "AGENTS.md 与 deep-dive 命令约定以专用 subagent_type（document-reader / bull-advocate / bear-advocate / info-alchemist / knowledge-architect / report-writer）触发子 Agent，但 Task 工具返回『subagent_type is not a valid value』，本次 deep-dive 全流程（Phase 1.5/1.7/2/4/5 共 6 次子任务）被迫降级为 general_purpose_task + 子 Agent 自行读 .trae/agents/*.md 定义文件兜底，且 .trae/agents 目录 Glob/LS 异常（Glob 无结果、LS 超时），仅 Read 单文件可用",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "2026-08-16 首次调用 Task(subagent_type=document-reader) 返回错误『failed to call Task tool, subagent_type is not a valid value』，随后 5 次改用 general_purpose_task 成功；.trae/agents 目录 Glob 返回 No file found 而 Read .trae/agents/document-reader.md 成功，LS 超时——环境能力与 AGENTS.md 文档约定不一致",
+          "taskId": "deep-dive-炬芯科技-20260816-a8x2"
+        }
+      ],
+      "rootCauseHypothesis": "环境（IDE/平台）未注册 AGENTS.md 中声明的 6 个专用 subagent_type，仅提供通用 general_purpose_task；AGENTS.md/命令文档仍按专用类型编写触发路径",
+      "goal": "统一子 Agent 触发契约：注册专用 subagent_type，或修改 AGENTS.md / 命令 / 子 Agent 描述为通用 general_purpose_task + 自读定义文件模式，消除运行时降级",
+      "severity": "high",
+      "confidence": 0.95,
+      "benefit": "全流程子 Agent 路由稳定、无需每次运行时降级兜底，降低编排器在子 Agent 触发上的返工",
+      "risk": "若注册专用类型需平台侧改动；文档化模式改动需同步 AGENTS.md 与各命令",
+      "acceptance": "deep-dive 命令按文档约定直接以专用 subagent_type 触发成功，或 AGENTS.md 明确改为通用触发模式后无降级",
+      "fingerprint": "63ffb68e043801041910",
+      "canonicalTargetPath": "AGENTS.md",
+      "status": "verified",
+      "taskIds": [
+        "deep-dive-炬芯科技-20260816-a8x2"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "high",
+      "firstSeenAt": "2026-08-16T09:30:08.793Z",
+      "lastSeenAt": "2026-08-16T09:30:08.793Z",
+      "batchIds": [
+        "20260816-batch-002"
+      ]
+    },
+    {
+      "problemCode": "checklist-auto-pdf-file-absent-false-positive",
+      "targetKind": "script",
+      "targetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "symptom": "investment-checklist-auto 扫描炬芯科技报告与笔记时 #8『财报 PDF 下载』误报（实际 pdf-texts 下 2023/2024/2025 年报 + 2025 半年报 5 份文件齐全），#30 大额减值误报（实际 2025 年减值仅 212 万/净利 1.04%），需人工逐项澄清",
+      "evidence": [
+        {
+          "grade": "C",
+          "detail": "2026-08-16 AUTO 扫描输出 #8 未通过（报告附录实际引用了 pdf-texts 5 份文件）、#30 未通过（deep-read 核验 212 万/净利 1.04%）；#30 与既有 checklist-auto-negation-context / checklist-auto-year-ambiguity 同型，退出码 0 放行但含误报",
+          "taskId": "deep-dive-炬芯科技-20260816-a8x2"
+        }
+      ],
+      "rootCauseHypothesis": "扫描器对『财报 PDF』与『大额减值』判定依赖报告文本关键词与阈值文本，未核验 pdf-texts 目录实际文件与附注减值明细",
+      "goal": "#8 改为校验 pdf-texts/<公司名>/ 目录文件存在性；#30 结合减值金额与净利比例判定，降低关键词误报",
+      "severity": "low",
+      "confidence": 0.6,
+      "benefit": "减少报告附录人工逐项澄清成本",
+      "risk": "目录校验在报告/笔记分处不同路径时可能误判，需定义清晰锚点",
+      "acceptance": "对炬芯科技扫描不再出现 #8/#30 误报",
+      "fingerprint": "e094672836410285fb13",
+      "canonicalTargetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-炬芯科技-20260816-a8x2"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "low",
+      "firstSeenAt": "2026-08-16T09:30:08.793Z",
+      "lastSeenAt": "2026-08-16T09:30:08.793Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "deep-dive-validated-link-broken",
+      "targetKind": "template",
+      "targetPath": "Research/99-Templates/company-template.md",
+      "symptom": "deep-dive 命令流程不含 Phase 3（cross-validator，无 validated 文件产出），但公司笔记模板/知识架构师强制 frontmatter 填写 validation_source（复用既有问题，第 2 例）：本次锐捷网络笔记 validation_source 指向不存在的 validated 文件，knowledge-architect 改为以 deep-read 为主验证源；同时 deep-read『待核实事项』（200G/400G 份额口径冲突、三家互联网客户占数据中心 ~90% 单源数据）无 Phase 3 验证环节",
+      "evidence": [
+        {
+          "grade": "C",
+          "detail": "2026-08-16 炬芯科技-公司研究.md frontmatter validation_source 指向 [[2026-08-16-炬芯科技-validated]]（不存在），knowledge-architect 汇报中标注为待建双链；deep-dive 命令步骤 1-7 确无 Phase 3",
+          "taskId": "deep-dive-炬芯科技-20260816-a8x2"
+        },
+        {
+          "grade": "C",
+          "detail": "2026-08-16 knowledge-architect 入库锐捷网络笔记时标注『03-Validation 无 validated 文件，validation_source 已指向 deep-read 为主验证源，若后续产出 validated 需回填』；deep-read 交接的 5 个待验证点（含 200G/400G 份额『连续14季度第一 vs IDC 2026Q1 第二』冲突）无验证环节承接，与既有观察（炬芯科技）同型，跨 2 个 taskId 复现",
+          "taskId": "deep-dive-锐捷网络-20260816-3847"
+        }
+      ],
+      "rootCauseHypothesis": "deep-dive 命令精简了 Phase 3，但 company-template.md 与 knowledge-architect 定义仍保留 validated 引用约定，未同步适配 deep-dive 模式；待验证事项缺乏承接环节",
+      "goal": "deep-dive 模式笔记的 validation_source 指向 deep-read 或允许为空并注明流程；模板同步说明各模式的 validation_source 取值规则；待核实事项由报告/下一轮研究承接验证",
+      "severity": "medium",
+      "confidence": 0.7,
+      "benefit": "知识库双链健康度提升，避免失效链接进入图谱与 valuation-tracker",
+      "risk": "模板改动需同步 knowledge-architect 定义与既有笔记约定",
+      "acceptance": "deep-dive 模式公司笔记 validation_source 指向实际存在的文件（deep-read 或空值+注释）",
+      "fingerprint": "a08bf7f809adcbf7d4c5",
+      "canonicalTargetPath": "Research/99-Templates/company-template.md",
+      "status": "verified",
+      "taskIds": [
+        "deep-dive-炬芯科技-20260816-a8x2",
+        "deep-dive-锐捷网络-20260816-3847"
+      ],
+      "occurrenceCount": 2,
+      "highestSeverity": "medium",
+      "firstSeenAt": "2026-08-16T09:30:08.793Z",
+      "lastSeenAt": "2026-08-16T15:41:47.583Z",
+      "batchIds": [
+        "20260816-batch-003"
+      ]
+    },
+    {
+      "problemCode": "web-fetch-jina-anti-bot",
+      "targetKind": "script",
+      "targetPath": ".trae/skills/research-web-search",
+      "symptom": "WebFetch r.jina.ai 前缀抓取东财研报详情页返回『正在进行安全验证』反爬页（复用既有问题，第 2 例）：研报正文抓取需另寻路径",
+      "evidence": [
+        {
+          "grade": "C",
+          "detail": "2026-08-16 WebFetch https://r.jina.ai/https://data.eastmoney.com/... 返回安全验证页；fetch-source.ts 同 URL 成功提取正文。单次观察",
+          "taskId": "deep-dive-炬芯科技-20260816-a8x2"
+        },
+        {
+          "grade": "C",
+          "detail": "2026-08-16 WebFetch https://r.jina.ai/https://data.eastmoney.com/report/zw_stock.jshtml?infocode=AP202608161828029098 返回安全验证页（反爬），与既有观察（炬芯科技）同型；本次研报观点以 WebSearch 摘要 + 外部来源补充，未直接获取研报正文",
+          "taskId": "deep-dive-锐捷网络-20260816-3847"
+        }
+      ],
+      "rootCauseHypothesis": "r.jina.ai 对东财域名触发反爬（频率/IP 限制），或免费代理节点被识别",
+      "goal": "研报抓取统一走 fetch-source.ts，文档移除 r.jina.ai 建议路径或标注可用性限制",
+      "severity": "low",
+      "confidence": 0.5,
+      "benefit": "研报正文获取路径确定性提升，减少抓取失败重试",
+      "risk": "低，仅影响文档指引",
+      "acceptance": "research-web-search 文档中 r.jina.ai 路径标注或替换为 fetch-source.ts 优先",
+      "fingerprint": "af8dafa04c57f72ed5b0",
+      "canonicalTargetPath": ".trae/skills/research-web-search",
+      "status": "verified",
+      "taskIds": [
+        "deep-dive-炬芯科技-20260816-a8x2",
+        "deep-dive-锐捷网络-20260816-3847"
+      ],
+      "occurrenceCount": 2,
+      "highestSeverity": "low",
+      "firstSeenAt": "2026-08-16T09:30:08.793Z",
+      "lastSeenAt": "2026-08-16T15:41:47.583Z",
+      "batchIds": [
+        "20260816-batch-003"
+      ]
+    },
+    {
+      "problemCode": "deep-dive-report-html-omission",
+      "targetKind": "command",
+      "targetPath": ".trae/commands/deep-dive.md",
+      "symptom": "deep-dive 命令与 AGENTS.md 对报告形态要求不一致：命令步骤 7 仅要求『单公司简版 md 报告』，而 AGENTS.md 交付质量检查要求『报告输出 md + html 双份（HTML 独立编写、图表 ECharts CDN）』，本次仅产出 md 未产出 HTML",
+      "evidence": [
+        {
+          "grade": "C",
+          "detail": "2026-08-16 report-writer 交付 md 简版报告后说明『未产出 HTML（本任务仅要求 md 单公司简版）』；对照 AGENTS.md 交付质量检查『报告输出 md + html 双份』存在约定冲突，单次观察",
+          "taskId": "deep-dive-锐捷网络-20260816-3847"
+        }
+      ],
+      "rootCauseHypothesis": "deep-dive 命令定义与 AGENTS.md 全局交付标准未对齐，命令作者未明确简版报告是否豁免 HTML",
+      "goal": "统一约定：deep-dive 简版报告是否需 HTML 由命令显式声明（或补充 HTML 产出步骤），消除两处文档冲突",
+      "severity": "low",
+      "confidence": 0.5,
+      "benefit": "交付形态可预期，避免子 Agent 与编排器对产物完整性判断不一致",
+      "risk": "无",
+      "acceptance": "deep-dive 命令明示报告是否包含 HTML，或 AGENTS.md 标注简版报告豁免 HTML",
+      "fingerprint": "8ea9c372301c0392b8fb",
+      "canonicalTargetPath": ".trae/commands/deep-dive.md",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-锐捷网络-20260816-3847"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "low",
+      "firstSeenAt": "2026-08-16T15:41:47.583Z",
+      "lastSeenAt": "2026-08-16T15:41:47.583Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "evaluate-yoy-metric-misparse",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "symptom": "evaluate.ts 输出净利同比 18771.65% 且营收同比『存疑（接口异常）』（实际 2025 年报：营收 +75.65%、归母净利由 -1.97 亿扭亏至 +1.73 亿无合理同比），接口同比字段口径错误；脚本虽自标『同比存疑，以年报为准』，但误导 PE-TTM/PEG 失真判定与估值判断，需人工纠偏",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "2026-08-17 evaluate.ts --code 300684 输出同比 1713.73%/6811.97% 并警告 PE-TTM 与 PEG 失真；document-reader 精读 2025 年报『第二节主要财务指标』原文确认 +17.14%/+68.12%；quality-screen auto 模式首次运行因该值触发一次性损益误报，改传 0.1714/0.6812 后输出 YELLOW 6.5/10 无红牌",
+          "taskId": "deep-dive-中石科技-20260817-cd4f"
+        },
+        {
+          "grade": "A",
+          "detail": "2026-08-17 运行 evaluate.ts --code 300476 --peer 002463 输出『营收同比 7977.33%』『净利同比 27351.63%』『PE-TTM vs 净利同比 56.67 vs 27351.63%』；document-reader 精读 2025 年报『主要会计数据和财务指标』原文确认 +79.77%/+273.52%/+277.07%；与既有 candidate（deep-dive-中石科技-20260817-cd4f evaluate-yoy-metric-misparse）同根因，跨 2 个 taskId 复现",
+          "taskId": "deep-dive-胜宏科技-20260817-8f3a"
+        },
+        {
+          "grade": "A",
+          "detail": "2026-08-17 运行 evaluate.ts --code 600667 输出『PE-TTM vs 净利同比 109.52 vs -3183.89%（⚠️ 同比存疑，以年报为准）』；document-reader 精读 2025 年报确认归母净利同比 -31.84%；与既有 candidate（deep-dive-胜宏科技-20260817-8f3a、deep-dive-中石科技-20260817-cd4f）同根因，跨 3 个 taskId 复现",
+          "taskId": "deep-dive-太极实业-20260817-a7k2"
+        },
+        {
+          "grade": "A",
+          "detail": "2026-08-17 evaluate.ts --code 600584 输出净利同比 -275.46% 与营收同比异常，明显偏离年报原文（+8.09%/-2.75%）；document-reader 精读 2025 年报『主要会计数据』及 4 篇券商研报交叉确认真实值；与中石科技 review（deep-dive-中石科技-20260817-cd4f #evaluate-yoy-metric-misparse）同型，跨任务复现",
+          "taskId": "deep-dive-长电科技-20260817-7k2m"
+        },
+        {
+          "grade": "A",
+          "detail": "2026-08-17 evaluate.ts --code 300394 输出营收同比『存疑（接口异常，以年报为准）』与净利同比 5014.76%，明显偏离年报原文（+58.79%/+50.15%）；document-reader 精读 2025 年报『主要会计数据』及 4 篇券商研报交叉确认真实值；与长电科技（deep-dive-长电科技-20260817-7k2m）、中石科技（deep-dive-中石科技-20260817-cd4f）同型，跨任务第三次复现",
+          "taskId": "deep-dive-天孚通信-20260817-4f2a"
+        },
+        {
+          "grade": "A",
+          "detail": "2026-08-17 evaluate.ts --code 300502 输出『营收同比 存疑（接口异常，以年报为准）』『净利同比 23588.97%（⚠️ 同比存疑，以年报为准）』，明显偏离年报原文（营收 +187.29%、归母净利 +235.89%，2025 年报 p.6-7）；document-reader 精读年报『主要会计数据』确认真实值；与天孚通信（deep-dive-天孚通信-20260817-4f2a）、长电科技（deep-dive-长电科技-20260817-7k2m）、中石科技（deep-dive-中石科技-20260817-cd4f）同型，跨任务第四次复现",
+          "taskId": "deep-dive-新易盛-20260817-3f9a"
+        },
+        {
+          "grade": "A",
+          "detail": "2026-08-17 evaluate.ts --code 688536 输出『PE-TTM vs 净利同比 152.10 vs 18771.65%（⚠️ 同比存疑，以年报为准）』，与年报原文（2025 营收 +75.65%、扭亏）明显偏离；document-reader 精读 2025 年报『主要会计数据』及中邮/国信研报交叉确认真实值；与长电科技 review（deep-dive-长电科技-20260817-7k2m）、中石科技 review（deep-dive-中石科技-20260817-cd4f #evaluate-yoy-metric-misparse）同型，第三次跨任务复现",
+          "taskId": "deep-dive-思瑞浦-20260817-8472"
+        }
+      ],
+      "rootCauseHypothesis": "evaluate.ts 同比字段来自同花顺 hithink API 同比接口，对 2025 年报口径取数错误；该字段被 PE-TTM/PEG 失真判定与估值判断直接消费，属数据源口径问题而非公司业务事实",
+      "goal": "evaluate.ts 同比字段改以年报原文口径核验（或标注接口同比存疑并强制引导以财报为准）；quality-screen 等下游在同比异常（|同比|>500%）时显式拦截而非自动触发一次性损益判定",
+      "severity": "high",
+      "confidence": 0.95,
+      "benefit": "估值快照与自动化质量筛查结论正确性提升，避免误导多空论证与估值判断",
+      "risk": "修改取数逻辑需回归测试其他公司",
+      "acceptance": "evaluate.ts --code 688536 不再输出 18771.65% 类异常同比，扭亏公司显式标注『扭亏无同比』",
+      "fingerprint": "5b8a3a505d2500160b39",
+      "canonicalTargetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "status": "verified",
+      "taskIds": [
+        "deep-dive-中石科技-20260817-cd4f",
+        "deep-dive-胜宏科技-20260817-8f3a",
+        "deep-dive-太极实业-20260817-a7k2",
+        "deep-dive-长电科技-20260817-7k2m",
+        "deep-dive-天孚通信-20260817-4f2a",
+        "deep-dive-新易盛-20260817-3f9a",
+        "deep-dive-思瑞浦-20260817-8472"
+      ],
+      "occurrenceCount": 7,
+      "highestSeverity": "high",
+      "firstSeenAt": "2026-08-17T01:53:58.957Z",
+      "lastSeenAt": "2026-08-17T08:15:17.995Z",
+      "batchIds": [
+        "20260817-batch-004"
+      ]
+    },
+    {
+      "problemCode": "checklist-auto-threshold-text-misread",
+      "targetKind": "script",
+      "targetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "symptom": "investment-checklist-auto 扫描太极实业报告与笔记出现两处关键词误读：①商誉/净资产被误读为 30.0%（实际 5.72/86.34=6.6%，应判 ✅）；②净利增速被误读为 +448.0%（实际年报口径 -31.84%，#29 双负增长/#31 PE>40 应判 ❌ 触发）；ReportWriter 需人工核验并在附录⑤说明修正",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "2026-08-17 运行 investment-checklist-auto.ts 扫描中石科技报告+公司笔记：AUTO 判『⚠️ 有条件放行』且 CRITICAL 1/2 未通过；逐项核对 deep-read 4.4 年报原文（商誉 1,009.18 万减值测试通过、有息负债 660 万）确认 2 项均为扫描器误报；与生益科技 review（deep-dive-生益科技-20260816-3d9a #checklist-auto-year-ambiguity）的阈值文本误读同型，跨任务复现",
+          "taskId": "deep-dive-中石科技-20260817-cd4f"
+        },
+        {
+          "grade": "A",
+          "detail": "2026-08-17 运行 investment-checklist-auto.ts 扫描胜宏科技报告+公司笔记：AUTO 判『⚠️ 有条件放行』且 CRITICAL 1/2 未通过（#28）；人工核验 deep-read 4.5（有息负债 64.45 亿、经营现金流 46.03 亿，比值 1.40）与 2025 年报确认关键词误报；与中石科技 review（deep-dive-中石科技-20260817-cd4f checklist-auto-threshold-text-misread）同型，跨 2 个 taskId 复现",
+          "taskId": "deep-dive-胜宏科技-20260817-8f3a"
+        },
+        {
+          "grade": "A",
+          "detail": "2026-08-17 运行 investment-checklist-auto.ts 扫描太极实业报告+公司笔记：AUTO 判『⚠️ 有条件放行』CRITICAL 1/2 未通过（#25 OCF/NI 0.79）；人工核验 deep-read 4.4/4.6 与 2025 年报确认商誉/净资产 6.6%、净利增速 -31.84% 两处误读；与既有 candidate（deep-dive-胜宏科技-20260817-8f3a、deep-dive-中石科技-20260817-cd4f）同型，跨 3 个 taskId 复现",
+          "taskId": "deep-dive-太极实业-20260817-a7k2"
+        }
+      ],
+      "rootCauseHypothesis": "扫描器按关键词/正则机械匹配：商誉/净资产字段从报表节选中取到含其他口径的数值；净利增速从 TTM 或含一次性损益口径取数，未与 deep-read 归母/扣非口径对齐",
+      "goal": "AUTO 扫描对关键阈值项做上下文消歧：商誉/净资产取深读口径并校验，净利增速以 deep-read 归母净利口径为准（区分一次性损益影响）",
+      "severity": "medium",
+      "confidence": 0.85,
+      "benefit": "50 项投资决策清单 AUTO 扫描结论可信度提升，减少 CRITICAL 误判与人工核验成本",
+      "risk": "消歧规则可能漏检真实风险，需测试覆盖",
+      "acceptance": "对太极实业报告+笔记扫描不再误读商誉/净资产与净利增速；真实高风险公司仍能正确警示",
+      "fingerprint": "9409fe756152cb093273",
+      "canonicalTargetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "status": "verified",
+      "taskIds": [
+        "deep-dive-中石科技-20260817-cd4f",
+        "deep-dive-胜宏科技-20260817-8f3a",
+        "deep-dive-太极实业-20260817-a7k2"
+      ],
+      "occurrenceCount": 3,
+      "highestSeverity": "medium",
+      "firstSeenAt": "2026-08-17T01:53:58.957Z",
+      "lastSeenAt": "2026-08-17T02:59:00.596Z",
+      "batchIds": [
+        "20260817-batch-004"
+      ]
+    },
+    {
+      "problemCode": "deep-dive-bear-report-coverage-gap",
+      "targetKind": "process",
+      "targetPath": "deep-dive 流程·步骤 2.4（研报采集）",
+      "symptom": "思瑞浦近 1100 天 35 篇研报全部为买入/增持/优于大市，无看空或谨慎评级研报；多空论证 Bear Case 主要依赖 document-reader 从财报原文自建 + 外部第三方谨慎观点（证券之星『股价偏高』、财股邦衰退信号），缺独立卖方看空观点交叉验证",
+      "evidence": [
+        {
+          "grade": "C",
+          "detail": "2026-08-17 stock.ts --code 300684 --reports --days 365 仅返回 2 条研报且均为买入评级；多空论证空方论点全部由 document-reader 从财报原文构建，无券商谨慎/中性研报交叉验证",
+          "taskId": "deep-dive-中石科技-20260817-cd4f"
+        },
+        {
+          "grade": "C",
+          "detail": "2026-08-17 stock.ts --code 300476 --reports --days 365 返回 14 条研报全部为买入/增持；编排器另以 WebSearch 获取雪球看空观点（2026-06-16『多重压力下的估值回归风险』）与美银研报（看多但含风险提示）作为空方佐证；与既有观察（deep-dive-中石科技-20260817-cd4f deep-dive-bear-report-coverage-gap）同型，跨 2 个 taskId 复现",
+          "taskId": "deep-dive-胜宏科技-20260817-8f3a"
+        },
+        {
+          "grade": "C",
+          "detail": "2026-08-17 stock.ts --code 600667 --reports --days 365 返回 0 条、--days 730 返回 1 条（2024-08 国信中性）；编排器另以 WebSearch 获取广发深度研报、高盛/大摩/东证看多目标价（40-43 元）、AI 生成谨慎报告作为多空佐证；与既有 observing（deep-dive-胜宏科技-20260817-8f3a、deep-dive-中石科技-20260817-cd4f）同型，跨 3 个 taskId 复现",
+          "taskId": "deep-dive-太极实业-20260817-a7k2"
+        },
+        {
+          "grade": "C",
+          "detail": "2026-08-17 stock.ts --code 600584 --reports --days 365 返回 11 条研报均为买入/优于大市评级（中邮/华鑫/开源/国信/华金/华安/国金），无看空或谨慎评级；多空论证空方论点主要由 document-reader 从财报原文自建；与中石科技 review（deep-dive-中石科技-20260817-cd4f #deep-dive-bear-report-coverage-gap）同型，跨任务复现",
+          "taskId": "deep-dive-长电科技-20260817-7k2m"
+        },
+        {
+          "grade": "C",
+          "detail": "2026-08-17 stock.ts --code 300394 --reports 返回 19 条研报，看多 17 条（东吴×5/华鑫×2/开源×2/民生×2/太平洋/山西×2/东莞/华龙/国金），谨慎/扰动 2 条（东吴 2025-11-02、国元 2025-11-01），无看空评级；多空论证空方论点主要由 document-reader 从财报原文+外部行业证据自建；与长电科技 review（deep-dive-长电科技-20260817-7k2m）同型，跨任务复现",
+          "taskId": "deep-dive-天孚通信-20260817-4f2a"
+        },
+        {
+          "grade": "C",
+          "detail": "2026-08-17 stock.ts --code 300502 --reports --days 200 返回 6 条研报（华鑫 2026-07-26/群益 2026-07-20/山西 2026-05-27/国金 2026-04-26/开源 2026-04-26/群益 2026-02-02），全为买入/买进，无看空评级；空方论点主要由 document-reader 从财报原文+外部行业证据（800G 价格 $1200→$350-400、CPO 量产、产能过剩 30-40%）自建；与天孚通信（deep-dive-天孚通信-20260817-4f2a）、长电科技（deep-dive-长电科技-20260817-7k2m）同型，跨任务第三次复现",
+          "taskId": "deep-dive-新易盛-20260817-3f9a"
+        },
+        {
+          "grade": "B",
+          "detail": "跨任务复现：2026-08-17 stock.ts --code 603629 --reports --days 365 与 --days 1100 两次独立调用均输出『共 0 条』（可复现失败）；中石科技任务（deep-dive-中石科技-20260817-cd4f）同日观察近 365 天仅 2 条研报且均为买入评级，两任务共同指向研报数据源覆盖不足",
+          "taskId": "deep-dive-利通电子-20260817-k7x2"
+        },
+        {
+          "grade": "C",
+          "detail": "通达信 F10 显示 2026-07-01 参与调研机构 13 家、2026-06-30 参与 8 家（投资者关系活动记录），但 stock.ts 未输出任何研报，存在卖方关注与研报抓取结果的明显落差",
+          "taskId": "deep-dive-利通电子-20260817-k7x2"
+        },
+        {
+          "grade": "C",
+          "detail": "2026-08-17 stock.ts --code 688536 --reports --days 1100 返回 35 条研报（国信/民生/中邮/华安/开源/华鑫/东莞/中邮）均为正面评级，无看空；编排器额外 WebSearch 外部谨慎观点（证券之星 2026-08-16 相对估值 204.77-226.32 元『股价偏高』、财股邦 5 条衰退信号）补足空方外部佐证；与长电科技/中石科技 review（#deep-dive-bear-report-coverage-gap）同型，第三次跨任务复现",
+          "taskId": "deep-dive-思瑞浦-20260817-8472"
+        }
+      ],
+      "rootCauseHypothesis": "A 股研报市场整体偏多（卖方鲜少看空），stock.ts 未提供跨券商补充检索或『谨慎评级』定向筛选；导致深度调研的多空论证空方缺乏独立卖方佐证，依赖人工外部检索",
+      "goal": "研报采集在卖方看空稀缺时，补充检索中性/谨慎评级或负面观点新闻作为空方外部证据源；多空论证标注『空方外部佐证来源』",
+      "severity": "medium",
+      "confidence": 0.75,
+      "benefit": "多空论证外部证据链更完整，减少单边依赖",
+      "risk": "增加采集步骤耗时；负面观点信源质量参差需人工甄别",
+      "acceptance": "多空论证空方至少 1 条外部佐证（或显式标注缺失原因）",
+      "fingerprint": "c796ae8932bb2616726d",
+      "canonicalTargetPath": "deep-dive 流程·步骤 2.4（研报采集）",
+      "status": "verified",
+      "taskIds": [
+        "deep-dive-中石科技-20260817-cd4f",
+        "deep-dive-胜宏科技-20260817-8f3a",
+        "deep-dive-太极实业-20260817-a7k2",
+        "deep-dive-长电科技-20260817-7k2m",
+        "deep-dive-天孚通信-20260817-4f2a",
+        "deep-dive-新易盛-20260817-3f9a",
+        "deep-dive-利通电子-20260817-k7x2",
+        "deep-dive-思瑞浦-20260817-8472"
+      ],
+      "occurrenceCount": 8,
+      "highestSeverity": "medium",
+      "firstSeenAt": "2026-08-17T01:53:58.957Z",
+      "lastSeenAt": "2026-08-17T08:15:17.995Z",
+      "batchIds": [
+        "20260817-batch-004"
+      ]
+    },
+    {
+      "problemCode": "document-reader-selfcheck-missing",
+      "targetKind": "agent",
+      "targetPath": ".trae/agents/document-reader.md",
+      "symptom": "document-reader 角色无同名 .self-check.ts 自检脚本（info-alchemist/cross-validator/knowledge-architect/report-writer 均有），其产出（deep-read 9 大精读目标+多空论证）缺乏自动化校验，本次仅靠人工按质量标准自检（17 项全过）",
+      "evidence": [
+        {
+          "grade": "C",
+          "detail": "2026-08-17 document-reader 子任务回报明确『.trae/agents/ 下不存在 document-reader.md.self-check.ts（Glob 确认仅有本体）』；AGENTS.md 列示的 6 个 Agent 自检脚本清单中 document-reader 项为空白",
+          "taskId": "deep-dive-中石科技-20260817-cd4f"
+        }
+      ],
+      "rootCauseHypothesis": "document-reader 角色先于自检脚本体系建立（或自检脚本一直未补），deep-read 的九大目标/多空论证覆盖率无脚本化验收",
+      "goal": "为 document-reader 补建 document-reader.md.self-check.ts（校验 9 大精读目标覆盖率、三年年报覆盖、No-Go 红线标注、多空论证第十章完整性），纳入 Phase 1.5 验收",
+      "severity": "low",
+      "confidence": 0.7,
+      "benefit": "deep-read 产出质量验收自动化，与其余角色自检体系对齐",
+      "risk": "新增脚本需测试；多空论证为自由文本，校验规则需谨慎设计避免误判",
+      "acceptance": ".trae/agents/document-reader.md.self-check.ts 存在且能对中石科技 deep-read 返回通过结论",
+      "fingerprint": "4eaa612f9486234b0e06",
+      "canonicalTargetPath": ".trae/agents/document-reader.md",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-中石科技-20260817-cd4f"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "low",
+      "firstSeenAt": "2026-08-17T01:53:58.957Z",
+      "lastSeenAt": "2026-08-17T01:53:58.957Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "quality-screen-interest-coverage-missing",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "symptom": "evaluate.ts 输出『利息覆盖倍数 N/A』（未从财报附注提取利息支出），quality-screen report 模式对应行显示 N/A 黄牌『利息覆盖倍数数据缺失』，扩展排雷（短债占比/货币资金占比等）依赖人工从年报补充，自动化排雷链路存在缺口",
+      "evidence": [
+        {
+          "grade": "C",
+          "detail": "2026-08-17 运行 evaluate.ts --code 300476 输出利息覆盖倍数 N/A；quality-screen report 模式对应黄牌『利息覆盖倍数数据缺失（扩展排雷未覆盖）』；胜宏科技有息负债 64.45 亿、财务费用含利息支出，该字段可由年报附注补齐，属可复现的字段级缺失（单次观察，未完成归因）",
+          "taskId": "deep-dive-胜宏科技-20260817-8f3a"
+        }
+      ],
+      "rootCauseHypothesis": "evaluate.ts 的利息覆盖倍数依赖 hithink API 利息支出字段，该字段在 API 返回中缺失或脚本未拼接；quality-screen 无自动补取路径",
+      "goal": "evaluate.ts 补齐利息覆盖倍数（从利息支出附注或 API 备用字段取数），或 quality-screen 对该行显式标注『需年报附注人工补充』而非 N/A 黄牌",
+      "severity": "low",
+      "confidence": 0.5,
+      "benefit": "扩展排雷字段覆盖更完整，减少人工补充成本",
+      "risk": "低，仅影响字段补充逻辑",
+      "acceptance": "evaluate.ts 输出利息覆盖倍数或 quality-screen 明确提示人工补充路径",
+      "fingerprint": "819be59cc1cec7825c10",
+      "canonicalTargetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-胜宏科技-20260817-8f3a"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "low",
+      "firstSeenAt": "2026-08-17T02:02:39.473Z",
+      "lastSeenAt": "2026-08-17T02:02:39.473Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "quality-screen-growth-param-scale",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "quality-screen.ts --mode auto 的 growth 类参数按倍数解析（--revenue-growth -12.77 被输出为『营收同比下降 -1277.0%』红牌），与 ROE/毛利率等百分比参数自动折算（0-1 小数）行为不一致；AGENTS.md 共享脚本用法表未说明 growth 需传小数，首轮筛查结论失真必须重跑",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "2026-08-17 运行 quality-screen.ts --mode auto --revenue-growth -12.77 --earnings-growth -31.84：输出红牌『营收同比下降 -1277.0%』『净利同比下降 -3184.0%』；脚本对 ROE 5.22 自动折算为 0.0522 并告警，但对 growth 未折算告警；重跑传 --revenue-growth=-0.1277 后输出正确 -12.77%。单次观察，未跨任务复现（记录为 observing）",
+          "taskId": "deep-dive-太极实业-20260817-a7k2"
+        }
+      ],
+      "rootCauseHypothesis": "quality-screen auto 模式对 growth/倍数类参数不做折算且无显式提示（脚本注释说明『growth/倍数类参数不做折算』），但 AGENTS.md 用法表未同步该契约，编排器按百分比直觉传参导致首轮结论失真",
+      "goal": "quality-screen auto 模式对 growth 参数增加显式契约提示（百分比需传小数），或在 AGENTS.md 共享脚本用法表中补充『growth 类参数传小数（如 -12.77% 传 -0.1277）』",
+      "severity": "medium",
+      "confidence": 0.7,
+      "benefit": "避免自动筛查首轮失真与重复执行，提高筛查结论可信度",
+      "risk": "低，仅影响参数契约与文档说明",
+      "acceptance": "quality-screen auto 模式在 growth 传百分比时给出明确告警（或 AGENTS.md 用法表注明小数契约），首轮输出不再出现 -1277% 类异常值",
+      "fingerprint": "4d676236d03bb97d4cd1",
+      "canonicalTargetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-太极实业-20260817-a7k2"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "medium",
+      "firstSeenAt": "2026-08-17T02:59:00.596Z",
+      "lastSeenAt": "2026-08-17T02:59:00.596Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "quality-screen-auto-growth-param-unit",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "quality-screen --mode auto 的 growth 参数单位与负值格式易误用：`--earnings-growth -2.75` 因 bun parseArgs 将负值误判为选项报 ERR_PARSE_ARGS_INVALID_OPTION_VALUE（须用 `--earnings-growth=-2.75` 等号格式）；`--revenue-growth 8.09` 被当作 809% 强成长（须传小数 0.0809）；AGENTS.md 共享脚本表未标注单位约定，编排器需翻源码确认",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "2026-08-17 两次运行 quality-screen.ts --mode auto（长电科技 QS-1~QS-8 数据）：首次 `--earnings-growth -2.75` 报错 exit 1；二次 `--revenue-growth 8.09 --earnings-growth=-2.75` 输出营收同比 809.00%（误判强成长绿牌）；改传 0.0809/-0.0275 后输出正确 8.09%/-2.75%；脚本头部注释虽标注『--revenue-growth 0.12（12%）』但 AGENTS.md 共享脚本表未载明，且负值等号格式为 bun parseArgs 硬限制",
+          "taskId": "deep-dive-长电科技-20260817-7k2m"
+        }
+      ],
+      "rootCauseHypothesis": "quality-screen auto 模式 growth 参数单位约定仅写在脚本头部注释，未同步至 AGENTS.md 共享脚本表与命令文档；bun parseArgs 对以 - 开头的选项值需等号格式的限制未在用法说明中提示",
+      "goal": "AGENTS.md 共享脚本表补充 quality-screen auto 模式参数单位说明（growth 传小数、负值用等号格式）；或脚本内对 growth>1（如 >5）显式警告疑似百分比误传",
+      "severity": "medium",
+      "confidence": 0.8,
+      "benefit": "降低编排器/Agent 使用 quality-screen auto 模式的参数误用率，避免质量筛查结论失真",
+      "risk": "改动小，需同步文档与脚本帮助文本",
+      "acceptance": "AGENTS.md 共享脚本表含 growth 单位说明；或脚本对 growth>5 的疑似误传给出显式警告",
+      "fingerprint": "18ed3bfe4c03948f3acb",
+      "canonicalTargetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-长电科技-20260817-7k2m"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "medium",
+      "firstSeenAt": "2026-08-17T03:26:57.838Z",
+      "lastSeenAt": "2026-08-17T03:26:57.838Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "deep-dive-no-cross-validator",
+      "targetKind": "process",
+      "targetPath": "deep-dive 流程·步骤 4（结构化提取与质量筛查）",
+      "symptom": "deep-dive 命令流程步骤 4 仅含 info-alchemist + quality-screen，无 /research 流程的 Phase 3 cross-validator 阶段；document-reader 提出的存疑点（2024 年股份支付异常 265 万、创芯微承诺口径 8752.8 万 vs 报表 8185 万、预付款项 +424.75% 长协性质、外部测算应收/利润 185.85% 口径）直接透传知识笔记与报告『交 CrossValidator』，无独立多源交叉验证环节",
+      "evidence": [
+        {
+          "grade": "C",
+          "detail": "2026-08-17 deep-dive 长电科技执行中，document-reader 回报『4 个 🟡 存疑点交 CrossValidator』，但命令流程步骤 4 未定义 cross-validator 阶段，存疑点由 knowledge-architect/report-writer 直接承接，未独立验证",
+          "taskId": "deep-dive-长电科技-20260817-7k2m"
+        },
+        {
+          "grade": "C",
+          "detail": "2026-08-17 deep-dive 天孚通信执行中，document-reader 回报『存疑项 6 条已交 CrossValidator』（含 2024 应收异常、2023 销量口径断裂、缺芯确认时滞、1.6T 市占率第三方观点置信度≤6 等），但命令流程步骤 4 未定义 cross-validator 阶段，存疑点由 info-alchemist/knowledge-architect/report-writer 直接承接，未独立验证；与长电科技 review（deep-dive-长电科技-20260817-7k2m）同型，跨任务复现",
+          "taskId": "deep-dive-天孚通信-20260817-4f2a"
+        },
+        {
+          "grade": "C",
+          "detail": "2026-08-17 deep-dive 新易盛执行中，document-reader 回报『存疑项已交 CrossValidator 复核』（含预计负债 8.16 亿性质待半年报核实、2025 年报调整后 ROE 21.66%/5.25% vs 当年 41.00%/13.36% 口径差异、泰国产能与份额自媒体数据置信度≤6），但命令流程步骤 4 未定义 cross-validator 阶段，存疑点由 info-alchemist/knowledge-architect/report-writer 直接承接，未独立验证；与天孚通信（deep-dive-天孚通信-20260817-4f2a）、长电科技（deep-dive-长电科技-20260817-7k2m）同型，跨任务复现",
+          "taskId": "deep-dive-新易盛-20260817-3f9a"
+        },
+        {
+          "grade": "C",
+          "detail": "2026-08-17 deep-dive 思瑞浦执行中，document-reader 回报『存疑点交 CrossValidator』（2024 年股份支付异常等 4 项），deep-read 第十二章列 12 条待核实事项；但命令流程步骤 4 未定义 cross-validator 阶段，存疑点由 knowledge-architect/report-writer 直接承接，未独立验证；与长电科技 review（deep-dive-长电科技-20260817-7k2m #deep-dive-no-cross-validator）同型，第二次跨任务复现",
+          "taskId": "deep-dive-思瑞浦-20260817-8472"
+        }
+      ],
+      "rootCauseHypothesis": "deep-dive 命令为单公司简版流程，精简了 cross-validator 阶段，但 document-reader 定义仍以『交 CrossValidator』为存疑点出口，二者衔接存在真空",
+      "goal": "deep-dive 命令在步骤 4 明确存疑点处理路径（或由编排器对存疑点做轻量多源核验后放行，或显式标注存疑点未验证）",
+      "severity": "low",
+      "confidence": 0.6,
+      "benefit": "存疑点处理路径清晰，避免『交 CrossValidator』后无承接方",
+      "risk": "轻量核验增加编排器负担",
+      "acceptance": "deep-dive 命令文档明确存疑点承接方与处理规则",
+      "fingerprint": "a5bca3ea394e4ab3421a",
+      "canonicalTargetPath": "deep-dive 流程·步骤 4（结构化提取与质量筛查）",
+      "status": "rejected",
+      "taskIds": [
+        "deep-dive-长电科技-20260817-7k2m",
+        "deep-dive-天孚通信-20260817-4f2a",
+        "deep-dive-新易盛-20260817-3f9a",
+        "deep-dive-思瑞浦-20260817-8472"
+      ],
+      "occurrenceCount": 4,
+      "highestSeverity": "low",
+      "firstSeenAt": "2026-08-17T03:26:57.838Z",
+      "lastSeenAt": "2026-08-17T08:15:17.995Z",
+      "batchIds": [
+        "20260817-batch-005"
+      ]
+    },
+    {
+      "problemCode": "quality-screen-industry-threshold-bias",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "quality-screen 对低毛利重资产强周期行业（封测 OSAT）机械评分系统性低估：长电科技毛利率 14.15%（封测行业常态，日月光亦仅 20%+）、ROE 5.56% 触发多项黄牌与估值 0 分，综合 0.0/10 RED；需人工结合行业特性定性修正，增加编排器判断成本",
+      "evidence": [
+        {
+          "grade": "C",
+          "detail": "2026-08-17 quality-screen auto 模式（长电科技）输出 RED 0.0/10，其中毛利率 14.15%<20%、净利率 4.04%<5% 黄牌为封测行业结构性属性；knowledge-architect 补充行业特性修正说明后『修正后仍为 RED』（估值透支+扣非下滑），但机械评分的行业偏置无法量化",
+          "taskId": "deep-dive-长电科技-20260817-7k2m"
+        }
+      ],
+      "rootCauseHypothesis": "quality-screen 阈值基于一般消费/制造行业设计，无行业参数（如半导体封测低毛利高周转）支持，重资产低毛利行业的盈利维度系统性低分",
+      "goal": "quality-screen 支持可选的行业阈值参数（如 --industry osat）或输出『行业属性修正』提示，减少机械评分对特定行业的系统性误判",
+      "severity": "low",
+      "confidence": 0.6,
+      "benefit": "质量筛查对低毛利行业公司结论更贴近业务实质，减少人工修正成本",
+      "risk": "行业参数引入复杂度，需维护行业阈值表",
+      "acceptance": "quality-screen 对封测类公司可通过行业参数或明确提示避免系统性 RED 误判",
+      "fingerprint": "5f43c491518d91930a88",
+      "canonicalTargetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-长电科技-20260817-7k2m"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "low",
+      "firstSeenAt": "2026-08-17T03:26:57.838Z",
+      "lastSeenAt": "2026-08-17T03:26:57.838Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "evaluate-api-rate-limit",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "symptom": "evaluate.ts 调用同花顺 hithink API 首次运行返回 HTTP 429 Too Many Requests（限流），需编排器手动重试，影响流程连续性",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "2026-08-17 evaluate.ts --code 600584 首次运行 exit 1 输出『❌ HTTP 429 Too Many Requests』；重试后成功（间隔约 1 分钟），同花顺 API 限流为外部依赖偶发",
+          "taskId": "deep-dive-长电科技-20260817-7k2m"
+        }
+      ],
+      "rootCauseHypothesis": "同花顺 hithink API 对并发/频繁请求限流；evaluate.ts 无自动重试或退避机制",
+      "goal": "evaluate.ts（或 hithink.ts API 库）增加 429 自动重试（指数退避）与限流提示，减少人工干预",
+      "severity": "low",
+      "confidence": 0.7,
+      "benefit": "流程连续性与自动化程度提升",
+      "risk": "重试逻辑需测试，避免无限重试",
+      "acceptance": "evaluate.ts 遇 429 自动退避重试（如 3 次）后仍失败才报错",
+      "fingerprint": "5a42a8514ab5bb70b1f1",
+      "canonicalTargetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-长电科技-20260817-7k2m"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "low",
+      "firstSeenAt": "2026-08-17T03:26:57.838Z",
+      "lastSeenAt": "2026-08-17T03:26:57.838Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "evaluate-nonrecurring-warning-false-positive",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "symptom": "evaluate.ts 对新易盛输出『⚠️ 净利可能含大额一次性收入（BD/license-out/资产处置等），PE-TTM 与 PEG 失真，请用正常化盈利』，但 document-reader 精读 2025 年报非经常性损益明细核实归母-扣非差额仅 2461 万元（占归母 0.26%），政府补助 3022 万为主，利润 100% 为经常性损益——警告由异常同比误触发，对真实高质量公司造成误导性提示",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "2026-08-17 evaluate.ts --code 300394 输出非经常性损益失真警告；document-reader 精读 2025 年报非经常性损益明细（政府补助 4660 万 + 金融资产收益 915 万 - 资产处置 802 万 - 所得税影响 753 万 = 差额 4081 万，占归母 2.02%），判定『无一次性暴利、无补助依赖』，与脚本警告矛盾；警告由同比接口异常（5014.76%）驱动，属误触发",
+          "taskId": "deep-dive-天孚通信-20260817-4f2a"
+        },
+        {
+          "grade": "A",
+          "detail": "2026-08-17 evaluate.ts --code 300502 输出非经常性损益失真警告；document-reader 精读 2025 年报非经常性损益表 p.167（政府补助 +3022 万、公允价值变动 -770 万、营业外净额 +648 万、资产处置 -3 万、所得税影响 -435 万 = 差额 2461 万，占归母 0.26%）与 2026H1 业绩预告（非经常性损益影响约 1900 万），判定『利润完全由经常性主业驱动』，与脚本警告矛盾；警告由同比接口异常（23588.97%）驱动，属误触发",
+          "taskId": "deep-dive-新易盛-20260817-3f9a"
+        }
+      ],
+      "rootCauseHypothesis": "evaluate.ts 在同比异常（|同比|>500%）时自动追加『大额一次性收入』警示，未区分同比异常的真实原因（接口取数错误 vs 真实一次性损益），导致对利润 100% 经常性的公司产生误报",
+      "goal": "evaluate.ts 的一次性损益警示改为基于非经常性损益明细数据触发（或仅在扣非/归母缺口 >10% 时触发），同比异常单独标注而不直接联动一次性损益判定",
+      "severity": "medium",
+      "confidence": 0.8,
+      "benefit": "减少对高质量盈利公司的误导性估值警示，降低 Agent 人工核验成本",
+      "risk": "改动需保证真实一次性损益公司仍能触发警示",
+      "acceptance": "evaluate.ts --code 300502 不再输出一次性损益失真警告（或输出基于非经常性明细的准确判断）",
+      "fingerprint": "9b27a44cdc5b1320f507",
+      "canonicalTargetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "status": "rejected",
+      "taskIds": [
+        "deep-dive-天孚通信-20260817-4f2a",
+        "deep-dive-新易盛-20260817-3f9a"
+      ],
+      "occurrenceCount": 2,
+      "highestSeverity": "medium",
+      "firstSeenAt": "2026-08-17T03:28:42.552Z",
+      "lastSeenAt": "2026-08-17T04:00:06.015Z",
+      "batchIds": [
+        "20260817-batch-005"
+      ]
+    },
+    {
+      "problemCode": "fetch-source-report-truncation",
+      "targetKind": "script",
+      "targetPath": ".trae/skills/research-web-search/scripts/fetch-source.ts",
+      "symptom": "fetch-source.ts 抓取东财研报正文仅输出『前 3000 字符』readability 截断摘要，盈利预测明细表/估值表/完整风险提示等后文丢失；本次 4 篇研报（东吴×2/太平洋/国元）均被截断，document-reader 需回 PDF 源或在研报详情页补全，影响研报证据完整性",
+      "evidence": [
+        {
+          "grade": "C",
+          "detail": "2026-08-17 fetch-source.ts 抓取 4 篇东财研报（AP202607191827116037 等）输出均标注『正文摘要（前 3000 字符，提取方式: readability）』，东吴 2026-07-20 研报的完整盈利预测/估值表与风险提示细节无法从摘要获取，仅靠摘要中已有数字；单任务单次观察，未完全归因（可能为脚本固定截断或东财页面结构）",
+          "taskId": "deep-dive-天孚通信-20260817-4f2a"
+        }
+      ],
+      "rootCauseHypothesis": "fetch-source.ts 对研报类来源默认输出前 3000 字符摘要，未提供『全文/分段』输出选项或对东财研报详情页的适配；研报后文（估值表/盈利预测明细）对 document-reader 是必需证据",
+      "goal": "fetch-source.ts 支持 --full 全文输出或按章节分段输出，研报类来源默认输出完整正文；或文档提示截断限制",
+      "severity": "low",
+      "confidence": 0.6,
+      "benefit": "研报证据完整性提升，减少 document-reader 需二次回源补全的成本",
+      "risk": "全文输出增加 token 消耗，需平衡",
+      "acceptance": "fetch-source.ts 对研报来源可输出完整正文（或明确的分段获取方式）",
+      "fingerprint": "f54e6a8851d7c31805aa",
+      "canonicalTargetPath": ".trae/skills/research-web-search/scripts/fetch-source.ts",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-天孚通信-20260817-4f2a"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "low",
+      "firstSeenAt": "2026-08-17T03:28:42.552Z",
+      "lastSeenAt": "2026-08-17T03:28:42.552Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "quality-screen-growth-valuation-bias",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "quality-screen 估值维度按 PE 绝对值区间评分（PE>50→2 分），高 PE 高增长成长股系统性低分；PE>40 黄牌已带 hasHighGrowth 豁免，但评分逻辑仍未调整；与 investment-checklist-auto 高增长豁免规则不一致；新易盛/天孚通信实例已验证",
+      "evidence": [
+        {
+          "grade": "C",
+          "detail": "2026-08-17 quality-screen.ts --mode report 对天孚通信输出估值维度 2/10（PE-TTM 142.99 >40），综合 6.5/10 YELLOW，唯一黄牌级拖累为估值；同任务 investment-checklist-auto.ts #31『PE>40 无高增长』判定为通过（净利 +50.1% ≥25% 高增长豁免），两套评分逻辑不一致；单次观察，未跨任务确认",
+          "taskId": "deep-dive-天孚通信-20260817-4f2a"
+        },
+        {
+          "grade": "C",
+          "detail": "2026-08-17 quality-screen.ts --mode report 对新易盛输出估值维度 2/10（PE-TTM 58.22 >40），综合 6.2/10 YELLOW，估值维度为综合分主要拖累；同任务 investment-checklist-auto.ts #31『PE>40 无高增长』判定为通过（净利 +235.9% ≥25% 高增长豁免），两套评分逻辑不一致；与天孚通信（deep-dive-天孚通信-20260817-4f2a 估值维度 2/10 同型）跨任务复现",
+          "taskId": "deep-dive-新易盛-20260817-3f9a"
+        },
+        {
+          "grade": "C",
+          "detail": "2026-08-17 quality-screen.ts --mode report 对天孚通信输出估值维度 2/10（PE-TTM 142.99 >40），综合 6.5/10 YELLOW，唯一黄牌级拖累为估值；同任务 investment-checklist-auto.ts #31『PE>40 无高增长』判定为通过（净利 +50.1% ≥25% 高增长豁免），两套评分逻辑不一致",
+          "taskId": "process-optimize-peg-valuation-20260817-d4f3"
+        },
+        {
+          "grade": "C",
+          "detail": "2026-08-17 quality-screen.ts --mode report 对新易盛输出估值维度 2/10（PE-TTM 58.22 >40），综合 6.2/10 YELLOW，估值维度为综合分主要拖累；同任务 investment-checklist-auto.ts #31『PE>40 无高增长』判定为通过（净利 +235.9% ≥25% 高增长豁免），两套评分逻辑不一致；与天孚通信跨任务复现",
+          "taskId": "process-optimize-peg-valuation-20260817-d4f3"
+        },
+        {
+          "grade": "A",
+          "detail": "用户 2026-08-17 要求改进成长股估值评分，本问题为既有 candidate，与本次 PEG 增强目标一致，合并入本批次",
+          "taskId": "process-optimize-peg-valuation-20260817-d4f3"
+        }
+      ],
+      "rootCauseHypothesis": "估值维度评分仅按 PE 绝对值区间，未结合增速/PEG 判断成长股合理性，导致高 PE 高成长优质成长股被系统性低估评分",
+      "goal": "quality-screen 估值维度评分：命中高成长（earningsGrowth≥25%）或 --peg<1.5 时不再机械低分，改按 PEG 分档评分（PEG<1→9 / 1-1.5→7 / 1.5-2→5 / >2→3），与 PE>40 黄牌 hasHighGrowth 豁免规则对齐；报告输出注明估值模型（按品种）",
+      "severity": "low",
+      "confidence": 0.8,
+      "benefit": "成长股质量筛查结论更贴近业务实质，减少人工修正成本，与投资清单自动规则一致",
+      "risk": "PEG<1.5 豁免阈值设计需避免过度放宽，保留高 PEG 低分机制",
+      "acceptance": "PE>40 但净利增速≥25%（或 PEG<1.5）的成长股估值维度不再机械给 0-2 分，评分逻辑与 investment-checklist-auto 对齐",
+      "fingerprint": "12f5f399491adf7f0623",
+      "canonicalTargetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "status": "verified",
+      "taskIds": [
+        "deep-dive-天孚通信-20260817-4f2a",
+        "deep-dive-新易盛-20260817-3f9a",
+        "process-optimize-peg-valuation-20260817-d4f3"
+      ],
+      "occurrenceCount": 3,
+      "highestSeverity": "low",
+      "firstSeenAt": "2026-08-17T03:28:42.552Z",
+      "lastSeenAt": "2026-08-17T10:17:30.256Z",
+      "batchIds": [
+        "20260817-batch-005",
+        "20260817-batch-005-approved"
+      ]
+    },
+    {
+      "problemCode": "investment-checklist-interest-debt-parse-gap",
+      "targetKind": "script",
+      "targetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "symptom": "checklist-auto #28『有息负债/OCF 流动性红线』对零有息负债公司无法自动解析：报告/笔记明确『短期借款 0、长期借款 0』，但正则仅匹配『有息负债』+数字，未识别『0/无/不存在』语境，输出『未解析到有息负债/经营现金流金额，需人工核验』，实际比值≈0 无风险",
+      "evidence": [
+        {
+          "grade": "C",
+          "detail": "2026-08-17 investment-checklist-auto.ts 扫描新易盛报告+笔记输出 #28『未解析到有息负债/经营现金流金额，需人工核验有息负债÷OCF 比值（>5 为红线）』，而笔记明确零有息负债（短期借款 0、长期借款 0、货币资金 81.56 亿），人工核验比值≈0；单任务单次观察，未跨任务确认",
+          "taskId": "deep-dive-新易盛-20260817-3f9a"
+        }
+      ],
+      "rootCauseHypothesis": "investment-checklist-auto.ts #28 的正则解析要求『有息负债』后紧跟数字金额，未覆盖『0/无/不存在』等零负债表述，对零负债优质公司产生不必要的待人工核验标记",
+      "goal": "checklist-auto #28 支持零有息负债表述识别（0/无/不存在/无有息负债），零负债公司直接判定通过",
+      "severity": "low",
+      "confidence": 0.5,
+      "benefit": "减少零负债公司的无效人工核验标记，输出更贴合实际",
+      "risk": "正则改动需避免误判有负债公司为无负债",
+      "acceptance": "checklist-auto 对『零有息负债』表述的公司 #28 直接判定通过（不再要求人工核验）",
+      "fingerprint": "196ef845ece1e002f839",
+      "canonicalTargetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-新易盛-20260817-3f9a"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "low",
+      "firstSeenAt": "2026-08-17T04:00:06.015Z",
+      "lastSeenAt": "2026-08-17T04:00:06.015Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "report-data-cross-check",
+      "targetKind": "process",
+      "targetPath": "deep-dive 流程·步骤 2.4（研报采集与引用）",
+      "symptom": "研报引用的财务数据与年报原文矛盾未被及时识别：太平洋证券 2026-06-21 研报『2025 年经营活动现金流量净额 -11.27 亿元』实为 2026Q1 单季数据（2025 全年 +12.21 亿）；市场/社区据此广泛误传『华工 2025 年经营现金流大幅流出』，document-reader 精读年报后纠正",
+      "evidence": [
+        {
+          "grade": "C",
+          "detail": "2026-08-17 华工科技 deep-dive：太平洋研报与空方观点文件（雪球/东财）均引用『2025 年经营现金流 -11.27 亿』；document-reader 核对 2025 年报现金流量表原文（+12.21 亿，+66.83%）确认系 2026Q1 单季数据误传，已在 deep-read 10.2/10.4 与公司笔记中显式纠正。单次观察，未见系统拦截机制",
+          "taskId": "deep-dive-华工科技-20260817-7226"
+        }
+      ],
+      "rootCauseHypothesis": "研报为二手信息，引用现金流/同比等关键财务数据时可能张冠李戴（跨期错位）；当前流程依赖 document-reader 精读时人工核对，无强制交叉校验要求或机制",
+      "goal": "在 document-reader 提示词/自检中强化『研报引用的关键财务数据（OCF/净利/同比/库存）必须与年报原文核对，发现矛盾显式标注纠正』要求；研报集采集时对关键数据标注『待年报核对』",
+      "severity": "medium",
+      "confidence": 0.5,
+      "benefit": "减少二手数据误传对多空论证与报告结论的污染；本次已人工纠正，需制度化",
+      "risk": "增加精读工作量；核对规则需避免过度怀疑导致研报价值打折",
+      "acceptance": "deep-read/processed 中研报引用的关键财务数据均标注年报核对状态；发现矛盾时显式记录纠正",
+      "fingerprint": "1e47bab1ca52ea5cec60",
+      "canonicalTargetPath": "deep-dive 流程·步骤 2.4（研报采集与引用）",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-华工科技-20260817-7226"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "medium",
+      "firstSeenAt": "2026-08-17T04:01:51.877Z",
+      "lastSeenAt": "2026-08-17T04:01:51.877Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "checklist-auto-growth-column-misread",
+      "targetKind": "script",
+      "targetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "symptom": "同一公司两次扫描结果不一致：第一版（以 deep-read 文件作第二参数）将净利增速提取为 2.9%（实际 1088.6%），导致 #31『PE>40 无高增长』误判 ❌（实际应 ✅）且 #29 说明列错误；知识节点入库后重跑提取 1088.6% 才正确",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "2026-08-17 investment-checklist-auto.ts 对利通电子报告+deep-read 第一版输出『净利=2.9%』判 #31 ❌、#29 误标；公司笔记入库后以报告+笔记重跑输出『净利=1088.6%』判 #31 ✅，两次运行结果差异由表格列匹配误差导致",
+          "taskId": "deep-dive-利通电子-20260817-k7x2"
+        }
+      ],
+      "rootCauseHypothesis": "扫描器按表格行列正则提取增速字段，deep-read 与公司笔记的表格行结构不同（匹配到净利数值行而非增速行），缺乏跨文件结构健壮的列头校验",
+      "goal": "AUTO 扫描增速字段提取增加列头校验与数值合理性校验（增速方向/量级与上下文不符时提示人工核对），保证不同输入文件结构下结果一致",
+      "severity": "medium",
+      "confidence": 0.85,
+      "benefit": "50 项投资决策清单 AUTO 结论跨输入文件结构的一致性，减少误判与人工核验成本",
+      "risk": "校验规则过严可能漏检真实数据，需测试覆盖",
+      "acceptance": "同一报告以任意输入文件扫描，增速与 PE 相关项（#29/#31）结论一致且与事实相符",
+      "fingerprint": "f5f36266252f7ce254a8",
+      "canonicalTargetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-利通电子-20260817-k7x2"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "medium",
+      "firstSeenAt": "2026-08-17T04:11:55.053Z",
+      "lastSeenAt": "2026-08-17T04:11:55.053Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "quality-screen-debt-metric-period-mismatch",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "auto 模式传 2026Q1 资产负债率 75.1%（红牌『超 70%』）与 report 模式从笔记 frontmatter financials 提取 2025FY 69.0%（黄牌『60-70% 偏高』）综合评分不同（1.5 vs 0.5），最新季度财务恶化无法在筛查评分中反映",
+      "evidence": [
+        {
+          "grade": "B",
+          "detail": "2026-08-17 利通电子两次 quality-screen：auto 模式（--debt 75.1，2026Q1 口径）综合 1.5/10 RED；report 模式从笔记 financials 提取 69.0%（2025FY 口径）判黄牌、综合 0.5/10；两口径均 RED 但评分与红牌条目不同，knowledge-architect 已在笔记中人工记录口径说明",
+          "taskId": "deep-dive-利通电子-20260817-k7x2"
+        }
+      ],
+      "rootCauseHypothesis": "frontmatter financials 块按年报口径生成（backfill 规则），无最新季度数据通道；quality-screen 无季报数据源，无法感知季度间财务恶化（本次为杠杆与存货恶化）",
+      "goal": "quality-screen 或笔记 frontmatter 支持标注『最新季度财务变化』（如 research_cutoff 外的 quarter snapshot），或在筛查输出中显式标注口径时点",
+      "severity": "low",
+      "confidence": 0.6,
+      "benefit": "质量筛查时效性与口径透明度提升",
+      "risk": "引入季报快照字段需同步 backfill/解析/前端链路",
+      "acceptance": "公司笔记或筛查输出能显式呈现最新季度关键财务（负债率等）与报告期口径的差异",
+      "fingerprint": "95ea4743e0e7c3f72a68",
+      "canonicalTargetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-利通电子-20260817-k7x2"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "low",
+      "firstSeenAt": "2026-08-17T04:11:55.053Z",
+      "lastSeenAt": "2026-08-17T04:11:55.053Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "deep-dive-report-html-missing",
+      "targetKind": "process",
+      "targetPath": "deep-dive 流程·步骤 7（报告生成）",
+      "symptom": "deep-dive 命令步骤 7 仅定义 Markdown 报告路径（company-deep-dive-template），未产出 HTML 版本，与 AGENTS.md『报告输出 md + html 双份』交付质量标准不一致；本次 deep-dive 报告仅 md 交付",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "AGENTS.md『交付质量检查-基础质量』要求『报告输出 md + html 双份（HTML 独立编写、图表 ECharts CDN）』；deep-dive 命令产物清单仅含 YYYY-MM-DD-<公司名>-deep-dive-report.md，本次实际产出亦仅 md",
+          "taskId": "deep-dive-利通电子-20260817-k7x2"
+        }
+      ],
+      "rootCauseHypothesis": "deep-dive.md 命令文档与 AGENTS.md 全局交付标准未对齐（deep-dive 为单公司简版，模板无 HTML 要求）；HTML 构建或在 /research 完整流程的 report-writer 中执行，deep-dive 未纳入",
+      "goal": "明确 deep-dive 报告是否需要 HTML：如需则在命令/模板中补 HTML 步骤；如豁免则在 AGENTS.md 交付检查中为 deep-dive 标注例外，避免交付口径冲突",
+      "severity": "low",
+      "confidence": 0.8,
+      "benefit": "交付口径一致，避免编排器与全局质量标准冲突",
+      "risk": "命令与 AGENTS.md 修改需用户批准（批次治理边界）",
+      "acceptance": "deep-dive 命令文档或 AGENTS.md 交付检查显式说明单公司简版报告的 HTML 要求或豁免",
+      "fingerprint": "5fa704bcbc96012f7de5",
+      "canonicalTargetPath": "deep-dive 流程·步骤 7（报告生成）",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-利通电子-20260817-k7x2"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "low",
+      "firstSeenAt": "2026-08-17T04:11:55.053Z",
+      "lastSeenAt": "2026-08-17T04:11:55.053Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "quality-screen-report-growth-misparse",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "quality-screen --mode report 对扭亏公司误判净利同比：思瑞浦 2025 年归母净利 -1.97→+1.73 亿（扭亏，无合理同比），financials 块未提供 net_profit_yoy 时，脚本经财务表『归母净利润』行以 growth 模式将 2025 列主数值 1.73 解析为净利同比 173.00%，输出『净利增长 173.0%』绿牌，成长性维度失真",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "2026-08-17 quality-screen.ts --mode report --file 思瑞浦草稿：首次 financials.net_profit_yoy=0.0 输出净利同比 0.00%（成长 6 分）；删除该字段后改从财务表『归母净利润（亿元）| -0.35 | -1.97 | 1.73 | V 型扭亏』行按 growth 模式提取主数值 1.73 得 173.00%，误标『净利增长 173.0%，利润增长强劲』绿牌；两次运行均未反映扭亏无同比的事实（parseCellValue 在 preferGrowth 时无括号同比则回退主数值）",
+          "taskId": "deep-dive-思瑞浦-20260817-8472"
+        }
+      ],
+      "rootCauseHypothesis": "quality-screen report 模式 parseCellValue 在 preferGrowth=true 且单元格无括号同比时回退取主数值，将绝对数值当同比百分比；扭亏/亏损转正公司无合理净利同比，脚本未对此类口径显式拦截",
+      "goal": "growth 字段提取仅接受括号内同比或带 % 数值，无同比时置 null 并标注『扭亏/无同比』；避免把归母净利绝对值 1.73 解析为 173%",
+      "severity": "medium",
+      "confidence": 0.85,
+      "benefit": "扭亏/亏损转正公司的质量筛查成长性维度不再失真，绿牌/黄牌判定可信",
+      "risk": "改动集中在 parseCellValue/tableValue 取值逻辑，需回归常规公司（有同比的）筛查",
+      "acceptance": "quality-screen --mode report 对无 net_profit_yoy 的扭亏公司输出『净利同比：N/A（扭亏）』而非 173.00%",
+      "fingerprint": "b7dbabe2b569712b663d",
+      "canonicalTargetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-思瑞浦-20260817-8472"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "medium",
+      "firstSeenAt": "2026-08-17T08:15:17.995Z",
+      "lastSeenAt": "2026-08-17T08:15:17.995Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "valuation-routing-by-type",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "symptom": "evaluate.ts 现有估值方法路由表仅包含金融/周期/资源/控股集团/一般工商 5 类，缺少高成长（growth）与亏损（lossmaking）品类；自动判定逻辑缺失；PEG 仅采用单年净利同比口径，未优先使用预测期增速（--forward-growth），易受一次性损益/周期波动扭曲，影响成长股估值合理性",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "用户 2026-08-17 明确要求引入 PEG 估值方式并按品种路由估值模型，此需求为功能增强请求，直接需求",
+          "taskId": "process-optimize-peg-valuation-20260817-d4f3"
+        }
+      ],
+      "rootCauseHypothesis": "evaluate.ts 路由表设计较早，未覆盖高成长与亏损两类典型标的；PEG 设计时未考虑预测期增速优先需求",
+      "goal": "扩展 evaluate.ts 企业类型路由表至 7 类（financial/cyclical/resource/conglomerate/growth/general/lossmaking）；添加自动判定逻辑；PEG 计算口径改为「显式 --forward-growth 优先 → 单年同比回退（受 suspiciousYoy/oneshot 守卫）」；估值快照与目标价指引按品种输出主估值锚",
+      "severity": "high",
+      "confidence": 1,
+      "benefit": "高成长公司估值更合理（PEG 匹配成长价值创造机制），亏损企业有匹配估值路径，覆盖全市场主要类型",
+      "risk": "自动判定逻辑需边界测试，新增类型不影响既有手动 --type 指定",
+      "acceptance": "7 类完整路由表，PEG 计算优先 --forward-growth，兼容既有用法，输出清晰标注品种与主估值锚",
+      "fingerprint": "3ac36c6df13f7fe2babb",
+      "canonicalTargetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "status": "verified",
+      "taskIds": [
+        "process-optimize-peg-valuation-20260817-d4f3"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "high",
+      "firstSeenAt": "2026-08-17T10:17:30.256Z",
+      "lastSeenAt": "2026-08-17T10:17:30.256Z",
+      "batchIds": [
+        "20260817-batch-005",
+        "20260817-batch-005-approved"
+      ]
+    },
+    {
+      "problemCode": "peg-fields-template",
+      "targetKind": "template",
+      "targetPath": "Research/99-Templates/company-template.md",
+      "symptom": "公司笔记 frontmatter 无 valuation_type（品种分类）与 peg 结构化字段，导致 valuation-tracker 无法解析与展示品种分类与 PEG 估值数据",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "用户 2026-08-17 要求全链路落地分品种估值，模板需新增对应 frontmatter 字段",
+          "taskId": "process-optimize-peg-valuation-20260817-d4f3"
+        }
+      ],
+      "rootCauseHypothesis": "模板设计早于品种分类与 PEG 增强需求，未预留对应字段",
+      "goal": "在 forward_pe 紧邻后新增 valuation_type（品种枚举）与 peg（值/增速口径/基准期）frontmatter 字段，格式与 forward_pe 一致",
+      "severity": "high",
+      "confidence": 1,
+      "benefit": "新品种信息能通过 backfill 回填并被 valuation-tracker 消费，全链路一致",
+      "risk": "增量字段不影响既有笔记，backfill 会跳过已存在字段（人工维护优先）",
+      "acceptance": "模板 frontmatter 包含 valuation_type 与 peg 两级字段，注释说明枚举值与用途",
+      "fingerprint": "5d524b26407a810923b0",
+      "canonicalTargetPath": "Research/99-Templates/company-template.md",
+      "status": "verified",
+      "taskIds": [
+        "process-optimize-peg-valuation-20260817-d4f3"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "high",
+      "firstSeenAt": "2026-08-17T10:17:30.256Z",
+      "lastSeenAt": "2026-08-17T10:17:30.256Z",
+      "batchIds": [
+        "20260817-batch-005",
+        "20260817-batch-005-approved"
+      ]
+    },
+    {
+      "problemCode": "peg-fields-backfill",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/valuation/backfill.ts",
+      "symptom": "backfill.ts 无 valuation_type 与 peg 字段的解析/回填逻辑，新建笔记模板虽有字段，但存量笔记无法批量回填，新增公司需人工填写",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "backfill 需为 valuation-tracker 回填所有结构化字段，新字段缺失回填逻辑",
+          "taskId": "process-optimize-peg-valuation-20260817-d4f3"
+        }
+      ],
+      "rootCauseHypothesis": "backfill 设计早于新品种与 PEG 字段，未包含对应逻辑",
+      "goal": "backfill.ts 新增解析/回填逻辑：解析 valuation_type（默认 general，financials.net_profit_yoy≥25 提示 growth）；回填 peg：仅当 frontmatter 已有 forward_pe.value + base_net_profit_yi 且 financials.net_profit_yi 可用时，隐含增速 = base_net_profit_yi / net_profit_yi − 1，peg = forward_pe.value ÷ (隐含增速 × 100)；增速≤0 或无数据时跳过；peg/valuation_type 加入 skipExistingKeys（人工维护优先）",
+      "severity": "high",
+      "confidence": 0.9,
+      "benefit": "存量笔记可通过 backfill 自动补全 peg/valuation_type，减少人工填写工作量",
+      "risk": "计算逻辑仅为起步参考，最终仍需人工确认，不覆盖已有值",
+      "acceptance": "backfill 能自动回填 peg 与 valuation_type 且不覆盖人工填写的值，兼容既有笔记",
+      "fingerprint": "dd8bbba276360b06d0cb",
+      "canonicalTargetPath": ".trae/scripts/valuation/backfill.ts",
+      "status": "verified",
+      "taskIds": [
+        "process-optimize-peg-valuation-20260817-d4f3"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "high",
+      "firstSeenAt": "2026-08-17T10:17:30.256Z",
+      "lastSeenAt": "2026-08-17T10:17:30.256Z",
+      "batchIds": [
+        "20260817-batch-005",
+        "20260817-batch-005-approved"
+      ]
+    },
+    {
+      "problemCode": "peg-tracker-server-parse",
+      "targetKind": "script",
+      "targetPath": "valuation-tracker/server/lib/research.ts",
+      "symptom": "valuation-tracker server 端解析公司笔记 frontmatter 不包含 valuationType 与 peg 字段，无法传递给前端展示",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "全链路落地需要 server 解析新字段，否则前端无法消费",
+          "taskId": "process-optimize-peg-valuation-20260817-d4f3"
+        }
+      ],
+      "rootCauseHypothesis": "research.ts 设计早于新字段需求，未包含解析逻辑",
+      "goal": "CompanyNote 类型增加 valuationType（string | undefined）与 peg（{value: number; growthBasis: string; basePeriod: string} | undefined）字段；解析逻辑与 forwardPe 同模式（从 frontmatter 提取）",
+      "severity": "high",
+      "confidence": 1,
+      "benefit": "server 能正确解析新字段并通过 API 返回给前端",
+      "risk": "增量字段不影响既有解析，缺少字段时为 undefined，兼容存量笔记",
+      "acceptance": "解析含新字段的 frontmatter 能正确提取值，不含新字段的存量笔记正常解析",
+      "fingerprint": "db14635b91e37212f9bf",
+      "canonicalTargetPath": "valuation-tracker/server/lib/research.ts",
+      "status": "verified",
+      "taskIds": [
+        "process-optimize-peg-valuation-20260817-d4f3"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "high",
+      "firstSeenAt": "2026-08-17T10:17:30.256Z",
+      "lastSeenAt": "2026-08-17T10:17:30.256Z",
+      "batchIds": [
+        "20260817-batch-005",
+        "20260817-batch-005-approved"
+      ]
+    },
+    {
+      "problemCode": "peg-tracker-frontend-types",
+      "targetKind": "script",
+      "targetPath": "valuation-tracker/lib/api.ts",
+      "symptom": "前端 CompanyItem 类型缺少 valuationType 与 peg 字段，类型不匹配 server 返回",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "全链路类型一致需要前端类型同步新增字段",
+          "taskId": "process-optimize-peg-valuation-20260817-d4f3"
+        }
+      ],
+      "rootCauseHypothesis": "api.ts 类型定义早于新字段需求，未同步更新",
+      "goal": "CompanyItem 类型增加 valuationType 与 peg 字段，与 server 端 CompanyNote 对齐",
+      "severity": "high",
+      "confidence": 1,
+      "benefit": "全链路类型一致，TypeScript 编译无错误",
+      "risk": "增量字段可选（undefined），不影响既有代码",
+      "acceptance": "bunx tsc --noEmit 无类型错误",
+      "fingerprint": "6a183efdb7c85605b426",
+      "canonicalTargetPath": "valuation-tracker/lib/api.ts",
+      "status": "verified",
+      "taskIds": [
+        "process-optimize-peg-valuation-20260817-d4f3"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "high",
+      "firstSeenAt": "2026-08-17T10:17:30.256Z",
+      "lastSeenAt": "2026-08-17T10:17:30.256Z",
+      "batchIds": [
+        "20260817-batch-005",
+        "20260817-batch-005-approved"
+      ]
+    },
+    {
+      "problemCode": "peg-tracker-frontend-display",
+      "targetKind": "component",
+      "targetPath": "valuation-tracker/components/CompanyDashboard.tsx",
+      "symptom": "CompanyDashboard 详情页不展示品种分类与 PEG 值，用户无法在 valuation-tracker 看到新增估值信息",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "前端展示是全链路落地的必要环节，用户需要在看板看到品种与 PEG",
+          "taskId": "process-optimize-peg-valuation-20260817-d4f3"
+        }
+      ],
+      "rootCauseHypothesis": "组件设计早于新字段需求，未包含展示逻辑",
+      "goal": "在 Forward PE 区块旁增加「品种」标签展示 + PEG 值及判读；使用现有 Tailwind 工具类，不新增自定义 CSS；CompareTable 不新增列（避免展示面过度扩散）",
+      "severity": "high",
+      "confidence": 0.9,
+      "benefit": "用户能在估值看板直接看到品种分类与 PEG 值，信息完整",
+      "risk": "布局调整不影响既有展示区块，新增内容在现有区块旁",
+      "acceptance": "品种标签与 PEG 正确展示，样式与现有页面一致，Tailwind 工具类符合项目约定",
+      "fingerprint": "1fd784218db5a90ea6f9",
+      "canonicalTargetPath": "valuation-tracker/components/CompanyDashboard.tsx",
+      "status": "verified",
+      "taskIds": [
+        "process-optimize-peg-valuation-20260817-d4f3"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "high",
+      "firstSeenAt": "2026-08-17T10:17:30.256Z",
+      "lastSeenAt": "2026-08-17T10:17:30.256Z",
+      "batchIds": [
+        "20260817-batch-005",
+        "20260817-batch-005-approved"
+      ]
+    },
+    {
+      "problemCode": "peg-docs-agents",
+      "targetKind": "document",
+      "targetPath": "AGENTS.md",
+      "symptom": "AGENTS.md 共享脚本用法表 evaluate.ts / quality-screen.ts 行未更新 PEG 口径与 --type 7 值说明，用户查阅文档时信息不完整",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "文档需要同步更新新功能说明，保持契约一致",
+          "taskId": "process-optimize-peg-valuation-20260817-d4f3"
+        }
+      ],
+      "rootCauseHypothesis": "文档未同步脚本新增功能",
+      "goal": "AGENTS.md 共享脚本用法表中 evaluate.ts 行补充 PEG 口径与 --type 枚举说明；quality-screen.ts 行补充 --type/--peg 参数说明",
+      "severity": "medium",
+      "confidence": 1,
+      "benefit": "文档与代码实现一致，用户能正确查阅用法",
+      "risk": "仅文档更新，不影响代码运行",
+      "acceptance": "AGENTS.md 包含 PEG 与 --type 新用法说明，与实现一致",
+      "fingerprint": "e20aa9b21a0c938e5a19",
+      "canonicalTargetPath": "AGENTS.md",
+      "status": "observing",
+      "taskIds": [
+        "process-optimize-peg-valuation-20260817-d4f3"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "medium",
+      "firstSeenAt": "2026-08-17T10:17:30.256Z",
+      "lastSeenAt": "2026-08-17T10:17:30.256Z",
+      "batchIds": []
+    }
+  ],
+  "batches": [
+    {
+      "id": "20260816-batch-001",
+      "status": "verified",
+      "itemFingerprints": [
+        "f8e54e1adec09df9e593",
+        "17ed133b9065d252ae4e",
+        "e58395d373320827faa3"
+      ],
+      "allowedPaths": [
+        ".trae/scripts/quality-gate/quality-screen.ts",
+        ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+        ".trae/scripts/file-ingestion/fetch-file.ts"
+      ],
+      "actualPaths": [],
+      "createdAt": "2026-08-16T03:38:18.934Z",
+      "decisionAt": "2026-08-16T03:39:10.968Z",
+      "verificationAt": "2026-08-16T03:55:26.588Z"
+    },
+    {
+      "id": "20260816-batch-002",
+      "status": "verified",
+      "itemFingerprints": [
+        "36a6271497278a374a13",
+        "63ffb68e043801041910",
+        "eda9adbff8be8a32dc97",
+        "8705451a11d6c539f9d5",
+        "c5410c998978fa403abb",
+        "e8a75ac6b1f86f6d2857"
+      ],
+      "allowedPaths": [
+        ".trae/scripts/evaluation/evaluate.ts",
+        "AGENTS.md",
+        ".trae/scripts/quality-gate/quality-screen.ts",
+        ".trae/scripts/stock-data/stock.ts",
+        ".trae/commands/deep-dive.md"
+      ],
+      "actualPaths": [],
+      "createdAt": "2026-08-16T14:42:21.216Z",
+      "decisionAt": "2026-08-16T14:46:25.110Z",
+      "verificationAt": "2026-08-16T14:59:51.985Z"
+    },
+    {
+      "id": "20260816-batch-003",
+      "status": "verified",
+      "itemFingerprints": [
+        "dbc1daf29fbb25a752de",
+        "fc32477b72b5a7a8d669",
+        "a08bf7f809adcbf7d4c5",
+        "72ac4c8e1a1a6dca54e2",
+        "af8dafa04c57f72ed5b0"
+      ],
+      "allowedPaths": [
+        ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+        ".trae/scripts/quality-gate/quality-screen.ts",
+        "Research/99-Templates/company-template.md",
+        "Research/00-Workspace/02-Processing/pdf-texts/鼎泰高科/研报集.md",
+        ".trae/skills/research-web-search"
+      ],
+      "actualPaths": [],
+      "createdAt": "2026-08-16T16:26:54.273Z",
+      "decisionAt": "2026-08-16T16:31:36.172Z",
+      "verificationAt": "2026-08-16T16:40:31.592Z"
+    },
+    {
+      "id": "20260817-batch-004",
+      "status": "verified",
+      "itemFingerprints": [
+        "5b8a3a505d2500160b39",
+        "9409fe756152cb093273",
+        "c796ae8932bb2616726d",
+        "62b6bdd0d3b7e25ab4a3",
+        "72ffcb7c933d9625a3c2"
+      ],
+      "allowedPaths": [
+        ".trae/scripts/evaluation/evaluate.ts",
+        ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+        "deep-dive 流程·步骤 2.4（研报采集）",
+        ".trae/scripts/file-ingestion/fetch-file.ts",
+        "AGENTS.md"
+      ],
+      "actualPaths": [],
+      "createdAt": "2026-08-17T02:19:08.002Z",
+      "decisionAt": "2026-08-17T02:20:56.630Z",
+      "verificationAt": "2026-08-17T02:26:42.430Z"
+    },
+    {
+      "id": "20260817-batch-005",
+      "status": "rejected",
+      "itemFingerprints": [
+        "3ac36c6df13f7fe2babb",
+        "5d524b26407a810923b0",
+        "6a183efdb7c85605b426",
+        "db14635b91e37212f9bf",
+        "1fd784218db5a90ea6f9",
+        "dd8bbba276360b06d0cb",
+        "9b27a44cdc5b1320f507",
+        "adbe33c360205997e61d",
+        "12f5f399491adf7f0623",
+        "a5bca3ea394e4ab3421a"
+      ],
+      "allowedPaths": [
+        ".trae/scripts/evaluation/evaluate.ts",
+        "Research/99-Templates/company-template.md",
+        "valuation-tracker/lib/api.ts",
+        "valuation-tracker/server/lib/research.ts",
+        "valuation-tracker/components/CompanyDashboard.tsx",
+        ".trae/scripts/valuation/backfill.ts",
+        ".trae/commands/deep-dive.md",
+        ".trae/scripts/quality-gate/quality-screen.ts",
+        "deep-dive 流程·步骤 4（结构化提取与质量筛查）"
+      ],
+      "actualPaths": [],
+      "createdAt": "2026-08-17T10:17:49.914Z",
+      "decisionAt": "2026-08-17T10:29:38.995Z"
+    },
+    {
+      "id": "20260817-batch-005-approved",
+      "status": "verified",
+      "itemFingerprints": [
+        "3ac36c6df13f7fe2babb",
+        "5d524b26407a810923b0",
+        "dd8bbba276360b06d0cb",
+        "db14635b91e37212f9bf",
+        "6a183efdb7c85605b426",
+        "1fd784218db5a90ea6f9",
+        "12f5f399491adf7f0623"
+      ],
+      "allowedPaths": [
+        ".trae/scripts/quality-gate/quality-screen.ts",
+        ".trae/scripts/evaluation/evaluate.ts",
+        "Research/99-Templates/company-template.md",
+        ".trae/scripts/valuation/backfill.ts",
+        "valuation-tracker/server/lib/research.ts",
+        "valuation-tracker/lib/api.ts",
+        "valuation-tracker/components/CompanyDashboard.tsx"
+      ],
+      "actualPaths": [],
+      "parentBatchId": "20260817-batch-005",
+      "createdAt": "2026-08-17T10:29:38.995Z",
+      "decisionAt": "2026-08-17T10:29:38.995Z",
+      "verificationAt": "2026-08-17T11:01:52.391Z"
+    }
+  ]
+}

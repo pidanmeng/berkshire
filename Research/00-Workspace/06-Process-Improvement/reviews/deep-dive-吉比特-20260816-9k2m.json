@@ -1,0 +1,89 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "deep-dive-吉比特-20260816-9k2m",
+  "origin": "process-improvement",
+  "command": "deep-dive 吉比特",
+  "status": "success",
+  "issues": [
+    {
+      "problemCode": "evaluate-ttm-yoy-anomaly",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "symptom": "evaluate.ts 输出的同比增速字段异常：营收同比 6788.94%、净利同比 8982.21%、ROE 33.27%（单期/最新值口径），与财报原文（2025FY 营收 +67.89%、归母 +89.80%）严重不符；同时 Forward PE 计算行引用该异常增速（(1+8982%) 递推预测期净利），若编排器/下游脚本未人工核对易导致预测净利与目标市值系统性失真",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-16 运行 evaluate.ts --code 603444 输出『营收同比 6788.94% / 净利同比 8982.21%』，与 2025 年报原文（营收 62.05 亿 +67.89%、归母 17.94 亿 +89.80%，毕马威审计）及 28 家券商一致预期（2026E +7.67%）矛盾；本次已由 document-reader 用年报原文核对后修正，未污染下游产物", "taskId": "deep-dive-吉比特-20260816-9k2m" }
+      ],
+      "rootCauseHypothesis": "hithink API 单期数据接口返回的同比基准期或 TTM 拼接口径异常（疑似最新单季数据与上年同期的错位或单位错误），evaluate.ts 未对同比字段做合理性校验（|同比|>500% 未告警），直接透传至输出",
+      "goal": "evaluate.ts 对同比类字段增加合理性校验（如 |同比|>300% 时标注『数据存疑，请以财报原文核对』）；Forward PE 计算禁用异常同比递推",
+      "severity": "medium",
+      "confidence": 0.9,
+      "benefit": "避免异常同比数据误导下游估值计算与报告引用；减少编排器人工核对成本",
+      "risk": "修改需回归 evaluate.ts 全部输出段落，确认不影响正常同比展示",
+      "acceptance": "对 603444 运行 evaluate.ts 输出营收同比≈+67.89%、净利同比≈+89.80% 或显式标注数据存疑"
+    },
+    {
+      "problemCode": "stock-category-filter-noop",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/stock-data/stock.ts",
+      "symptom": "stock.ts --announcements --category yjyg 过滤业绩预告类别未生效：指定类别 yjyg（业绩预告）后仍返回全部 254 条公告（含董事会规则、信息披露管理办法等无关项），需人工从全量列表中筛选业绩预增公告，增加采集阶段人工成本",
+      "evidence": [
+        { "grade": "C", "detail": "2026-08-16 运行 stock.ts --code 603444 --announcements --category yjyg --days 900，输出 254 条未按类别过滤（包含『董事会提名委员会工作规则』『信息披露管理办法』等非 yjyg 公告）；本次通过人工定位 2026-07-14/2026-04-14 两条业绩预增公告", "taskId": "deep-dive-吉比特-20260816-9k2m" }
+      ],
+      "rootCauseHypothesis": "巨潮公告类别映射（category 参数 → 公告类别代码）可能未匹配 yjyg，或过滤在 API 响应组装后未生效；需复现确认是参数映射缺失还是过滤逻辑未执行",
+      "goal": "修复 stock.ts --category 过滤逻辑，使指定类别只返回该类公告；补充单测",
+      "severity": "low",
+      "confidence": 0.6,
+      "benefit": "公告采集阶段减少无关结果干扰，提升阶段效率",
+      "risk": "category 映射表改动可能影响其他类别过滤",
+      "acceptance": "对 603444 运行 --category yjyg 仅返回业绩预告类公告"
+    },
+    {
+      "problemCode": "orchestrator-dir-number-conflict",
+      "targetKind": "command",
+      "targetPath": "AGENTS.md",
+      "symptom": "编排器为知识库新行业目录分配编号时未先核查目录占用：任务上下文指定 05-游戏，但 05-医药生物 已占用（且 04 已被多次复用），knowledge-architect 运行时才发现冲突并自主改至 08-游戏，导致知识库目录编号与编排器认知不一致",
+      "evidence": [
+        { "grade": "C", "detail": "2026-08-16 deep-dive 吉比特 执行时，编排器指示写入 Research/10-Knowledge/05-游戏/，knowledge-architect 发现 05-医药生物 已存在（04 目录亦已复用三次），自主改用 08-游戏 并写入三份产物；最终知识库存在 04-电子/04-新材料/04-玻纤/05-医药生物/08-游戏 编号不连续", "taskId": "deep-dive-吉比特-20260816-9k2m" }
+      ],
+      "rootCauseHypothesis": "AGENTS.md 未定义行业目录编号分配规则（新增行业时如何编号），编排器凭现有 LS 快照推断编号，与磁盘实际目录脱节",
+      "goal": "在 AGENTS.md 目录约定中补充『新增一级行业目录编号规则』（如：取最大现存编号+1，或由 knowledge-architect 按磁盘实际分配并回报），并在编排器提示词中要求写入前核查目录占用",
+      "severity": "low",
+      "confidence": 0.7,
+      "benefit": "避免目录编号冲突与『指定路径 vs 实际路径』偏差，减少子任务自主决策偏差",
+      "risk": "仅文档与提示词变更，无代码风险",
+      "acceptance": "后续新增行业任务不再出现编号冲突"
+    },
+    {
+      "problemCode": "fetch-file-ocr-first-pass-fail",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/file-ingestion/fetch-file.ts",
+      "symptom": "fetch-file.ts 首次处理年报类 PDF 时因 1 个扫描封面页触发『PDF 需要 OCR』退出码 4，需人工重跑加 --allow-ocr-pages 才降级产出；流程体验上『年报下载必失败一次』，且失败 PDF 残留 failed/ 目录需清理",
+      "evidence": [
+        { "grade": "C", "detail": "2026-08-16 批量下载吉比特 2023/2024/2025 年报与 2026H1 中报，4 份首传全部因 1 页 OCR 失败（退出码 4），重跑加 --allow-ocr-pages 后成功；failed/ 目录残留 4 份原始 PDF", "taskId": "deep-dive-吉比特-20260816-9k2m" }
+      ],
+      "rootCauseHypothesis": "脚本默认策略对含 OCR 页的 PDF 直接失败，虽提供 --allow-ocr-pages 降级但未对『OCR 页占比 ≤5%』的常见年报场景自动降级；属设计取舍而非 bug",
+      "goal": "评估将 OCR 页占比 ≤5% 且无可用正文的情况改为默认降级（保留告警），或在 AGENTS.md 采集说明中注明『年报类 PDF 需附带 --allow-ocr-pages』以消除首传失败",
+      "severity": "low",
+      "confidence": 0.6,
+      "benefit": "减少采集阶段重复执行次数与 failed 目录残留",
+      "risk": "自动降级可能掩盖真实 OCR 异常页（占比 >5% 仍失败不受影响）",
+      "acceptance": "年报 PDF 单次调用即可产出 Markdown 或明确提示"
+    },
+    {
+      "problemCode": "deep-read-raw-source-dangling-link",
+      "targetKind": "command",
+      "targetPath": "AGENTS.md",
+      "symptom": "deep-dive 流程不产生 raw 文件（01-Inbox 为空），但 document-reader/info-alchemist 的 frontmatter 模板仍引用 [[YYYY-MM-DD-主题-raw]] 双链，导致知识库出现指向不存在文件的悬空链接",
+      "evidence": [
+        { "grade": "C", "detail": "2026-08-16 deep-dive 吉比特：info-alchemist 汇报 raw 文件缺失（01-Inbox 目录为空），processed frontmatter 按惯例保留 [[2026-08-16-吉比特-raw]] 双链形成悬空链接；deep-dive 命令流程步骤 1-8 确实不含 InfoHunter/raw 产出阶段", "taskId": "deep-dive-吉比特-20260816-9k2m" }
+      ],
+      "rootCauseHypothesis": "deep-dive 命令复用标准流程的 frontmatter 模板（raw_source 必填），但命令本身跳过 Phase 1 raw 文件产出，模板未按命令类型差异化",
+      "goal": "deep-dive 流程的 frontmatter 模板允许 raw_source 置空或链接 pdf_texts 目录，避免悬空双链",
+      "severity": "low",
+      "confidence": 0.5,
+      "benefit": "消除知识库断链告警，提高图谱整洁度",
+      "risk": "无",
+      "acceptance": "吉比特相关笔记无指向不存在 raw 文件的断链"
+    }
+  ]
+}

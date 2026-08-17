@@ -1,0 +1,24 @@
+{
+  "id": "conv-1785798887987-zeq9yqjf7",
+  "providerId": "opencode",
+  "title": "/research-investment-framework 东山精密",
+  "titleGenerationStatus": "failed",
+  "createdAt": 1785798887987,
+  "updatedAt": 1785799006937,
+  "lastResponseAt": 1785799006937,
+  "sessionId": "ses_036176676ffey50wcJDFeb0pws",
+  "selectedModel": "opencode:opencode/deepseek-v4-flash-free",
+  "providerState": {
+    "databasePath": "C:\\Users\\Administrator.DESKTOP-TOIASJ8\\AppData\\Roaming\\opencode\\opencode.db"
+  },
+  "usage": {
+    "cacheCreationInputTokens": 0,
+    "cacheReadInputTokens": 57856,
+    "contextTokens": 71333,
+    "contextWindow": 200000,
+    "contextWindowIsAuthoritative": true,
+    "inputTokens": 13477,
+    "model": "opencode:opencode/deepseek-v4-flash-free",
+    "percentage": 36
+  }
+}

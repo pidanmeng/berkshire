@@ -1,0 +1,105 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "deep-dive-胜宏科技-20260817-8f3a",
+  "origin": "process-improvement",
+  "command": "deep-dive 胜宏科技",
+  "status": "success",
+  "issues": [
+    {
+      "problemCode": "evaluate-yoy-metric-misparse",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "symptom": "evaluate.ts 输出营收同比 7977.33%、净利同比 27351.63%，与 2025 年报原文（营收 +79.77%、归母 +273.52%、扣非 +277.07%）数量级不符；脚本输出自带『同比存疑』警告并阻止 Forward PE 递推，但字段仍污染下游判断（估值/杜邦/同业对比行）",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-17 运行 evaluate.ts --code 300476 --peer 002463 输出『营收同比 7977.33%』『净利同比 27351.63%』『PE-TTM vs 净利同比 56.67 vs 27351.63%』；document-reader 精读 2025 年报『主要会计数据和财务指标』原文确认 +79.77%/+273.52%/+277.07%；与既有 candidate（deep-dive-中石科技-20260817-cd4f evaluate-yoy-metric-misparse）同根因，跨 2 个 taskId 复现" }
+      ],
+      "rootCauseHypothesis": "evaluate.ts 同比字段来自 hithink API 同比接口（或 TTM 口径拼错），对 2025 年报口径取数错误（数量级放大百倍）；该字段被估值/杜邦/同业行直接消费，属数据源口径问题而非公司业务事实",
+      "goal": "evaluate.ts 同比字段改以年报原文口径核验或显式标注『接口同比存疑，请以财报为准』；下游在同比异常（|同比|>500%）时拦截而非透传",
+      "severity": "high",
+      "confidence": 0.95,
+      "benefit": "估值快照与自动化指标对下游可信，避免误导多空论证与估值判断",
+      "risk": "修改取数逻辑需回归测试其他公司",
+      "acceptance": "evaluate.ts --code 300476 输出营收同比 +79.77%、净利同比 +273.52%（或显式标注数据存疑），不再输出百倍异常值"
+    },
+    {
+      "problemCode": "checklist-auto-threshold-text-misread",
+      "targetKind": "script",
+      "targetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "symptom": "investment-checklist-auto 扫描胜宏科技报告与笔记误报 #28『有息负债/OCF 流动性红线』CRITICAL（关键词命中『短期借款/有息负债』误判债务风险，实际 64.45 亿/46.03 亿=1.40 < 5 未触发红线，且 H 股募资后现金充足），ReportWriter 需人工核验并写入附录说明",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-17 运行 investment-checklist-auto.ts 扫描胜宏科技报告+公司笔记：AUTO 判『⚠️ 有条件放行』且 CRITICAL 1/2 未通过（#28）；人工核验 deep-read 4.5（有息负债 64.45 亿、经营现金流 46.03 亿，比值 1.40）与 2025 年报确认关键词误报；与中石科技 review（deep-dive-中石科技-20260817-cd4f checklist-auto-threshold-text-misread）同型，跨 2 个 taskId 复现" }
+      ],
+      "rootCauseHypothesis": "扫描器按关键词/正则机械匹配：『短期借款/有息负债』出现即触发债务风险判定，未结合现金余额与比值阈值（有息负债/OCF < 5 不触发）做上下文消歧",
+      "goal": "AUTO 扫描对负债类检查项做上下文消歧：区分『关键词出现』与『阈值达标』；有息负债检查结合现金余额与 OCF 比值判定",
+      "severity": "medium",
+      "confidence": 0.85,
+      "benefit": "50 项投资决策清单 AUTO 扫描结论可信度提升，减少 CRITICAL 误判与人工核验成本",
+      "risk": "消歧规则可能漏检真实债务风险，需测试覆盖",
+      "acceptance": "对胜宏科技报告+笔记扫描不再误报 #28；真实高负债低现金公司仍能正确警示"
+    },
+    {
+      "problemCode": "deep-dive-bear-report-coverage-gap",
+      "targetKind": "process",
+      "targetPath": "deep-dive 流程·步骤 2.4（研报采集）",
+      "symptom": "胜宏科技近 365 天 14 篇研报全部为买入/增持（开源/东莞/中邮/中银/太平洋/上海/华安/广发/甬兴/野村等），无看空/谨慎研报；多空论证 Bear Case 依赖 document-reader 从财报原文自建 + 编排器 WebSearch 补充外部观点（雪球空方长文），缺少卖方谨慎视角的研报级外部佐证",
+      "evidence": [
+        { "grade": "C", "detail": "2026-08-17 stock.ts --code 300476 --reports --days 365 返回 14 条研报全部为买入/增持；编排器另以 WebSearch 获取雪球看空观点（2026-06-16『多重压力下的估值回归风险』）与美银研报（看多但含风险提示）作为空方佐证；与既有观察（deep-dive-中石科技-20260817-cd4f deep-dive-bear-report-coverage-gap）同型，跨 2 个 taskId 复现" }
+      ],
+      "rootCauseHypothesis": "A 股研报市场整体偏多（卖方鲜少看空），高景气赛道公司研报全为买入；stock.ts 未提供跨券商（慧博/研报客等）补充检索或『谨慎评级』定向筛选",
+      "goal": "研报采集在卖方看空稀缺时，补充检索中性/谨慎评级或负面观点新闻作为空方外部证据源；多空论证标注『空方研报级佐证缺失，已以外部观点+财报自建补充』",
+      "severity": "medium",
+      "confidence": 0.65,
+      "benefit": "多空论证外部证据链更完整，减少单边依赖",
+      "risk": "增加采集步骤耗时；负面观点信源质量参差需人工甄别",
+      "acceptance": "多空论证空方至少 1 条外部佐证（或显式标注缺失原因与替代路径）"
+    },
+    {
+      "problemCode": "deep-read-raw-source-dangling-link",
+      "targetKind": "command",
+      "targetPath": "AGENTS.md",
+      "symptom": "deep-dive 流程不产生 raw 文件（01-Inbox 为空），但 document-reader 在 deep-read frontmatter 中填写 [[YYYY-MM-DD-公司名-raw]] 双链引用不存在的文件（胜宏科技 deep-read 填了 2026-08-16-胜宏科技-raw.md），形成悬空链接，编排器须手动修正为 pdf_texts 目录",
+      "evidence": [
+        { "grade": "C", "detail": "2026-08-17 检查胜宏科技 deep-read frontmatter 发现 raw_source 指向不存在的 2026-08-16-胜宏科技-raw.md（01-Inbox 无文件），编排器手动改为 pdf_texts 目录路径；与既有观察（deep-dive-吉比特-20260816-9k2m deep-read-raw-source-dangling-link）同型，跨 2 个 taskId 复现" }
+      ],
+      "rootCauseHypothesis": "deep-dive 命令复用标准流程的 frontmatter 模板（raw_source 必填），但命令本身跳过 Phase 1 raw 文件产出，模板未按命令类型差异化",
+      "goal": "deep-dive 流程的 frontmatter 模板允许 raw_source 置空或默认链接 pdf_texts 目录，避免悬空双链",
+      "severity": "low",
+      "confidence": 0.6,
+      "benefit": "消除知识库断链告警，提高图谱整洁度",
+      "risk": "无",
+      "acceptance": "deep-dive 产出笔记无指向不存在 raw 文件的断链"
+    },
+    {
+      "problemCode": "fetch-file-ocr-first-pass-fail",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/file-ingestion/fetch-file.ts",
+      "symptom": "fetch-file.ts 首次处理 2024 年报因 1 个扫描封面页触发『PDF 需要 OCR』退出码 4，需编排器重跑加 --allow-ocr-pages 才降级产出；流程体验上『年报下载首次必失败一次』，且失败 PDF 残留 failed/ 目录需人工清理",
+      "evidence": [
+        { "grade": "C", "detail": "2026-08-17 下载胜宏科技 2024 年报首传因 1 页 OCR 失败（exit 4），加 --allow-ocr-pages 重试成功；failed/ 目录残留 1222949182 原始 PDF，编排器手动 DeleteFile 清理；与既有观察（deep-dive-吉比特-20260816-9k2m fetch-file-ocr-first-pass-fail）同型，跨 2 个 taskId 复现" }
+      ],
+      "rootCauseHypothesis": "脚本默认策略对含 OCR 页的 PDF 直接失败，虽提供 --allow-ocr-pages 降级但未对『OCR 页占比 ≤5%』的常见年报场景自动降级；属设计取舍而非 bug",
+      "goal": "评估将 OCR 页占比 ≤5% 且无可用正文的情况改为默认降级（保留告警），或在 AGENTS.md 采集说明中注明『年报类 PDF 需附带 --allow-ocr-pages』以消除首传失败",
+      "severity": "low",
+      "confidence": 0.65,
+      "benefit": "减少采集阶段重复执行次数与 failed 目录残留",
+      "risk": "自动降级可能掩盖真实 OCR 异常页（占比 >5% 仍失败不受影响）",
+      "acceptance": "年报 PDF 单次调用即可产出 Markdown 或明确提示"
+    },
+    {
+      "problemCode": "quality-screen-interest-coverage-missing",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "symptom": "evaluate.ts 输出『利息覆盖倍数 N/A』（未从财报附注提取利息支出），quality-screen report 模式对应行显示 N/A 黄牌『利息覆盖倍数数据缺失』，扩展排雷（短债占比/货币资金占比等）依赖人工从年报补充，自动化排雷链路存在缺口",
+      "evidence": [
+        { "grade": "C", "detail": "2026-08-17 运行 evaluate.ts --code 300476 输出利息覆盖倍数 N/A；quality-screen report 模式对应黄牌『利息覆盖倍数数据缺失（扩展排雷未覆盖）』；胜宏科技有息负债 64.45 亿、财务费用含利息支出，该字段可由年报附注补齐，属可复现的字段级缺失（单次观察，未完成归因）" }
+      ],
+      "rootCauseHypothesis": "evaluate.ts 的利息覆盖倍数依赖 hithink API 利息支出字段，该字段在 API 返回中缺失或脚本未拼接；quality-screen 无自动补取路径",
+      "goal": "evaluate.ts 补齐利息覆盖倍数（从利息支出附注或 API 备用字段取数），或 quality-screen 对该行显式标注『需年报附注人工补充』而非 N/A 黄牌",
+      "severity": "low",
+      "confidence": 0.5,
+      "benefit": "扩展排雷字段覆盖更完整，减少人工补充成本",
+      "risk": "低，仅影响字段补充逻辑",
+      "acceptance": "evaluate.ts 输出利息覆盖倍数或 quality-screen 明确提示人工补充路径"
+    }
+  ]
+}

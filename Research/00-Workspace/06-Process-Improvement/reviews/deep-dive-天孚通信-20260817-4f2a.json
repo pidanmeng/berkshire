@@ -1,0 +1,105 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "deep-dive-天孚通信-20260817-4f2a",
+  "origin": "process-improvement",
+  "command": "deep-dive 天孚通信",
+  "status": "success",
+  "issues": [
+    {
+      "problemCode": "evaluate-yoy-metric-misparse",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "symptom": "evaluate.ts 输出天孚通信净利同比 5014.76%、营收同比『存疑（接口异常）』，实际 2025 年报营收 +58.79%、归母净利 +50.15%；接口同比字段口径错误，需 document-reader 从年报原文人工纠偏",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-17 evaluate.ts --code 300394 输出营收同比『存疑（接口异常，以年报为准）』与净利同比 5014.76%，明显偏离年报原文（+58.79%/+50.15%）；document-reader 精读 2025 年报『主要会计数据』及 4 篇券商研报交叉确认真实值；与长电科技（deep-dive-长电科技-20260817-7k2m）、中石科技（deep-dive-中石科技-20260817-cd4f）同型，跨任务第三次复现" }
+      ],
+      "rootCauseHypothesis": "evaluate.ts 同比字段来自同花顺 hithink API 同比接口，对 2025 年报口径取数错误；该字段被 quality-screen/估值判断直接消费，属数据源口径问题而非公司业务事实",
+      "goal": "evaluate.ts 同比字段改以年报原文口径核验（或标注接口同比存疑并强制引导以财报为准）；quality-screen 等下游在同比异常（|同比|>500%）时显式拦截而非自动触发一次性损益判定",
+      "severity": "high",
+      "confidence": 0.9,
+      "benefit": "估值快照与自动化质量筛查结论正确性提升，避免误导多空论证与估值判断",
+      "risk": "修改取数逻辑需回归测试其他公司",
+      "acceptance": "evaluate.ts --code 300394 输出营收同比 +58.79%、归母净利同比 +50.15%，且不再输出 5014.76% 类异常值"
+    },
+    {
+      "problemCode": "evaluate-nonrecurring-warning-false-positive",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "symptom": "evaluate.ts 对天孚通信输出『⚠️ 净利可能含大额一次性收入（BD/license-out/资产处置等），PE-TTM 与 PEG 失真，请用正常化盈利』，但 document-reader 精读 2025 年报非经常性损益明细核实归母-扣非差额仅 4081 万元（占归母 2.02%）、政府补助仅占 2.3%，利润 98% 为经常性损益，无一次性暴利——警告由异常同比（5014.76%）误触发，对真实高质量公司造成误导性提示，需 Agent 人工核实后才能排除",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-17 evaluate.ts --code 300394 输出非经常性损益失真警告；document-reader 精读 2025 年报非经常性损益明细（政府补助 4660 万 + 金融资产收益 915 万 - 资产处置 802 万 - 所得税影响 753 万 = 差额 4081 万，占归母 2.02%），判定『无一次性暴利、无补助依赖』，与脚本警告矛盾；警告由同比接口异常（5014.76%）驱动，属误触发" }
+      ],
+      "rootCauseHypothesis": "evaluate.ts 在同比异常（|同比|>500%）时自动追加『大额一次性收入』警示，未区分同比异常的真实原因（接口取数错误 vs 真实一次性损益），导致对利润 98% 经常性的公司产生误报",
+      "goal": "evaluate.ts 的一次性损益警示改为基于非经常性损益明细数据触发（或仅在扣非/归母缺口 >10% 时触发），同比异常单独标注而不直接联动一次性损益判定",
+      "severity": "medium",
+      "confidence": 0.8,
+      "benefit": "减少对高质量盈利公司的误导性估值警示，降低 Agent 人工核验成本",
+      "risk": "改动需保证真实一次性损益公司仍能触发警示",
+      "acceptance": "evaluate.ts --code 300394 不再输出一次性损益失真警告（或输出基于非经常性明细的准确判断）"
+    },
+    {
+      "problemCode": "deep-dive-bear-report-coverage-gap",
+      "targetKind": "process",
+      "targetPath": "deep-dive 流程·步骤 2.4（研报采集）",
+      "symptom": "天孚通信近 365 天 19 篇研报中 17 篇为买入/增持/超预期类，仅 2 篇带谨慎/扰动视角（东吴『业绩短期扰动，看好长期成长趋势』、国元『环比放缓或系缺芯』），无真正看空研报；多空论证 Bear Case 主要依赖 document-reader 自建（估值透支/Fabrinet 单客户依赖/2027 供给释放），缺独立卖方看空观点交叉验证",
+      "evidence": [
+        { "grade": "C", "detail": "2026-08-17 stock.ts --code 300394 --reports 返回 19 条研报，看多 17 条（东吴×5/华鑫×2/开源×2/民生×2/太平洋/山西×2/东莞/华龙/国金），谨慎/扰动 2 条（东吴 2025-11-02、国元 2025-11-01），无看空评级；多空论证空方论点主要由 document-reader 从财报原文+外部行业证据自建；与长电科技 review（deep-dive-长电科技-20260817-7k2m）同型，跨任务复现" }
+      ],
+      "rootCauseHypothesis": "A 股研报市场整体偏多（卖方鲜少看空），stock.ts 未提供跨券商补充检索或『谨慎评级』定向筛选；导致深度调研的多空论证空方缺乏外部佐证",
+      "goal": "研报采集在卖方看空稀缺时，补充检索中性/谨慎评级或负面观点新闻作为空方外部证据源；多空论证标注『空方外部佐证缺失』",
+      "severity": "medium",
+      "confidence": 0.65,
+      "benefit": "多空论证外部证据链更完整，减少单边依赖",
+      "risk": "增加采集步骤耗时；负面观点信源质量参差需人工甄别",
+      "acceptance": "多空论证空方至少 1 条外部佐证（或显式标注缺失原因）"
+    },
+    {
+      "problemCode": "fetch-source-report-truncation",
+      "targetKind": "script",
+      "targetPath": ".trae/skills/research-web-search/scripts/fetch-source.ts",
+      "symptom": "fetch-source.ts 抓取东财研报正文仅输出『前 3000 字符』readability 截断摘要，盈利预测明细表/估值表/完整风险提示等后文丢失；本次 4 篇研报（东吴×2/太平洋/国元）均被截断，document-reader 需回 PDF 源或在研报详情页补全，影响研报证据完整性",
+      "evidence": [
+        { "grade": "C", "detail": "2026-08-17 fetch-source.ts 抓取 4 篇东财研报（AP202607191827116037 等）输出均标注『正文摘要（前 3000 字符，提取方式: readability）』，东吴 2026-07-20 研报的完整盈利预测/估值表与风险提示细节无法从摘要获取，仅靠摘要中已有数字；单任务单次观察，未完全归因（可能为脚本固定截断或东财页面结构）" }
+      ],
+      "rootCauseHypothesis": "fetch-source.ts 对研报类来源默认输出前 3000 字符摘要，未提供『全文/分段』输出选项或对东财研报详情页的适配；研报后文（估值表/盈利预测明细）对 document-reader 是必需证据",
+      "goal": "fetch-source.ts 支持 --full 全文输出或按章节分段输出，研报类来源默认输出完整正文；或文档提示截断限制",
+      "severity": "low",
+      "confidence": 0.6,
+      "benefit": "研报证据完整性提升，减少 document-reader 需二次回源补全的成本",
+      "risk": "全文输出增加 token 消耗，需平衡",
+      "acceptance": "fetch-source.ts 对研报来源可输出完整正文（或明确的分段获取方式）"
+    },
+    {
+      "problemCode": "deep-dive-no-cross-validator",
+      "targetKind": "process",
+      "targetPath": "deep-dive 流程·步骤 4（结构化提取与质量筛查）",
+      "symptom": "deep-dive 命令流程步骤 4 仅含 info-alchemist + quality-screen，无 /research 流程的 Phase 3 cross-validator 阶段；document-reader 提出的 6 条存疑项（2024 应收增速 +82.8% 高于营收、2023 销量口径断裂、缺芯确认时滞、1.6T 市占率第三方数据等）直接透传到 processed/知识笔记与报告，无独立多源交叉验证环节",
+      "evidence": [
+        { "grade": "C", "detail": "2026-08-17 deep-dive 天孚通信执行中，document-reader 回报『存疑项 6 条已交 CrossValidator』（含 2024 应收异常、2023 销量口径断裂、缺芯确认时滞、1.6T 市占率第三方观点置信度≤6 等），但命令流程步骤 4 未定义 cross-validator 阶段，存疑点由 info-alchemist/knowledge-architect/report-writer 直接承接，未独立验证；与长电科技 review（deep-dive-长电科技-20260817-7k2m）同型，跨任务复现" }
+      ],
+      "rootCauseHypothesis": "deep-dive 命令为单公司简版流程，精简了 cross-validator 阶段，但 document-reader 定义仍以『交 CrossValidator』为存疑点出口，二者衔接存在真空",
+      "goal": "deep-dive 命令在步骤 4 明确存疑点处理路径（或由编排器对存疑点做轻量多源核验后放行，或显式标注存疑点未验证）",
+      "severity": "low",
+      "confidence": 0.6,
+      "benefit": "存疑点处理路径清晰，避免『交 CrossValidator』后无承接方",
+      "risk": "轻量核验增加编排器负担",
+      "acceptance": "deep-dive 命令文档明确存疑点承接方与处理规则"
+    },
+    {
+      "problemCode": "quality-screen-growth-valuation-bias",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "quality-screen 估值维度对高 PE 高增长成长股机械低分：天孚通信 PE-TTM 143（>40 触发红牌档）但净利 +50.15% 高增长，估值维度仅 2/10，综合分 6.5/10 YELLOW 的唯一下拉项；checklist-auto #31 已有『PE>40 高增长豁免』规则，quality-screen 无对应豁免，需人工结合增速判断估值合理性",
+      "evidence": [
+        { "grade": "C", "detail": "2026-08-17 quality-screen.ts --mode report 对天孚通信输出估值维度 2/10（PE-TTM 142.99 >40），综合 6.5/10 YELLOW，唯一黄牌级拖累为估值；同任务 investment-checklist-auto.ts #31『PE>40 无高增长』判定为通过（净利 +50.1% ≥25% 高增长豁免），两套评分逻辑不一致；单次观察，未跨任务确认" }
+      ],
+      "rootCauseHypothesis": "quality-screen 估值维度按 PE 绝对值区间评分（>40 低分），未结合增速/PEG 做成长股豁免，与 investment-checklist-auto 的高增长豁免规则不一致",
+      "goal": "quality-screen 估值维度对 PE>40 但净利增速 ≥25%（或 PEG<1）的高增长股给与豁免或提示，减少成长股系统性低分",
+      "severity": "low",
+      "confidence": 0.6,
+      "benefit": "成长股质量筛查结论更贴近业务实质，减少人工修正成本",
+      "risk": "豁免阈值设计需避免过度放宽，需与 checklist 规则对齐",
+      "acceptance": "quality-screen 对高 PE 高增长股（净利增速≥25%）估值维度不再机械给 0-2 分，或输出豁免提示"
+    }
+  ]
+}

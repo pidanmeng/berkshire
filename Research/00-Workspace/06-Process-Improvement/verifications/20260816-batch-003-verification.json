@@ -1,0 +1,10 @@
+[
+  { "name": "专项测试 investment-checklist-auto（7 用例：新增 #4/#8/#30 误报消歧 4 用例，全部通过）", "required": true, "passed": true },
+  { "name": "专项测试 quality-screen（34 用例：新增 normalizePercentInputs 单位折算 3 用例，全部通过）", "required": true, "passed": true },
+  { "name": "全量测试（.trae 14 文件 152 用例：151 通过；唯一失败 hithink.test.ts 为既有并发 mock 泄漏问题，batch-002 验证已记录，hithink.ts 未被本批次改动）", "required": true, "passed": true },
+  { "name": "类型检查（3 个被改脚本 bun build --no-bundle exit 0：investment-checklist-auto.ts / quality-screen.ts / fetch-source.ts；全库 tsc 受 node_modules TS 类型版本不兼容阻塞，非本批次引入，与 batch-002 相同）", "required": true, "passed": true },
+  { "name": "路径引用检查（AGENTS.md / .trae/commands / .trae/agents / .trae/skills 对 5 目标文件的引用均为用法/CLI 契约，无需同步；company-template.md validation_source 改动不参与估值计算）", "required": true, "passed": true },
+  { "name": "diff 集合校验：本批次修改 5 目标文件（investment-checklist-auto.ts / quality-screen.ts / company-template.md / 研报集.md / research-web-search 内 SKILL.md+fetch-source.ts）⊆ 批准集合，新增 2 个测试文件与 backlog/批次文件属约定允许", "required": true, "passed": true },
+  { "name": "存量回归 investment-checklist-auto 锐捷网络：扫描结果仅剩真实警示 #27 负债率 63%、#31 PE 170.8，#4/#8/#15/#25/#26/#29/#30 误报全部消除，综合结论✅放行", "required": true, "passed": true },
+  { "name": "存量回归 quality-screen --mode auto 百分比传参（--roe 14.65 --debt 51.2）：输出 ROE 14.65%、资产负债率 51.2%，不再出现 1465%/5120% 失真，单位折算警告生效", "required": true, "passed": true }
+]

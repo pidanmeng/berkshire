@@ -1,0 +1,11 @@
+{
+  "id": "conv-1785624730797-cs6u0fyt8",
+  "providerId": "codex",
+  "title": "你好",
+  "titleGenerationStatus": "failed",
+  "createdAt": 1785624730797,
+  "updatedAt": 1785627005890,
+  "lastResponseAt": 1785625853740,
+  "sessionId": null,
+  "selectedModel": "gpt-5.4-mini"
+}

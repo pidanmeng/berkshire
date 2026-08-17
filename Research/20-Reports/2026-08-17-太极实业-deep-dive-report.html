@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>太极实业（600667.SH）深度调研报告</title>
+<style>
+:root {
+  --color-canvas: #000000;
+  --color-surface: #0a0a0a;
+  --color-surface-raised: #111111;
+  --color-border: #1a1a1a;
+  --color-ink: #ffffff;
+  --color-ink-muted: #a1a1a1;
+  --color-ink-subtle: #666666;
+  --color-accent: #0070f3;
+  --color-accent-hover: #3291ff;
+  --color-danger: #ee0000;
+  --color-up: #f04141;
+  --color-down: #2e9e5b;
+  --star-on: #fbbf24;
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: "Geist", Inter, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  line-height: 1.6;
+  padding-bottom: 80px;
+}
+.container { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+header {
+  border-bottom: 1px solid var(--color-border);
+  padding: 56px 0 40px;
+  background: linear-gradient(180deg, #0a0a0a 0%, #000000 100%);
+}
+h1 { font-size: 40px; font-weight: 600; letter-spacing: -1.28px; margin-bottom: 12px; }
+h2 { font-size: 24px; font-weight: 600; letter-spacing: -0.96px; margin: 48px 0 20px; padding-bottom: 8px; border-bottom: 1px solid var(--color-border); }
+h3 { font-size: 18px; font-weight: 600; margin: 24px 0 12px; }
+h4 { font-size: 15px; margin-bottom: 4px; color: var(--color-ink); }
+p, li { color: var(--color-ink-muted); font-size: 15px; }
+a { color: var(--color-accent); text-decoration: none; }
+a:hover { color: var(--color-accent-hover); }
+.subtitle { color: var(--color-ink-subtle); font-size: 14px; }
+.tag { display: inline-block; padding: 2px 10px; border: 1px solid var(--color-border); border-radius: 9999px; font-size: 12px; color: var(--color-ink-muted); margin-right: 8px; margin-bottom: 8px; }
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card h3 { margin-top: 0; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+@media (max-width: 800px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } }
+.stat { text-align: center; padding: 20px 12px; }
+.stat .value { font-size: 28px; font-weight: 600; letter-spacing: -0.8px; }
+.stat .label { font-size: 12px; color: var(--color-ink-subtle); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+.up { color: var(--color-up); }
+.down { color: var(--color-down); }
+.warn { color: #fbbf24; }
+.star { color: var(--star-on); letter-spacing: 2px; }
+.star-off { color: #333; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13.5px; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--color-border); }
+th { color: var(--color-ink-subtle); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+td { color: var(--color-ink-muted); }
+.verdict-red { color: var(--color-danger); font-weight: 600; }
+.verdict-green { color: var(--color-down); font-weight: 600; }
+.verdict-yellow { color: #fbbf24; font-weight: 600; }
+.chart-box { width: 100%; height: 340px; margin: 16px 0; }
+.chart-note { font-size: 12px; color: var(--color-ink-subtle); margin-top: -8px; }
+.quote { border-left: 3px solid var(--color-accent); padding: 12px 16px; background: var(--color-surface-raised); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; margin: 12px 0; font-size: 14px; color: var(--color-ink-muted); }
+.badge { display: inline-block; padding: 2px 8px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 500; }
+.badge-red { background: rgba(238,0,0,0.15); color: var(--color-danger); border: 1px solid rgba(238,0,0,0.4); }
+.badge-green { background: rgba(46,158,91,0.15); color: var(--color-down); border: 1px solid rgba(46,158,91,0.4); }
+.badge-yellow { background: rgba(251,191,36,0.15); color: #fbbf24; border: 1px solid rgba(251,191,36,0.4); }
+footer { border-top: 1px solid var(--color-border); margin-top: 64px; padding-top: 24px; font-size: 12px; color: var(--color-ink-subtle); }
+.conclusion-item { margin-bottom: 14px; padding-left: 16px; border-left: 2px solid var(--color-accent); }
+ul.no-list { list-style: none; padding: 0; }
+ul.no-list li { padding: 10px 0; border-bottom: 1px solid var(--color-border); }
+ul.no-list li:last-child { border-bottom: none; }
+ol.track { padding-left: 20px; }
+ol.track li { padding: 6px 0; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js" onerror="window.__ECHARTS_FAIL=true"></script>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <div style="margin-bottom:16px;">
+      <span class="tag">600667.SH</span><span class="tag">沪市主板 · 半导体封测+工程EPC · 双主业</span><span class="tag">deep-dive</span><span class="tag">quality-screen RED</span>
+    </div>
+    <h1>太极实业 深度调研报告</h1>
+    <p class="subtitle">数据时点：2026-08-17（估值快照）｜ 财报基准：2023/2024/2025 年报 + 2025 半年报原文精读 ｜ 主验证源：[[2026-08-17-太极实业-deep-read]]</p>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- ① 核心结论 -->
+  <section>
+    <h2>核心结论</h2>
+    <div class="conclusion-item">
+      <h4>① 估值严重透支，安全边际为负（置信度：高）</h4>
+      <p>股价 24.05 元、总市值 503 亿；PE-TTM 109.5 / PB 5.75 / 250 日分位 93.3%（2026 年内由 7-10 元飙升至最高 32.10 元，+200%）。三情景目标价 8.4 / 11.95 / 16.0 元，<strong>当前价高于乐观情景上沿</strong>；而 2025 年营收/归母/扣非实际连续三年下滑。🔴 空方「估值透支」（强/9）胜出，当前价位不具备任何安全边际。</p>
+    </div>
+    <div class="conclusion-item">
+      <h4>② HBM 叙事与官方口径相悖，题材溢价是估值主支撑（置信度：高）</h4>
+      <p>公司 2026-02-13 互动平台、06-25/08-13 两次异动公告三次明确「半导体业务目前不涉及 HBM 产品」；三年年报原文检索「HBM」零命中。东财社区「全球第二 HBM3E 封测厂」等叙事属未证实传言。<strong>分歧点显式标注</strong>：多方以海太绑定+存储周期（DDR5 占产量 87.1%）论证，空方以官方澄清+年报口径证伪——<strong>裁决以公司公告为准，叙事退潮后股价向业绩回归是大概率</strong>（历史类比：2021 元宇宙、2023 ChatGPT 概念退潮）。</p>
+    </div>
+    <div class="conclusion-item">
+      <h4>③ 生意模式：「大营收、薄利润、重资产、强周期」的坏生意（置信度：高）</h4>
+      <p>净利率 1.81%、毛利率 7.65%（工程总包仅 1.96%）、资产负债率 72.91%、工程垫资吞噬现金流（2025 年 OCF 4.38 亿 -79.87%、OCF/NI 0.79<1、合同资产 107.83 亿 +27.3%、应收+合同资产原值 185.08 亿占营收 60.3%）。唯一亮点海太（2025 净利 2.39 亿）为「成本+10% 约定收益」模式，<strong>利润上限被锁死，存储大牛市中无超额弹性</strong>（2025 年半导体分行业收入仅 +7.73%）。</p>
+    </div>
+    <div class="conclusion-item">
+      <h4>④ 护城河中等且结构性分化（置信度：中）</h4>
+      <p>海太绑定型护城河真实（SK 海力士合资 17 年、第四期合同至 2030-06-30、成本+10% 保底），但归母仅享 55%、不涉 HBM；十一科技综合甲级资质真实但随订单萎缩打折（新签 -31%、在手 -43%，商誉减值测试自认 2026-2030 收入增长 -19.35%~0%）；太极半导体无护城河且 2025 年转亏。护城河宽度 5.0/10，能否持续 10 年：不确定。</p>
+    </div>
+    <div class="conclusion-item">
+      <h4>⑤ 管理层诚信 🟢 通过（未触发 No-Go），信号偏中性（置信度：高）</h4>
+      <p>三年标准无保留审计（中兴华）、分红率 30%+、回购注销 1.46 亿股、补税/OCF 恶化/未决诉讼如实披露、HBM 三次澄清不迎合炒作（加分）；扣分：OCF 披露简略、太极半导体亏损轻描淡写、锡高投 2026-07-09 高位减持 4800 万股（2.3%）与澄清时点重叠。</p>
+    </div>
+    <div class="conclusion-item">
+      <h4>⑥ 当前操作建议：观望（高估可考虑减仓）（置信度：中）</h4>
+      <p>quality-screen 结论 <span class="badge badge-red">🔴 RED（0/100）</span>，不得标注为「建议重点跟踪」。目标买入价 6.7 元、目标卖出价 17 元。2026 半年报（预约 2026-08-27 披露）为多空裁决第一验证点：半导体板块增速 &lt;15% 则「高增长兑现」假设崩塌。</p>
+    </div>
+
+    <!-- ② 四大师综合评分 -->
+    <div class="card" style="margin-top:16px;">
+      <h3>四大师综合评分 <span style="font-size:13px;color:var(--color-ink-subtle);">综合分由系统 composite.ts 加权计算，不人工填写</span></h3>
+      <table>
+        <tr><th>维度</th><th>大师</th><th>星级</th><th>0-10 分</th><th>核心判断</th></tr>
+        <tr><td>能力圈</td><td>巴菲特</td><td><span class="star">★★★</span><span class="star-off">✩✩</span></td><td>6.0</td><td>「大营收薄利润的工程+代工混合体」本质可一句话说清；但海太 2030 年合同到期后的续签/重定价、存储技术路线切换（HBM 等先进封装）使 10 年格局预测难度高</td></tr>
+        <tr><td>护城河</td><td>巴菲特</td><td><span class="star">★★☆</span><span class="star-off">✩✩</span></td><td>5.0</td><td>海太绑定型护城河真实（合同至 2030、成本+10% 保底）但利润贡献有限（归母约 1.3 亿）且不涉 HBM；十一科技资质随订单萎缩打折；太极半导体无护城河且转亏 -2166 万</td></tr>
+        <tr><td>生意模式</td><td>段永平</td><td><span class="star">★★</span><span class="star-off">✩✩✩</span></td><td>4.0</td><td>净利率 1.81%、毛利率 7.65%、重资产（权益乘数 3.69）、强周期、无定价权、工程垫资吞噬现金流（合同资产 107.83 亿）；仅海太成本转嫁模式尚可但锁死利润上限</td></tr>
+        <tr><td>管理层诚信（本分）</td><td>段永平</td><td><span class="star">★★★☆</span><span class="star-off">✩</span></td><td>7.0</td><td>三年标准无保留 + 分红 30%+ + 回购注销 + 重大不利如实披露 + HBM 主动澄清；扣分：OCF 披露简略、太极半导体亏损轻描淡写、锡高投高位减持 2.3%</td></tr>
+        <tr><td>反向检查清单</td><td>芒格</td><td><span class="star">★★★</span><span class="star-off">✩✩</span></td><td>6.0</td><td>风险识别全面（现金流红旗/合同资产计提充分性/未决诉讼约 24.8 亿/估值透支/HBM 叙事/单一客户依赖）；但现金流连续恶化与合同资产膨胀暴露执行风险</td></tr>
+        <tr><td>历史类比与时间框架</td><td>李录</td><td><span class="star">★★☆</span><span class="star-off">✩✩</span></td><td>5.5</td><td>通富微电绑定 AMD、设计院红利消退（光伏 EPC 热潮）、HBM 题材炒作退潮三个类比贴切；周期成分大于结构性，时间框架不确定性高</td></tr>
+      </table>
+      <p style="font-size:13px;color:var(--color-ink-subtle);">scores: capability 6.0 / moat 5.0 / business_model 4.0 / management 7.0 / inversion 6.0 / historical 5.5 ｜ 综合分由系统按 .trae/scripts/valuation/composite.ts 权重加权计算（不人工填写）</p>
+    </div>
+  </section>
+
+  <!-- ③ 估值快照 -->
+  <section>
+    <h2>估值与股价快照（数据时点：2026-08-17）</h2>
+    <div class="grid-4" style="margin-bottom:16px;">
+      <div class="card stat"><div class="value">24.05<span style="font-size:14px;">元</span></div><div class="label">最新股价（93.3% 分位）</div></div>
+      <div class="card stat"><div class="value">503<span style="font-size:14px;">亿</span></div><div class="label">总市值</div></div>
+      <div class="card stat"><div class="value warn">109.5x</div><div class="label">PE-TTM（严重高估）</div></div>
+      <div class="card stat"><div class="value warn">5.75x</div><div class="label">PB-MRQ（ROE 5.2% 支撑不了）</div></div>
+    </div>
+    <div class="card">
+      <table>
+        <tr><th>指标</th><th>当前值</th><th>历史分位</th><th>同业对比</th><th>评价</th></tr>
+        <tr><td>股价（元）</td><td>24.05</td><td>93.3%（250 日）</td><td>2026 年内由 7-10 元飙升至最高 32.10（+200%）</td><td>高位回落</td></tr>
+        <tr><td>PE-TTM</td><td>109.52</td><td>93.3%</td><td>封测同业（长电/通富/华天）30-60x；工程类 10-20x</td><td class="verdict-red">贵（隐含未来两年净利翻倍以上）</td></tr>
+        <tr><td>PB-MRQ</td><td>5.75</td><td>—</td><td>工程+代工混合体 ROE 5.2% 支撑不了 5.75x PB</td><td class="verdict-red">贵</td></tr>
+        <tr><td>PS-TTM / PCF-TTM</td><td>1.64 / 57.60</td><td>—</td><td>净利率 1.81% 的生意给 1.64x PS；OCF 4.38 亿隐含 57.6 年回收</td><td class="verdict-red">偏贵/极贵</td></tr>
+        <tr><td>股息率</td><td>~0.27%</td><td>—</td><td>2025 年 10 派 0.65 元（分红率 30.34%）</td><td class="verdict-red">极低</td></tr>
+        <tr><td>52周最高 / 最低</td><td>32.10 / 7.38</td><td>—</td><td>年内振幅 +335%</td><td class="verdict-yellow">题材波动剧烈</td></tr>
+      </table>
+      <div class="quote">
+        <strong>估值判断（称重机视角）</strong>：当前 503 亿市值对应 2025 年归母 4.48 亿（PE-TTM 109.5x）、2026E 研报共识 7.8 亿（Forward PE 64.5x），隐含未来两年净利翻倍以上才能消化；而 2025 年营收/净利实际连续下滑、工程订单断崖（新签 -31%）、现金流恶化（OCF/NI 0.79）——<strong>估值严重透支基本面，安全边际为负</strong>。唯一支撑是 HBM 题材叙事，但该叙事与公司官方口径（三次澄清不涉及）相悖——题材退潮后股价向业绩回归是大概率（情景A）。当前不具备安全边际，不触发任何买入条件。
+      </div>
+    </div>
+  </section>
+
+  <!-- ④ 财务数据 -->
+  <section>
+    <h2>关键财务数据（2023-2025）</h2>
+    <div class="card">
+      <h3>营收 / 归母净利 / 扣非净利趋势（柱线混合）</h3>
+      <div id="chart-1" class="chart-box"></div>
+      <p class="chart-note">数据来源：2023/2024/2025 年报主要会计数据（[[2026-08-17-太极实业-processed]] F1-F3）｜ 营收、归母、扣非连续三年下滑：营收 -10.68%/-12.77%、归母 -9.98%/-31.84%、扣非 -24.94%/-21.62%</p>
+    </div>
+    <div class="card">
+      <h3>十一科技订单序列（前瞻指标）</h3>
+      <div id="chart-2" class="chart-box"></div>
+      <p class="chart-note">数据来源：三年年报在建项目章节（[[2026-08-17-太极实业-processed]] F20-F21）｜ 新签合同 -13%/-31%、在手订单 -43%（2025 年末）；商誉减值测试自认 2026-2030 收入增长 -19.35%~0%</p>
+    </div>
+  </section>
+
+  <!-- ⑤ 估值区间与目标价 -->
+  <section>
+    <h2>估值区间与目标价（安全边际视角）</h2>
+    <div class="card">
+      <h3>三情景目标价 vs 当前价（元/股）</h3>
+      <div id="chart-3" class="chart-box"></div>
+      <p class="chart-note">估值锚：目标市值 = 预测净利 × 情景 PE，除以总股本 20.92 亿股｜悲观 175 亿 = 2026E 7.8 亿 × 22.4x；中性 250 亿 = 7.8 亿 × 32.1x；乐观 335 亿 = 7.8 亿 × 42.9x（或 2027E 10.5 亿 × 31.9x）；目标买入 = 悲观 × 0.8 ≈ 6.7 元｜ 研报预测非公司指引</p>
+      <table style="margin-top:16px;">
+        <tr><th>情景</th><th>目标市值（亿元）</th><th>假设</th><th>目标价（元）</th><th>隐含涨跌幅（vs 24.05）</th></tr>
+        <tr><td>目标买入</td><td>~140</td><td>悲观估值 × 0.8（安全边际）</td><td>6.7</td><td class="down">-72%</td></tr>
+        <tr><td>悲观</td><td>175</td><td>2026E 7.8 亿 × 22x（工程继续收缩+回款恶化，HBM 退潮）</td><td>8.4</td><td class="down">-65%</td></tr>
+        <tr><td>中性</td><td>250</td><td>2026E 7.8 亿 × 32x（存储周期延续，海太量增，工程企稳）</td><td>11.95</td><td class="down">-50%</td></tr>
+        <tr><td>乐观</td><td>335</td><td>2027E 10.5 亿 × 32x（净利兑现+订单修复）</td><td>16.0</td><td class="down">-33%</td></tr>
+        <tr><td>目标卖出</td><td>~356</td><td>乐观估值上沿</td><td>17.0</td><td class="down">-29%</td></tr>
+        <tr><td>当前</td><td>503</td><td>2026-08-17 收盘</td><td>24.05</td><td>—</td></tr>
+      </table>
+      <div class="quote">
+        <strong>目标买入价（安全边际）：6.7 元</strong>（悲观 × 0.8）｜ <strong>目标卖出价（高估）：17 元</strong>（乐观上沿）<br>
+        <strong>当前操作建议：观望（高估可考虑减仓）</strong>——当前价 24.05 元高于乐观情景目标价 16.0 元（+50%），即使乐观情景也低于当前市值，量化反映估值透支程度。持仓者可考虑反弹减仓兑现，未持仓者等待估值回归至目标买入区间（≤6.7 元）再评估。2026 半年报（2026-08-27）为第一验证点。
+      </div>
+      <p style="font-size:13px;color:var(--color-ink-subtle);">Forward PE 快照：2026E 口径（7.8 亿）64.5x ｜ 2027E 口径（10.5 亿）47.9x（东方证券研报共识，非公司指引）。核心变量：海太 DDR5 占比与 SK 海力士订单量、十一科技新签/在手订单、一次性补税消退后税率恢复 25%、HBM 叙事是否被证伪、工程回款质量。</p>
+    </div>
+  </section>
+
+  <!-- ⑥ 护城河 -->
+  <section>
+    <h2>护城河评估（巴菲特框架）</h2>
+    <div class="card">
+      <table>
+        <tr><th>类型</th><th>是否存在</th><th>量化证据</th><th>趋势</th></tr>
+        <tr><td>成本优势</td><td><span class="badge badge-red">否（仅成本转嫁）</span></td><td>海太「全部成本+约定收益」为成本补偿型而非成本优势型；工程总包毛利率仅 1.96%</td><td>无成本优势</td></tr>
+        <tr><td>品牌/定价权</td><td><span class="badge badge-red">弱</span></td><td>销售费用率 0.20%；十一科技靠资质+历史口碑获客，无品牌溢价</td><td>稳定</td></tr>
+        <tr><td>网络效应</td><td><span class="badge badge-red">无</span></td><td>—</td><td>—</td></tr>
+        <tr><td>转换成本</td><td><span class="badge badge-green">强（仅海太）</span></td><td>与 SK 海力士绑定 17 年、第四期合同至 2030-06、月产能 26.96 亿 Gb（+16.6%）；太极半导体市场化客户分散</td><td>稳定至 2030；到期重定价风险</td></tr>
+        <tr><td>规模效应</td><td><span class="badge badge-yellow">中</span></td><td>海太封装/测试月产能 +16.6%/+34.6%，规模效应带来稳定现金流</td><td>增强</td></tr>
+        <tr><td>牌照/特许</td><td><span class="badge badge-yellow">中-强（十一科技）</span></td><td>工程设计综合甲级（覆盖 21 个行业，全国少数）+施工总承包壹级</td><td>资质长期存在但订单萎缩侵蚀价值</td></tr>
+      </table>
+      <p style="margin-top:12px;"><strong>宽度评分：5.0/10（中等，结构性分化）</strong> ｜ 能否持续 10 年以上：<strong>不确定</strong>——海太绑定确定性至 2030-06-30 合同期，但存储先进封装路线切换（HBM/TSV）与地缘脱钩存在边缘化风险；十一科技资质长期存在但工程行业下行压制价值；太极半导体无护城河。</p>
+
+      <h3 style="margin-top:20px;">HBM 叙事核查（重大分歧专项）</h3>
+      <p><strong>市场炒作叙事与公司官方口径不一致，属重大分歧，必须显式标注：</strong></p>
+      <ul class="no-list">
+        <li>【事实】公司三次公开澄清「半导体业务目前不涉及 HBM 产品」：2026-02-13 互动平台、06-25/08-13 两次异动公告（信源：上证报 2026-06-25、证券时报 2026-08-13、AASTOCKS 2026-08-13）</li>
+        <li>【事实】三年年报原文均无 HBM/TSV 堆叠表述，海太定位始终为「为 SK 海力士 DRAM 产品提供后工序服务」（2025 年报 p.12-14/p.20）；pdf-texts 原文检索「HBM」零命中</li>
+        <li>【观点/未证实传言】东财社区「国内唯一、全球第二 HBM3E 封测厂」「承担海力士 40-50% DRAM 后工序」等叙事与官方口径不一致（caifuhao.eastmoney.com 2026-08-14 等）——<strong>属市场想象，不得作为投资依据</strong></li>
+      </ul>
+      <div class="quote"><strong>裁决</strong>：以公司公告为准。当前 109.5x PE 的估值定价中包含相当部分 HBM 题材溢价；若叙事退潮而业绩未兑现，股价向基本面回归是大概率（历史类比：2021 元宇宙、2023 ChatGPT 概念退潮）。2026 年半年报（2026-08-27 披露）将检验半导体板块真实增速与口径是否变化。</div>
+    </div>
+  </section>
+
+  <!-- ⑦ 多空辩论 -->
+  <section>
+    <h2>多空论证综合裁决</h2>
+    <div class="card">
+      <h3>多空论点置信度对照（五维度）</h3>
+      <div id="chart-4" class="chart-box"></div>
+      <p class="chart-note">置信度（1-10）取自 [[2026-08-17-太极实业-deep-read]] 第十章论点分级 ｜ 估值维度为最大分歧点：空方 9 vs 多方 5；五维度证据天平整体偏向空方</p>
+      <table>
+        <tr><th>维度</th><th>🟢 多方</th><th>🔴 空方</th><th>裁决（结合外围因素）</th></tr>
+        <tr><td>增长</td><td>海太量增价升（封装测试 +17.1%、DDR5 87.1%）、存储超级周期（强/中）</td><td>工程新签 -31%、在手 -43%、减值测试预测收入增长 -19.35%~0%（强）</td><td><span class="badge badge-red">空方胜（合并口径）</span>：半导体真实增长（+7.73%）但占营收仅约 15%，工程确定性下滑（-15.69%）；产业面「成本+10%」锁弹性——DRAM 合约价 +90-95% 的红利主要归 SK 海力士，多方「存储周期弹性」论点被结构性削弱</td></tr>
+        <tr><td>护城河</td><td>海太绑定 2030、十一科技综合甲级（中/强）</td><td>太极半导体转亏、海太不涉 HBM、EPC 毛利率 1.96% 无定价权（中）</td><td><span class="badge badge-yellow">平局（分化裁决）</span>：海太绑定型护城河真实（置信度 8）但利润贡献有限（归母约 1.3 亿）；十一科技资质真实但价值随订单萎缩打折；宽度 5.0/10</td></tr>
+        <tr><td>财务质量</td><td>净现金约 12 亿、商誉 6.6%、审计无保留（中）</td><td>OCF/NI 0.79、合同资产 +27.3% 至 107.83 亿（计提率仅 1.30%）、应收+合同 185 亿、资本开支/OCF 86.6%（强）</td><td><span class="badge badge-red">空方胜</span>：账面稳健（货币资金 73.32 亿）掩盖现金流失血；合同资产计提充分性存疑+未决诉讼约 24.8 亿，若业主违约集中暴露减值将侵蚀全部净利润（情景B）</td></tr>
+        <tr><td>估值</td><td>2027E 净利 10.5 亿兑现 → Forward PE 47.9x（研报预测非财报；广发 2024-08 预测 25E 7.57 亿 vs 实际 4.48 亿落空有前科）</td><td>PE-TTM 109.5、PB 5.75、250 日分位 93.3%、PCF 57.6，隐含未来两年净利翻倍以上（强）</td><td><span class="badge badge-red">空方胜（最大分歧点）</span>：当前价 24.05 元高于乐观情景目标价 16.0 元；即使 2027E 兑现 Forward PE 仍 47.9x；估值已透支 2-3 年乐观预期，安全边际为负</td></tr>
+        <tr><td>周期/政策/国际</td><td>存储周期反转+AI 基建+国产替代（中）</td><td>存储 2027 后可能回落、光伏市场化（136 号文）、SK 海力士地缘脱钩尾部风险（中）</td><td><span class="badge badge-red">空方胜（公司弹性有限）</span>：周期上行中段但公司 β=0（成本+10%）；国际面地缘脱钩尾部但致命、无法对冲；政策面 136 号文持续压制电站资产（巴拉贡已减值）</td></tr>
+      </table>
+      <div class="quote" style="margin-top:16px;">
+        <strong>最大分歧点</strong>：海太/太极半导体能否在本轮 AI 存储周期中获得超出「成本+10%」模式的超额利润，以及当前 503 亿市值隐含的增长假设（未来 2 年净利翻倍以上）能否被业绩兑现。<br>
+        <strong>综合裁决</strong>：结合产业理解（成本+10% 模式使公司无法享受存储暴利，2025 年半导体收入仅 +7.73%；三次澄清不涉 HBM，市场叙事与基本面存在根本冲突）、行业周期（存储上行中段+工程明确下行，2026 年合并收入大概率继续萎缩，业绩兑现依赖海太单腿）、国际形势（SK 海力士地缘脱钩尾部但致命，无法通过财报对冲）、政策形势（光伏 136 号文持续压制）——<strong>证据天平偏向空方：估值透支（93.3% 分位）+ 现金流恶化（OCF/NI 0.79）+ 订单断崖（商誉测试自证）三重证据链完整；多方论证高度依赖研报预测兑现（广发 2024-08 预测 25E 7.57 亿实际仅 4.48 亿，预测落空有前科）。结论：当前价位不构成投资机会，维持观望/高估可考虑减仓。</strong>多方论证失效条件 = 2026 半年报半导体增速 &lt;15% 或工程订单继续大幅下滑；空方论证失效条件 = 存储超级周期推动海太收入/利润大幅超预期（如 2026 年半导体板块收入 +50% 以上）且十一科技订单 2026 下半年明显修复。
+      </div>
+    </div>
+  </section>
+
+  <!-- ⑧ 增长驱动与核心优势（强制章节） -->
+  <section>
+    <h2>增长驱动与核心优势可持续性</h2>
+    <div class="card">
+      <h3>增长驱动分析（问题组 A）</h3>
+      <p><strong>A1 是否处于高增长阶段：否，负增长（三年连续收缩）。</strong>营收 -10.68%/-12.77%、归母 -9.98%/-31.84%、扣非 -24.94%/-21.62%（2025 归母剔除一次性补税 2.57 亿后约 -1%~-2% 仍为负）。市场以「存储超级周期+HBM 题材」定价的隐含高增长假设（未来两年净利翻倍以上）与基本面现状存在根本背离。结构拆分：半导体分行业 +7.73%（海太量增）为唯一正增长板块（占营收约 15%），工程 -15.69% 拖累合并口径。</p>
+      <table>
+        <tr><th>归因维度</th><th>贡献</th><th>量化证据</th></tr>
+        <tr><td>量增（销量/产能）</td><td class="verdict-yellow">✅ 仅半导体</td><td>海太封装产量 286 亿颗（+20.5%）、测试 304 亿颗（+29.5%）、封装晶片销量 +12.55%；工程总包 -16.11%（华虹无锡 2025-03 完工、长鑫二期 2025-06 完工）</td></tr>
+        <tr><td>价增（提价/结构升级）</td><td class="verdict-yellow">✅ 仅封装</td><td>封装测试毛利率 9.77%→17.90%（+8.13pp，DDR5 占产量 87.1%）；模组毛利率 18.39%→4.73%（-13.66pp）；设计咨询 -7.57pp（人工 +23.64%）</td></tr>
+        <tr><td>新业务/第二曲线</td><td class="verdict-red">❌ 未兑现</td><td>太极半导体 16D/32D 堆叠量产/突破、1β DRAM 验证量产——技术储备存在但 2025 年净利 -2166 万转亏</td></tr>
+        <tr><td>并购并表</td><td class="verdict-red">❌ 无</td><td>2025 年无重大并购（华芯绝缘为 2026-07 事件，对价未披露）；收入全部内生</td></tr>
+        <tr><td>行业景气/政策红利</td><td class="verdict-yellow">⚠️ 弱受益</td><td>存储行业上行（SIA：2025 全球半导体销售额 7,917 亿美元 +25.6%；2026Q1 DRAM 合约价 +90-95%）但成本+10% 锁死利润弹性；工程行业下行（建筑业增加值 -1.1%）；光伏电价市场化（136 号文）</td></tr>
+      </table>
+      <p><strong>A3/A4 未来增长因素内因/外因与企业主导性：外因占比高、主导性低。</strong>海太-SK 海力士订单量（外因，不可主导，合同锁定至 2030 但弹性锁死、到期重定价风险）、存储周期/DRAM 价格（外因，不可主导，2026Q1 合约价 +90-95% 为周期高点信号）、十一科技订单（外因为主，行业资本开支决定）、太极半导体技术突破（内因，可主导，已兑现技术但盈利未兑现）、工程回款管理（内因，可主导，OCF/NI 0.79 与合同资产膨胀暴露管理短板）。<strong>「可主导的内因」占比低，增长高度依赖外因，纯外因驱动的增长需在估值中标注周期风险——当前 PE-TTM 109.5 未体现该风险。</strong></p>
+      <p><strong>A5 可持续性：不可持续。</strong>边际信号：工程新签 -31%、在手 -43%（前瞻向下）、半导体 +7.73%（弱增长）、合同资产 +27.3%（现金流失血）。跟踪阈值：①半导体分行业增速 &lt;15% → 「高增长兑现」假设崩塌（当前 7.73% 已远低于阈值）；②新签同比继续 &lt;0 → 工程下行延续；③OCF/NI 连续两期 &lt;1 → 盈利质量恶化确认。</p>
+    </div>
+    <div class="card">
+      <h3>核心优势可持续性分析（问题组 B）</h3>
+      <table>
+        <tr><th>优势维度</th><th>公司数值</th><th>同业/行业对比</th><th>差距量化</th></tr>
+        <tr><td>海太成本转嫁+订单锁定</td><td>2025 净利 2.39 亿（+0.8%）、OCF 6.98 亿健康；DDR5 占产量 87.1%；合同锁定至 2030-06</td><td>市场化封测（长电/通富/华天）毛利率 20%+ 但订单波动；太极半导体已亏损</td><td>订单确定性显著高于市场化代工（α=0 无价格风险）；但无弹性（β=0），无法享受行业暴利</td></tr>
+        <tr><td>十一科技资质壁垒</td><td>工程设计综合甲级（覆盖 21 个行业）+施工总承包壹级；光伏 EPC 20 强第 5 位</td><td>中电二建、中电四建等对手</td><td>资质牌照全国稀缺；但 EPC 毛利率 1.96% 无定价权，资质价值随在手订单 -43% 打折</td></tr>
+        <tr><td>半导体产能规模</td><td>海太封装/测试月产能 26.96/30.42 亿 Gb（+16.62%/+34.60%）</td><td>长电/通富/华天第一梯队</td><td>第二梯队体量（海太+太极半导体合计约 47 亿营收），但海太在 SK 海力士体系内独家/核心配套</td></tr>
+      </table>
+      <p><strong>优势成因</strong>：海太——结构性「客户+股东」合资绑定（SK 海力士持股 45%、合资 17 年、四期合同续签）→ 独家/核心后工序配套 → 产能同步扩产 → 成本全部转嫁+总投资额 10% 约定收益（本质是绑定/特许型优势，非成本或技术优势）；十一科技——政策牌照+历史大项目业绩（华虹无锡 39.17 亿、国家存储器基地 36.30 亿）→ 获单能力（本质是牌照+经验壁垒，非定价权）。</p>
+      <p><strong>趋势判断：海太高位稳定至 2030（合同锁定）→ 2030 年后重定价风险；十一科技收窄（新签 -31%、在手 -43%、商誉测试自证收入负增长）；太极半导体无优势可维持（转亏）。</strong>侵蚀因素（概率+幅度）：①存储周期 2027 年后回落（中高/高）；②SK 海力士地缘脱钩/产能转移（低/致命，尾部）；③HBM/TSV 先进封装路线切换（中/中高，公司三次澄清不涉 HBM，存在边缘化风险）；④工程资本开支放缓（高/中高）；⑤合同资产坏账集中暴露（中/高，计提率仅 1.30% vs 未决诉讼约 24.8 亿）；⑥十一科技税率永久恢复 25%（已发生/中）。</p>
+      <p><strong>独特壁垒（护城河→优势溢价因果链）</strong>：海太——SK 海力士 45% 持股+17 年合资+产能深度嵌入 → 合同锁定（至 2030-06-30）→「成本+10%」保底收益 → 利润下限支撑（年约 2.4-2.7 亿）。结构性壁垒=合资股权绑定+产能嵌入+合同锁定，同行无法复制；可持续年限：确定至 2030-06，之后重定价风险。十一科技——综合甲级牌照+历史业绩 → 大项目承接能力；可持续年限：资质长期存在但价值随行业景气波动（当前下行）。</p>
+      <p><strong>优势敏感性</strong>：海太净利 2.39 亿全部依赖 SK 海力士订单——下行抗跌但上行无弹性（成本+10%）；若 2030 年续签重定价下调约定收益（10%→8%），海太净利一次性缩水约 20%。整体：2025 年归母 4.48 亿中十一科技贡献约 4.21 亿，其净利每下滑 10% → 归母约 -9.4%；合同资产若计提 3%（约 3.2 亿）→ 归母约 -71%；整体毛利率每 -1pp → 净利约 -3 亿（≈归母 -67%）——薄利生意对毛利率与减值变动极度敏感。</p>
+    </div>
+  </section>
+
+  <!-- ⑨ 质量筛查与投资清单 -->
+  <section>
+    <h2>质量筛查与投资清单</h2>
+    <div class="grid-2">
+      <div class="card">
+        <h3>质量筛查 <span class="badge badge-red" style="margin-left:8px;">RED 0/100</span></h3>
+        <p>红牌 5 项 + 黄牌 5 项，触发排除标准：<strong>不得标注为「建议重点跟踪」等级</strong></p>
+        <table>
+          <tr><td class="verdict-red">红牌</td><td>资产负债率 72.9%（>60%）</td></tr>
+          <tr><td class="verdict-red">红牌</td><td>营收 -12.8%（连续下滑）</td></tr>
+          <tr><td class="verdict-red">红牌</td><td>净利 -31.8%（连续下滑）</td></tr>
+          <tr><td class="verdict-red">红牌</td><td>戴维斯双杀预警（营收净利双降 + PE 109.5 >30）</td></tr>
+          <tr><td class="verdict-red">红牌</td><td>含一次性损益（2025 补税 2.57 亿 / 2024 坏账转回 1.245 亿）</td></tr>
+          <tr><td class="verdict-yellow">黄牌</td><td>ROE 5.2%（<12%）、毛利率 7.6%（<25%）、净利率 1.8%（<10%）、OCF/NI 0.79（<0.8）、PE 109.5（>40）</td></tr>
+        </table>
+        <p style="font-size:13px;color:var(--color-ink-subtle);">说明：资产负债率 72.9% 中相当部分源于工程 EPC 经营杠杆与海太代工模式（行业普遍性），货币资金 73.32 亿 &gt; 有息负债 41.11 亿（短期无流动性风险）；但估值透支与「营收净利双降」为硬伤——RED 结论主要由估值合理性与成长性维度驱动。</p>
+      </div>
+      <div class="card">
+        <h3>财报精读 10 项检查清单</h3>
+        <table>
+          <tr><td class="verdict-red">❌</td><td>ROE ≥12%：5.22%（连续三年下滑）</td></tr>
+          <tr><td class="verdict-red">❌</td><td>资产负债率 ≤60%：72.91%（短债占比 91.4%）</td></tr>
+          <tr><td class="verdict-red">❌</td><td>营收趋势 ≥2 年连续稳健：连续下滑 + 订单断崖</td></tr>
+          <tr><td class="verdict-yellow">⚠️</td><td>OCF ≥ 净利×0.8：0.79（略低于，方向逆转）</td></tr>
+          <tr><td class="verdict-yellow">⚠️</td><td>毛利率 ≥25%：7.65%（EPC 结构性偏低）</td></tr>
+          <tr><td class="verdict-yellow">⚠️</td><td>MD&amp;A 披露：OCF 恶化简略、太极半导体亏损轻描淡写</td></tr>
+          <tr><td class="verdict-green">✅</td><td>归母净利为正 4.48 亿 ｜ 商誉/净资产 6.6% &lt;30% ｜ 无大额减值 ｜ 审计标准无保留（中兴华）</td></tr>
+        </table>
+        <p style="font-size:13px;color:var(--color-ink-subtle);"><strong>❌ = 3（ROE、资产负债率、营收趋势）、⚠️ = 3——❌ ≥3 高优先级风险</strong>：ROE 长期低于 12%（称重机不认可）、高杠杆经营、成长性证伪。</p>
+      </div>
+    </div>
+    <div class="card">
+      <h3>50 项投资决策清单 AUTO 扫描（2026-08-17）</h3>
+      <p>综合结论：<span class="badge badge-yellow">⚠️ 有条件放行（退出码 0）</span>——脚本原始统计 CRITICAL 1/2 未通过（#25 OCF/NI 0.79）、IMPORTANT 3/7、NORMAL 1/3；<strong>经人工核验修正后：CRITICAL 1/2（#25）、IMPORTANT 5/7（#11 毛利率/ROE、#26 ROE、#27 资产负债率、#29 双负增长、#31 PE&gt;40）、NORMAL 1/3（#14 重资产）未通过</strong>。脚本对商誉占比（误读 30.0%，实际 6.6%）与净利增速（误读 +448.0%，实际 -31.84%）存在关键词误读，已人工修正（详见 md 报告附录⑤）。未触发 No-Go 一票否决（OCF/NI 0.79 ≥0.5 红线）——与 quality-screen RED 结论一致，不构成「建议重点跟踪」等级。</p>
+    </div>
+  </section>
+
+  <!-- ⑩ 风险 -->
+  <section>
+    <h2>风险提示（芒格框架）</h2>
+    <div class="card">
+      <h3>这家公司可能怎么死？（失败情景）</h3>
+      <ul class="no-list">
+        <li>🔴 <strong>失败剧本 A（最可能）：估值回归</strong>——HBM 概念退潮，股价向基本面回归：503 亿市值隐含 PE 63-112x（按 2025 年 4.48 亿或 2026E 7.8 亿），需 2-3 年业绩持续翻倍才能消化；若 2026 半年报（8-27 披露）不及预期，戴维斯双杀风险大。概率：高</li>
+        <li>🔴 <strong>失败剧本 B：工程应收账款黑洞</strong>——十一科技已完工未结算 107.83 亿（计提率仅 1.30%）+应收 62.35 亿，若业主（含地方政府平台）违约集中暴露（参考内蒙古电力 4.83 亿、腾晖 0.89 亿、保华房地产 2.64 亿历史坏账），减值将侵蚀全部净利润。概率：中高</li>
+        <li>🔴 <strong>失败剧本 C：SK 海力士脱钩/技术路线切换</strong>——地缘政治导致海力士在华封测产能转移、或 HBM 等先进封装工序由海力士自建/转移至韩国本土，海太订单断崖（第四期合同有约束但政治风险无法对冲）。概率：低（尾部但致命）</li>
+        <li>🟡 <strong>失败剧本 D：存储周期反转</strong>——2026Q1 DRAM 合约价 +90-95% 高位，2027 年后周期回落，海太订单量收缩（成本+10% 平滑利润但营收与稼动率波动）。概率：中</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>风险分级</h3>
+      <table>
+        <tr><th>等级</th><th>风险</th><th>关键证据</th></tr>
+        <tr><td class="verdict-red">高</td><td>估值风险</td><td>PE-TTM 109.5 / PB 5.75 / 250 日分位 93.3%，隐含未来两年净利翻倍以上；增速不及预期即戴维斯双杀</td></tr>
+        <tr><td class="verdict-red">高</td><td>HBM 叙事证伪</td><td>市场炒作「HBM3E 封测龙头」vs 公司三次澄清不涉 HBM、年报零 HBM 表述；题材退潮股价向业绩回归（元宇宙/ChatGPT 概念前车）</td></tr>
+        <tr><td class="verdict-red">高</td><td>工程现金流</td><td>OCF/NI 0.79、合同资产 +27.3% 至 107.83 亿（计提率仅 1.30%）、应收+合同资产 185.08 亿占营收 60.3%、未决诉讼约 24.8 亿</td></tr>
+        <tr><td class="verdict-red">高</td><td>订单萎缩</td><td>新签 -31%、在手 -43%，商誉减值测试自认 2026-2030 收入增长 -19.35%~0%——2026 年工程收入大概率继续萎缩</td></tr>
+        <tr><td class="verdict-yellow">中高</td><td>单一客户依赖</td><td>海太 100% 收入来自 SK 海力士（占公司营收 12.76%），2030 年合同到期续签/重定价风险；地缘脱钩为尾部致命</td></tr>
+        <tr><td class="verdict-yellow">中</td><td>盈利质量</td><td>ROE 5.2%（❌）、毛利率 7.6%、资产负债率 72.91%（短债占比 91.4%）、2025/2024 连续两年含大额一次性损益</td></tr>
+        <tr><td class="verdict-yellow">中</td><td>股东行为</td><td>锡高投 2026-07-09 高位减持 2.3% 与 HBM 澄清时间重叠；高管减持已提前终止（2026-08-12，边际缓和）</td></tr>
+        <tr><td class="verdict-yellow">中</td><td>税负/政策</td><td>十一科技税率恢复 25%（永久）+ 2025 一次性补税 2.57 亿；光伏电价市场化（136 号文）下巴拉贡电站已减值</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- ⑪ 反向检查清单 -->
+  <section>
+    <h2>反向检查清单（什么情况下我们会错？）</h2>
+    <div class="card">
+      <ol class="track">
+        <li><strong>存储超级周期超预期兑现</strong>——2026E 归母 7.8 亿、2027E 10.5 亿如期兑现，海太随 SK 海力士扩产投资额增长而上台阶，半导体板块增速连续两期 &gt;20%——「增长见顶」判断落空，503 亿市值可被业绩逐步消化（Forward PE 降至 64.5x/47.9x）</li>
+        <li><strong>十一科技订单 2026 下半年明显修复</strong>——新签同比转正、在手订单止跌（华虹 FAB9B 中标 37.78 亿若为趋势性信号而非单点）——「工程断崖」论证被证伪</li>
+        <li><strong>HBM 口径变化（间接参与确认）</strong>——若 SK 海力士无锡厂 HBM 产线落地且海太/太极半导体承接相关工序（当前公司三次澄清不涉及，未来口径变化需以公告为准），护城河与估值逻辑需重估（当前证据不支持，置信度上限 6）</li>
+        <li><strong>合同资产减值被证明充分</strong>——多数业主为国资/上市大厂（长鑫、华虹、积塔），违约概率低；历史坏账（腾晖系）已通过诉讼/重整处置（2025 年收回现金 2.0 亿+股票）——「现金流失血→减值爆雷」论据被削弱（但不改 OCF/NI 0.79 当期事实）</li>
+        <li><strong>反向（错在另一边）：若 2026 半年报（2026-08-27）半导体增速 &lt;15%、新签继续下滑、OCF 继续恶化或大股东继续减持</strong>——「观望」应升级为「回避」，高位回落风险进一步放大（情景A 概率最高）</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ⑫ 跟踪指标 -->
+  <section>
+    <h2>跟踪指标（与投资论点直接挂钩，可观测、有阈值）</h2>
+    <div class="card">
+      <table>
+        <tr><th>#</th><th>指标</th><th>频率</th><th>锚点</th><th>阈值/预警</th></tr>
+        <tr><td>1</td><td><strong>十一科技新签/在手订单</strong></td><td>半年报</td><td>新签 301.34 亿 / 在手 226.63 亿（2025）</td><td class="verdict-red">新签同比转正为修复信号；在手订单继续下滑 → 工程下行延续</td></tr>
+        <tr><td>2</td><td>海太单季营收与 DDR5 占比</td><td>每季度</td><td>DDR5 占产量 87.1%（2025）</td><td class="verdict-red">半导体分行业增速 &lt;15% 预警（当前 7.73% 已低于）；封装测试毛利率（17.90%）能否维持</td></tr>
+        <tr><td>3</td><td>OCF 与合同资产</td><td>半年报</td><td>OCF/NI 0.79（2025）；合同资产 107.83 亿</td><td class="verdict-red">OCF/NI 是否回到 &gt;1；合同资产是否停止膨胀（+27.3%）；坏账计提是否补提</td></tr>
+        <tr><td>4</td><td>2026 半年报 HBM 口径</td><td>2026-08-27</td><td>「不涉及 HBM」（三次澄清）</td><td>半导体板块收入/利润增速；是否维持「不涉及 HBM」表述——多空裁决第一验证点</td></tr>
+        <tr><td>5</td><td>大股东减持动态</td><td>每月/公告</td><td>锡高投持股 31.22%（2026-07 减持 2.3%）</td><td>是否继续减持；无锡产业集团有无增持/回购动作</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- ⑬ 附录 -->
+  <section>
+    <h2>附录</h2>
+    <div class="card">
+      <h3>document-reader 精读摘要（deep-read）</h3>
+      <p>三年年报趋势：<strong>逐年恶化</strong>（营收 393.77→351.72→306.82 亿、归母 7.30→6.57→4.48 亿、扣非 7.13→5.35→4.20 亿、ROE 9.69%→7.88%→5.22%，全部连续下滑）｜ 三年连贯性：<strong>连贯，无断裂</strong>（会计政策/估计一致、期初数衔接一致、审计机构中兴华连续三年、分产品口径一致；海太合同第三期→第四期切换但盈利模式不变）｜ 管理层诚实度：<strong>🟢 诚实（未触发 No-Go）</strong>（补税 2.57 亿附注 76 逐项可稽核、HBM 主动三次澄清不迎合炒作；存疑点：OCF 披露简略、太极半导体亏损轻描淡写，属 🟡 轻度）。</p>
+      <p style="font-size:13px;color:var(--color-ink-subtle);">扣非归因：2025 年归母-扣非差额 0.285 亿（占归母 6.4%），非经主要项目为单独减值测试应收转回 0.415 亿（一次性）、其他营业外收支 0.716 亿；2024 年同项差额 1.22 亿（占 18.6%）主因坏账转回 1.245 亿（一次性不可持续）。指标波动归因：归母 -31.84% 主因所得税费用 +114%（含补缴 2.57 亿），营业利润仅 -2.5%（置信度 9）；OCF -79.87% 主因工程回款减少（合同资产 +23.15 亿，置信度 8）。逻辑一致性：8 项勾稽 2 ❌ 3 ⚠️（合同资产膨胀与回款恶化为核心断裂点）。置信度自评 8/10。</p>
+    </div>
+    <div class="card">
+      <h3>多空论证摘要对照表（Bull vs Bear，摘自 deep-read 第十章）</h3>
+      <table>
+        <tr><th>#</th><th>🟢 多方论点</th><th>强度/置信度</th><th>🔴 空方论点</th><th>强度/置信度</th></tr>
+        <tr><td>1</td><td>海太-SK 海力士绑定利润底座（合同至 2030、成本+10% 保底、OCF 6.98 亿健康）</td><td>强 / 8</td><td>HBM 叙事证伪 + 估值透支（三次澄清不涉 HBM、PE 109.5、分位 93.3%）</td><td>强 / 9</td></tr>
+        <tr><td>2</td><td>存储超级周期 + AI 先进封装（DDR5 87.1%、封装毛利率 +8.13pp、DRAM 合约价 +90-95%）</td><td>中 / 6</td><td>工程现金流失血（OCF/NI 0.79、合同资产 107.83 亿 +27.3%、应收+合同 185 亿）</td><td>强 / 8</td></tr>
+        <tr><td>3</td><td>十一科技资质壁垒 + 半导体厂房长期需求（综合甲级、光伏 EPC 20 强第 5 位）</td><td>中 / 5</td><td>订单断崖 + 商誉测试自证负增长（新签 -31%、在手 -43%、2026-2030 收入 -19.35%~0%）</td><td>强 / 8</td></tr>
+        <tr><td>4</td><td>资产负债表稳健（净现金约 12 亿、商誉 6.6%、审计无保留、分红+回购 52.66%）</td><td>中 / 7</td><td>补税一次性抬升 + 太极半导体转亏（所得税 +114%、优惠失效、净利 -2166 万）</td><td>中 / 7</td></tr>
+        <tr><td>5</td><td>先进封装技术储备期权（16D/32D 堆叠、1β DRAM 验证量产）</td><td>弱 / 3</td><td>大股东高位减持 + 诉讼坏账包袱（锡高投 -2.3%、未决诉讼约 24.8 亿、内蒙 4.83 亿坏账）</td><td>中 / 7</td></tr>
+      </table>
+      <p style="font-size:13px;color:var(--color-ink-subtle);">双方脆弱点：多方论证失效条件 = 2026 半年报半导体增速 &lt;15% 或工程订单继续大幅下滑；空方论证失效条件 = 存储超级周期推动海太收入/利润大幅超预期（如 2026 年半导体板块收入 +50% 以上）且十一科技订单 2026 下半年明显修复。</p>
+    </div>
+    <div class="card">
+      <h3>质量筛查与 10 项检查清单（摘要）</h3>
+      <p>quality-screen：<span class="badge badge-red">RED 0/100</span>（红牌 5 项：资产负债率 72.9%/营收 -12.8%/净利 -31.8%/戴维斯双杀预警/含一次性损益；黄牌 5 项）｜ 财报精读 10 项：❌ = 3（ROE 5.22%、资产负债率 72.91%、营收连续下滑）、⚠️ = 3（OCF/NI 0.79、毛利率 7.65%、MD&amp;A 披露简略）、✅ = 4——❌ ≥3 高优先级风险。详见 md 报告。</p>
+    </div>
+    <div class="card">
+      <h3>50 项投资决策清单 AUTO 扫描（摘要）</h3>
+      <p>综合结论：<span class="badge badge-yellow">⚠️ 有条件放行（退出码 0）</span>——CRITICAL 1/2 未通过（#25 OCF/NI 0.79，未触 No-Go）；经人工核验修正后 IMPORTANT 5/7 未通过（#11、#26、#27、#29、#31）、NORMAL 1/3（#14 重资产）。脚本关键词误读（商誉占比、净利增速）已人工修正，与 quality-screen RED 结论一致。完整扫描块见 md 报告附录⑤。</p>
+    </div>
+    <div class="card">
+      <h3>信息来源与相关研究</h3>
+      <p>法定披露：2023/2024/2025 年报 + 2025 半年报原文（pdf-texts/太极实业/）｜ 精读：[[2026-08-17-太极实业-deep-read]]（含第十章多空论证）｜ 结构化：[[2026-08-17-太极实业-processed]]（56 条关键事实）｜ 知识节点：[[太极实业-公司研究]]、[[存储封测-行业分析]]、[[半导体-行业概览]] ｜ 研报：高盛（目标价 40.8 元）、摩根大通（42.5 元）、东方证券（43.6 元；2026E 7.8 亿/2027E 10.5 亿）、广发（2024-08 增持 8.62 元，25E 预测落空）、国信（2024-08 中性）——研报预测仅供市场共识参考，不替代财报 ｜ 外部证据：上证报、证券时报、AASTOCKS（HBM 澄清/减持公告）｜ 估值/筛查：evaluate.ts、quality-screen.ts、composite.ts、investment-checklist-auto.ts（2026-08-17）。</p>
+    </div>
+  </section>
+
+  <!-- ⑭ 页脚 -->
+  <footer>
+    <p>本报告由本系统基于公开信息生成（2023/2024/2025 年报 + 2025 半年报原文精读 + 券商研报 + 外部多源证据）。数据时点：2026-08-17。研报预测数据仅供市场共识参考，非公司指引。仅供内部研究参考，不构成投资建议。市场有风险，投资需谨慎。</p>
+    <p style="margin-top:8px;">相关笔记：太极实业-公司研究 ｜ 存储封测-行业分析 ｜ 半导体-行业概览 ｜ 2026-08-17-太极实业-deep-read / processed</p>
+  </footer>
+</div>
+
+<script>
+if (window.__ECHARTS_FAIL) {
+  document.querySelectorAll("[id^='chart-']").forEach(function(el){
+    el.innerHTML = '<div style="padding:16px;border:1px dashed #333;color:#666;border-radius:8px;">图表加载失败（CDN 不可用），请查阅 Markdown 报告数据表</div>';
+  });
+}
+
+var DARK = {
+  text: "#a1a1a1", axis: "#666666", split: "#1a1a1a", accent: "#0070f3"
+};
+
+// chart-1 三年营收/归母净利/扣非趋势（柱线混合）
+(function(){
+  var el = document.getElementById("chart-1");
+  if (!el || typeof echarts === "undefined") return;
+  var c = echarts.init(el);
+  c.setOption({
+    backgroundColor: "transparent",
+    color: ["#0070f3", "#2e9e5b", "#fbbf24"],
+    tooltip: { trigger: "axis" },
+    legend: { top: 0, textStyle: { color: DARK.text } },
+    grid: { left: 60, right: 50, top: 44, bottom: 30 },
+    xAxis: { type: "category", data: ["2023", "2024", "2025"], axisLine: { lineStyle: { color: DARK.axis } }, axisLabel: { color: DARK.text } },
+    yAxis: [
+      { type: "value", name: "营收（亿元）", nameTextStyle: { color: DARK.axis }, axisLabel: { color: DARK.text }, splitLine: { lineStyle: { color: DARK.split } } },
+      { type: "value", name: "净利（亿元）", min: 0, max: 10, nameTextStyle: { color: DARK.axis }, axisLabel: { color: DARK.text }, splitLine: { show: false } }
+    ],
+    series: [
+      { name: "营业收入", type: "bar", barWidth: 44, data: [393.77, 351.72, 306.82], label: { show: true, position: "top", color: DARK.text, fontSize: 10 } },
+      { name: "归母净利润", type: "line", yAxisIndex: 1, smooth: true, data: [7.30, 6.57, 4.48], symbolSize: 9, label: { show: true, position: "top", color: "#2e9e5b", fontSize: 10 } },
+      { name: "扣非净利润", type: "line", yAxisIndex: 1, smooth: true, data: [7.13, 5.35, 4.20], symbolSize: 9, label: { show: true, position: "bottom", color: "#fbbf24", fontSize: 10 } }
+    ]
+  });
+})();
+
+// chart-2 十一科技订单序列（新签+在手）
+(function(){
+  var el = document.getElementById("chart-2");
+  if (!el || typeof echarts === "undefined") return;
+  var c = echarts.init(el);
+  c.setOption({
+    backgroundColor: "transparent",
+    color: ["#0070f3", "#fbbf24"],
+    tooltip: { trigger: "axis" },
+    legend: { top: 0, textStyle: { color: DARK.text } },
+    grid: { left: 60, right: 50, top: 44, bottom: 30 },
+    xAxis: { type: "category", data: ["2023", "2024", "2025"], axisLine: { lineStyle: { color: DARK.axis } }, axisLabel: { color: DARK.text } },
+    yAxis: { type: "value", name: "亿元", nameTextStyle: { color: DARK.axis }, axisLabel: { color: DARK.text }, splitLine: { lineStyle: { color: DARK.split } } },
+    series: [
+      { name: "新签合同", type: "bar", barWidth: 34, data: [502.59, 436.70, 301.34], label: { show: true, position: "top", color: DARK.text, fontSize: 10 } },
+      { name: "在手订单（年末）", type: "bar", barWidth: 34, data: [432.86, 394.82, 226.63], label: { show: true, position: "top", color: "#fbbf24", fontSize: 10 } }
+    ]
+  });
+})();
+
+// chart-3 三情景目标价 vs 当前价
+(function(){
+  var el = document.getElementById("chart-3");
+  if (!el || typeof echarts === "undefined") return;
+  var c = echarts.init(el);
+  var cur = 24.05;
+  c.setOption({
+    backgroundColor: "transparent",
+    tooltip: { trigger: "axis" },
+    legend: { top: 0, textStyle: { color: DARK.text } },
+    grid: { left: 60, right: 20, top: 44, bottom: 30 },
+    xAxis: { type: "category", data: ["目标买入 6.7", "悲观 8.4", "中性 11.95", "乐观 16.0", "目标卖出 17.0", "当前 24.05"], axisLine: { lineStyle: { color: DARK.axis } }, axisLabel: { color: DARK.text } },
+    yAxis: { type: "value", name: "元/股", nameTextStyle: { color: DARK.axis }, axisLabel: { color: DARK.text }, splitLine: { lineStyle: { color: DARK.split } } },
+    series: [{
+      name: "价格", type: "bar", barWidth: 40,
+      data: [
+        { value: 6.7, itemStyle: { color: "#666666" } },
+        { value: 8.4, itemStyle: { color: "#2e9e5b" } },
+        { value: 11.95, itemStyle: { color: "#fbbf24" } },
+        { value: 16.0, itemStyle: { color: "#3291ff" } },
+        { value: 17.0, itemStyle: { color: "#0070f3" } },
+        { value: 24.05, itemStyle: { color: "#f04141" } }
+      ],
+      label: { show: true, position: "top", color: DARK.text, fontSize: 10 },
+      markLine: { data: [{ yAxis: cur, lineStyle: { color: "#f04141", type: "dashed" } }], label: { show: true, formatter: "当前价 24.05（高于乐观上沿 +50%）", color: "#f04141", position: "end" } }
+    }]
+  });
+})();
+
+// chart-4 多空五维度对照（条形）
+(function(){
+  var el = document.getElementById("chart-4");
+  if (!el || typeof echarts === "undefined") return;
+  var c = echarts.init(el);
+  c.setOption({
+    backgroundColor: "transparent",
+    color: ["#2e9e5b", "#f04141"],
+    tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
+    legend: { top: 0, textStyle: { color: DARK.text } },
+    grid: { left: 130, right: 50, top: 44, bottom: 30 },
+    xAxis: { type: "value", min: 0, max: 10, name: "置信度（1-10）", nameTextStyle: { color: DARK.axis }, axisLabel: { color: DARK.text }, splitLine: { lineStyle: { color: DARK.split } } },
+    yAxis: { type: "category", data: ["周期/政策/国际", "估值", "财务质量", "护城河", "增长"], axisLine: { lineStyle: { color: DARK.axis } }, axisLabel: { color: DARK.text } },
+    series: [
+      { name: "🟢 多方", type: "bar", barWidth: 12, data: [6, 5, 6, 7, 7], label: { show: true, position: "right", color: "#2e9e5b", fontSize: 10 } },
+      { name: "🔴 空方", type: "bar", barWidth: 12, data: [7, 9, 8, 6, 8], label: { show: true, position: "right", color: "#f04141", fontSize: 10 } }
+    ]
+  });
+})();
+</script>
+
+</body>
+</html>

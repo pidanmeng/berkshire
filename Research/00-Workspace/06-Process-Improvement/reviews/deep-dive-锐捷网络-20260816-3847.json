@@ -1,0 +1,128 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "deep-dive-锐捷网络-20260816-3847",
+  "origin": "process-improvement",
+  "command": "deep-dive 锐捷网络",
+  "status": "success",
+  "issues": [
+    {
+      "problemCode": "evaluate-yoy-data-anomaly",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "symptom": "evaluate.ts 估值快照同比增速异常（复用既有问题，第 3 例）：本次输出『营收同比 2237.41% / 净利同比 2129.80%』，与 2025 年报原文（营收 143.16 亿 +22.37%、归母 6.96 亿 +21.30%）相差百倍；evaluate.ts 无异常倍数校验，PEG 与『PE-TTM vs 净利同比』行直接引用异常值，若下游未以年报核对将污染 processed → 知识库 → 报告整条数据链",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-16 运行 evaluate.ts --code 301165 --peer 600498，输出营收同比 2237.41%、净利同比 2129.80%、PE-TTM 170.77 标注疑似一次性损益；对照 2025 年报原文（+22.37%/+21.30%）矛盾，编排器与 document-reader 均以年报口径剔除 API 异常值后才进入 processed"
+        }
+      ],
+      "rootCauseHypothesis": "hithink API 同比字段口径异常（对比基准期错位或单位放大百倍），evaluate.ts 未对 |同比|>500% 做合理性校验或回退到年报口径，直接透传至输出",
+      "goal": "evaluate.ts 对同比类字段增加合理性校验（|同比|>300% 时标注『数据存疑，以年报为准』）；Forward PE/PEG 计算禁用异常同比递推",
+      "severity": "high",
+      "confidence": 0.95,
+      "benefit": "估值快照与核心指标对下游可信，避免异常增速进入投资判断",
+      "risk": "修改需回归 evaluate.ts 全部输出段落",
+      "acceptance": "evaluate.ts --code 301165 输出营收同比≈+22.37%、净利同比≈+21.30% 或显式标注数据存疑"
+    },
+    {
+      "problemCode": "quality-screen-auto-unit-doc-missing",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "quality-screen --mode auto 输入单位约定易错（复用既有问题，第 2 例）：按百分比值传参（--roe 14.65 --debt 51.2）被脚本内部 ×100 放大（ROE 1465%、资产负债率 5120%），输出红牌判定失真（资产负债率被误判超 70% 红线）；需改传小数（0.1465/0.512）才正确",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-16 首次按百分比传参运行 quality-screen.ts --mode auto --roe 14.65 --gross-margin 35.48 --debt 51.2，输出『高 ROE 1465.0%』『资产负债率 5120.0% 超 70% 红牌』明显失真；改传小数后输出正确（ROE 14.65%/负债率 51.2%，RED 0.7/10 主因应收红牌）。与既有观察（风华高科）同型，跨 2 个 taskId 复现"
+        }
+      ],
+      "rootCauseHypothesis": "auto 模式 CLI 帮助与 AGENTS.md 用法表未明确『百分比类指标须传小数（0-1）』，编排器/Agent 按直觉传百分比导致数值放大 100 倍、红黄牌判定失真",
+      "goal": "脚本帮助文本与 AGENTS.md 用法表补充单位约定；或 auto 模式按传入值域自适应（≥1 视为百分数，<1 视为小数），消除歧义",
+      "severity": "medium",
+      "confidence": 0.75,
+      "benefit": "降低编排器与 Agent 误用概率，避免筛查结论失真",
+      "risk": "自适应逻辑可能改变既有调用行为，需测试覆盖",
+      "acceptance": "auto 模式按百分比传参也能输出正确数值，或帮助文本明确标注小数约定"
+    },
+    {
+      "problemCode": "checklist-auto-false-positives",
+      "targetKind": "script",
+      "targetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "symptom": "investment-checklist-auto.ts 扫描出现中文正则误报需逐项人工澄清（复用既有问题追加证据）：真实警示仅 #31 PE-TTM 170>40 与 #27 负债率约 63%，其余未通过项经原文核验为关键词/上下文误报",
+      "evidence": [
+        { "grade": "C", "detail": "2026-08-16 report-writer 运行 investment-checklist-auto.ts 扫描锐捷网络报告与公司笔记：输出若干 IMPORTANT/NORMAL 未通过项，逐项澄清后仅 #31 估值与 #27 负债率为真实信号，其余为中文正则误报（同型问题已在 国际复材/生益科技/鼎泰高科/三环集团/盛科通信/风华高科 等多任务记录）"
+        }
+      ],
+      "rootCauseHypothesis": "AUTO 扫描为关键词匹配、缺乏上下文语义与最新财年取值约束，对三年对照表首行、警示措辞、否定语境（无减值/转回）等误命中",
+      "goal": "AUTO 扫描增加上下文消歧与最新财年取值，降低误报率，减少人工逐项核实成本",
+      "severity": "medium",
+      "confidence": 0.8,
+      "benefit": "50 项投资决策清单 AUTO 扫描结论可信度提升，避免误报干扰放行决策",
+      "risk": "消歧规则复杂化可能引入漏报，需回归多公司样本测试",
+      "acceptance": "对锐捷网络报告扫描不再出现非真实警示的未通过项"
+    },
+    {
+      "problemCode": "research-report-lack-bear-coverage",
+      "targetKind": "process",
+      "targetPath": "Research/00-Workspace/02-Processing/pdf-texts/鼎泰高科/研报集.md",
+      "symptom": "券商研报全部为看多/正面评级，无看空或谨慎评级（复用既有问题，第 2 例）：本次 13 篇研报（开源/太平洋/民生/国信/国元）全部为买入/增持，deep-dive『至少 1 篇看多 + 1 篇看空/谨慎（如有）』在看空侧缺失，空方论点只能由 bear-advocate 基于财报原文 + 编排器 WebSearch 外部媒体观点独立挖掘",
+      "evidence": [
+        { "grade": "C", "detail": "2026-08-16 stock.ts --reports --days 730 返回 13 篇研报全部看多，无看空/谨慎；编排器另行 WebSearch 补充空方观点（雪球/证券之星/东财股吧等，含 PE 99.77% 分位、毛利率下滑、Q4 魔咒、JDM 议价权等），bear-advocate 独立完成空方论证。与既有观察（鼎泰高科）同型，跨 2 个 taskId 复现"
+        }
+      ],
+      "rootCauseHypothesis": "研报采集源单一（东财研报中心），券商对高景气赛道公司普遍只发买入研报，看空观点不进入研报体系",
+      "goal": "采集看空观点时扩展非研报源（负面新闻、减持公告、雪球看空长文）；研报侧无看空时显式标注并提示 bear-advocate 独立挖掘",
+      "severity": "low",
+      "confidence": 0.7,
+      "benefit": "多空辩论的证据对称性提升，避免多方单边叙事",
+      "risk": "非研报源信噪比低，需甄别来源可信度",
+      "acceptance": "研报集在看空缺失时自动补充非研报看空线索清单"
+    },
+    {
+      "problemCode": "deep-dive-validated-link-broken",
+      "targetKind": "template",
+      "targetPath": "Research/99-Templates/company-template.md",
+      "symptom": "deep-dive 命令流程不含 Phase 3（cross-validator，无 validated 文件产出），但公司笔记模板/知识架构师强制 frontmatter 填写 validation_source（复用既有问题，第 2 例）：本次锐捷网络笔记 validation_source 指向不存在的 validated 文件，knowledge-architect 改为以 deep-read 为主验证源；同时 deep-read『待核实事项』（200G/400G 份额口径冲突、三家互联网客户占数据中心 ~90% 单源数据）无 Phase 3 验证环节",
+      "evidence": [
+        { "grade": "C", "detail": "2026-08-16 knowledge-architect 入库锐捷网络笔记时标注『03-Validation 无 validated 文件，validation_source 已指向 deep-read 为主验证源，若后续产出 validated 需回填』；deep-read 交接的 5 个待验证点（含 200G/400G 份额『连续14季度第一 vs IDC 2026Q1 第二』冲突）无验证环节承接，与既有观察（炬芯科技）同型，跨 2 个 taskId 复现"
+        }
+      ],
+      "rootCauseHypothesis": "deep-dive 命令精简了 Phase 3，但 company-template.md 与 knowledge-architect 定义仍保留 validated 引用约定，未同步适配 deep-dive 模式；待验证事项缺乏承接环节",
+      "goal": "deep-dive 模式笔记的 validation_source 指向 deep-read 或允许为空并注明流程；模板同步说明各模式的 validation_source 取值规则；待核实事项由报告/下一轮研究承接验证",
+      "severity": "medium",
+      "confidence": 0.7,
+      "benefit": "知识库双链健康度提升，避免失效链接进入图谱与 valuation-tracker",
+      "risk": "模板改动需同步 knowledge-architect 定义与既有笔记约定",
+      "acceptance": "deep-dive 模式公司笔记 validation_source 指向实际存在的文件（deep-read 或空值+注释）"
+    },
+    {
+      "problemCode": "web-fetch-jina-anti-bot",
+      "targetKind": "script",
+      "targetPath": ".trae/skills/research-web-search",
+      "symptom": "WebFetch r.jina.ai 前缀抓取东财研报详情页返回『正在进行安全验证』反爬页（复用既有问题，第 2 例）：研报正文抓取需另寻路径",
+      "evidence": [
+        { "grade": "C", "detail": "2026-08-16 WebFetch https://r.jina.ai/https://data.eastmoney.com/report/zw_stock.jshtml?infocode=AP202608161828029098 返回安全验证页（反爬），与既有观察（炬芯科技）同型；本次研报观点以 WebSearch 摘要 + 外部来源补充，未直接获取研报正文"
+        }
+      ],
+      "rootCauseHypothesis": "r.jina.ai 对东财域名触发反爬（频率/IP 限制），或免费代理节点被识别",
+      "goal": "研报抓取统一走 fetch-source.ts，文档移除 r.jina.ai 建议路径或标注可用性限制",
+      "severity": "low",
+      "confidence": 0.5,
+      "benefit": "研报正文获取路径确定性提升，减少抓取失败重试",
+      "risk": "低，仅影响文档指引",
+      "acceptance": "research-web-search 文档中 r.jina.ai 路径标注或替换为 fetch-source.ts 优先"
+    },
+    {
+      "problemCode": "deep-dive-report-html-omission",
+      "targetKind": "command",
+      "targetPath": ".trae/commands/deep-dive.md",
+      "symptom": "deep-dive 命令与 AGENTS.md 对报告形态要求不一致：命令步骤 7 仅要求『单公司简版 md 报告』，而 AGENTS.md 交付质量检查要求『报告输出 md + html 双份（HTML 独立编写、图表 ECharts CDN）』，本次仅产出 md 未产出 HTML",
+      "evidence": [
+        { "grade": "C", "detail": "2026-08-16 report-writer 交付 md 简版报告后说明『未产出 HTML（本任务仅要求 md 单公司简版）』；对照 AGENTS.md 交付质量检查『报告输出 md + html 双份』存在约定冲突，单次观察"
+        }
+      ],
+      "rootCauseHypothesis": "deep-dive 命令定义与 AGENTS.md 全局交付标准未对齐，命令作者未明确简版报告是否豁免 HTML",
+      "goal": "统一约定：deep-dive 简版报告是否需 HTML 由命令显式声明（或补充 HTML 产出步骤），消除两处文档冲突",
+      "severity": "low",
+      "confidence": 0.5,
+      "benefit": "交付形态可预期，避免子 Agent 与编排器对产物完整性判断不一致",
+      "risk": "无",
+      "acceptance": "deep-dive 命令明示报告是否包含 HTML，或 AGENTS.md 标注简版报告豁免 HTML"
+    }
+  ]
+}

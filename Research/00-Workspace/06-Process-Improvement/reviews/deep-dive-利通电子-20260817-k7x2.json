@@ -1,0 +1,74 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "deep-dive-利通电子-20260817-k7x2",
+  "origin": "process-improvement",
+  "command": "deep-dive 利通电子",
+  "status": "success",
+  "issues": [
+    {
+      "problemCode": "deep-dive-bear-report-coverage-gap",
+      "targetKind": "process",
+      "targetPath": "deep-dive 流程·步骤 2.4（研报采集）",
+      "symptom": "利通电子（603629）券商研报 stock.ts 近 365 天与近 1100 天均返回 0 条（全量缺失，比中石科技任务仅 2 条更严重）；而 2026-06-30/07-01 投资者关系活动显示参与机构 13 家/8 家，卖方/机构有明显关注但研报未抓取；多空论证的看多/看空外部佐证均由 document-reader 以 WebSearch 补建，不满足 deep-dive『至少 1 篇看多 + 1 篇看空』研报采集要求",
+      "evidence": [
+        { "grade": "B", "detail": "跨任务复现：2026-08-17 stock.ts --code 603629 --reports --days 365 与 --days 1100 两次独立调用均输出『共 0 条』（可复现失败）；中石科技任务（deep-dive-中石科技-20260817-cd4f）同日观察近 365 天仅 2 条研报且均为买入评级，两任务共同指向研报数据源覆盖不足" },
+        { "grade": "C", "detail": "通达信 F10 显示 2026-07-01 参与调研机构 13 家、2026-06-30 参与 8 家（投资者关系活动记录），但 stock.ts 未输出任何研报，存在卖方关注与研报抓取结果的明显落差" }
+      ],
+      "rootCauseHypothesis": "stock.ts 研报源（东财研报接口）对部分标的返回空集（接口收录不全或筛选条件过严）；A 股卖方研报整体偏多且部分转型期中小市值标的覆盖稀疏，看空研报稀缺",
+      "goal": "stock.ts 研报抓取对空集做显式标注与降级提示（如『数据源 0 条，建议 WebSearch 补充』）；研报采集在看空稀缺时以负面观点新闻/机构调研纪要作为空方外部佐证源；deep-read 标注『研报外部佐证缺失』",
+      "severity": "medium",
+      "confidence": 0.75,
+      "benefit": "研报采集完整性提升，多空论证外部证据链更完整（避免 document-reader 全自主建观点）",
+      "risk": "补充检索增加采集耗时；负面信源质量参差需人工甄别",
+      "acceptance": "stock.ts --code 603629 --reports 返回非空研报或显式标注数据源缺失；deep-read 多空论证至少 1 条外部研报/新闻佐证"
+    },
+    {
+      "problemCode": "checklist-auto-growth-column-misread",
+      "targetKind": "script",
+      "targetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "symptom": "同一公司两次扫描结果不一致：第一版（以 deep-read 文件作第二参数）将净利增速提取为 2.9%（实际 1088.6%），导致 #31『PE>40 无高增长』误判 ❌（实际应 ✅）且 #29 说明列错误；知识节点入库后重跑提取 1088.6% 才正确",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-17 investment-checklist-auto.ts 对利通电子报告+deep-read 第一版输出『净利=2.9%』判 #31 ❌、#29 误标；公司笔记入库后以报告+笔记重跑输出『净利=1088.6%』判 #31 ✅，两次运行结果差异由表格列匹配误差导致" }
+      ],
+      "rootCauseHypothesis": "扫描器按表格行列正则提取增速字段，deep-read 与公司笔记的表格行结构不同（匹配到净利数值行而非增速行），缺乏跨文件结构健壮的列头校验",
+      "goal": "AUTO 扫描增速字段提取增加列头校验与数值合理性校验（增速方向/量级与上下文不符时提示人工核对），保证不同输入文件结构下结果一致",
+      "severity": "medium",
+      "confidence": 0.85,
+      "benefit": "50 项投资决策清单 AUTO 结论跨输入文件结构的一致性，减少误判与人工核验成本",
+      "risk": "校验规则过严可能漏检真实数据，需测试覆盖",
+      "acceptance": "同一报告以任意输入文件扫描，增速与 PE 相关项（#29/#31）结论一致且与事实相符"
+    },
+    {
+      "problemCode": "quality-screen-debt-metric-period-mismatch",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "auto 模式传 2026Q1 资产负债率 75.1%（红牌『超 70%』）与 report 模式从笔记 frontmatter financials 提取 2025FY 69.0%（黄牌『60-70% 偏高』）综合评分不同（1.5 vs 0.5），最新季度财务恶化无法在筛查评分中反映",
+      "evidence": [
+        { "grade": "B", "detail": "2026-08-17 利通电子两次 quality-screen：auto 模式（--debt 75.1，2026Q1 口径）综合 1.5/10 RED；report 模式从笔记 financials 提取 69.0%（2025FY 口径）判黄牌、综合 0.5/10；两口径均 RED 但评分与红牌条目不同，knowledge-architect 已在笔记中人工记录口径说明" }
+      ],
+      "rootCauseHypothesis": "frontmatter financials 块按年报口径生成（backfill 规则），无最新季度数据通道；quality-screen 无季报数据源，无法感知季度间财务恶化（本次为杠杆与存货恶化）",
+      "goal": "quality-screen 或笔记 frontmatter 支持标注『最新季度财务变化』（如 research_cutoff 外的 quarter snapshot），或在筛查输出中显式标注口径时点",
+      "severity": "low",
+      "confidence": 0.6,
+      "benefit": "质量筛查时效性与口径透明度提升",
+      "risk": "引入季报快照字段需同步 backfill/解析/前端链路",
+      "acceptance": "公司笔记或筛查输出能显式呈现最新季度关键财务（负债率等）与报告期口径的差异"
+    },
+    {
+      "problemCode": "deep-dive-report-html-missing",
+      "targetKind": "process",
+      "targetPath": "deep-dive 流程·步骤 7（报告生成）",
+      "symptom": "deep-dive 命令步骤 7 仅定义 Markdown 报告路径（company-deep-dive-template），未产出 HTML 版本，与 AGENTS.md『报告输出 md + html 双份』交付质量标准不一致；本次 deep-dive 报告仅 md 交付",
+      "evidence": [
+        { "grade": "A", "detail": "AGENTS.md『交付质量检查-基础质量』要求『报告输出 md + html 双份（HTML 独立编写、图表 ECharts CDN）』；deep-dive 命令产物清单仅含 YYYY-MM-DD-<公司名>-deep-dive-report.md，本次实际产出亦仅 md" }
+      ],
+      "rootCauseHypothesis": "deep-dive.md 命令文档与 AGENTS.md 全局交付标准未对齐（deep-dive 为单公司简版，模板无 HTML 要求）；HTML 构建或在 /research 完整流程的 report-writer 中执行，deep-dive 未纳入",
+      "goal": "明确 deep-dive 报告是否需要 HTML：如需则在命令/模板中补 HTML 步骤；如豁免则在 AGENTS.md 交付检查中为 deep-dive 标注例外，避免交付口径冲突",
+      "severity": "low",
+      "confidence": 0.8,
+      "benefit": "交付口径一致，避免编排器与全局质量标准冲突",
+      "risk": "命令与 AGENTS.md 修改需用户批准（批次治理边界）",
+      "acceptance": "deep-dive 命令文档或 AGENTS.md 交付检查显式说明单公司简版报告的 HTML 要求或豁免"
+    }
+  ]
+}

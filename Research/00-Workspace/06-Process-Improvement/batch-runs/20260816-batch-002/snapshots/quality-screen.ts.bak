@@ -1,0 +1,591 @@
+#!/usr/bin/env bun
+/**
+ * 公司质量筛查 (Quality Screen)
+ * 灵感来自 ai-berkshire 的 quality-screen Skill（7 项质量评分 + 8 项财务红牌筛查）
+ *
+ * 用法:
+ *   bun run quality-screen.ts --mode auto   --roe 0.18 --gross-margin 0.32 --net-margin 0.15 --ocf-to-ni 1.1 --debt 0.4 --pe-ttm 18 --revenue-growth 0.12 --earnings-growth 0.15 --name "贵州茅台" --code 600519
+ *   # 排雷扩展（可选）：--cash-to-revenue 1.05 --interest-coverage 3.2 --receivables-growth 0.1 --inventory-growth 0.05 --short-debt-ratio 0.6 --cash-asset-ratio 0.2 --goodwill-ratio 0.1 --regulatory-violations
+ *   bun run quality-screen.ts --mode report --file <company-report-md-path>
+ *   bun run quality-screen.ts --mode batch  --csv <input.csv>   # 批量筛查
+ *
+ * 输入数据优先级 (auto 模式下用户不提供时自动查):
+ *   1. CLI 参数直接传入
+ *   2. 尝试调用 research-financial-analysis skills 的 evaluate.ts 获取
+ *   3. 尝试调用 hithink-finance 的公司财务数据端点
+ *   4. 缺失项标记为 N/A 并给出"数据不足"提示
+ */
+
+import { parseArgs } from "util";
+
+type NumOpt = number | null;
+
+interface CompanyMetrics {
+  name?: string;
+  code?: string | number;
+  roe: NumOpt;           // ROE (净资产收益率，小数，如 0.18 表示 18%)
+  grossMargin: NumOpt;   // 毛利率 (小数)
+  netMargin: NumOpt;     // 净利率 (小数)
+  ocfToNi: NumOpt;       // 经营现金流 / 净利润 (如 1.1 表示现金流好于净利)
+  debtRatio: NumOpt;     // 资产负债率 (小数)
+  peTtm: NumOpt;         // PE(TTM)
+  revenueGrowth: NumOpt; // 营收同比增长 (小数)
+  earningsGrowth: NumOpt;// 净利润同比增长 (小数)
+  // ==== 财务排雷扩展（方法论：财务报表入门 / QA 系列）====
+  cashToRevenue?: NumOpt;      // 现金收入比 = 销售商品收到现金 / 营业收入
+  interestCoverage?: NumOpt;   // 利息覆盖倍数 = 经营现金流 / 利息支出
+  receivablesGrowth?: NumOpt;  // 应收账款同比增速 (小数)
+  inventoryGrowth?: NumOpt;    // 存货同比增速 (小数)
+  shortDebtRatio?: NumOpt;     // 短期有息负债占负债总额比例 (小数)
+  cashAssetRatio?: NumOpt;     // 货币资金 / 总资产 (小数，用于存贷双高判定)
+  goodwillRatio?: NumOpt;      // 商誉 / 净资产 (小数)
+  regulatoryViolations?: boolean; // 是否存在监管处罚/立案记录
+}
+
+interface QualityResult {
+  overallScore: number;   // 0-10 综合分
+  redFlags: string[];     // 红牌 (需高度警惕的财务异常)
+  yellowFlags: string[];  // 黄牌 (需关注但未触及红线)
+  greenHighlights: string[]; // 绿牌 (加分亮点)
+  sevenQuality: {         // 七项质量评分 (0-10)
+    profitability: number;     // 盈利能力 (ROE/毛利率/净利率)
+    cashQuality: number;       // 现金流质量 (OCF vs NI)
+    leverageSafety: number;    // 杠杆与安全 (资产负债率)
+    valuation: number;         // 估值合理性 (PE 区间)
+    growth: number;            // 成长性 (营收+利润增长)
+    businessMoat: number;      // 生意模式护城河 (高毛利+高 ROE 稳定性信号)
+    earningsQuality: number;   // 盈利质量 (综合净利+现金流的匹配)
+  };
+  verdict: "GREEN" | "YELLOW" | "RED"; // 最终筛查结论
+  verdictText: string;
+  markdown: string;       // Markdown 报告（可直接粘贴进公司笔记/报告）
+}
+
+// ======== 核心评分逻辑 ========
+export function screenCompany(m: CompanyMetrics): QualityResult {
+  const redFlags: string[] = [];
+  const yellowFlags: string[] = [];
+  const greenHighlights: string[] = [];
+
+  // ==== 8 项财务红牌筛查 (ai-berkshire 原版 8-filters) ====
+
+  // 1. ROE 检查：连续 2 年 <10% → 黄牌；<5% → 红牌
+  if (m.roe !== null) {
+    if (m.roe < 0.05)      redFlags.push(`ROE 仅 ${(m.roe * 100).toFixed(1)}%，低于 5% 资本回报红线`);
+    else if (m.roe < 0.10) yellowFlags.push(`ROE ${(m.roe * 100).toFixed(1)}%，低于 10% 良好线`);
+    else if (m.roe >= 0.20) greenHighlights.push(`高 ROE ${(m.roe * 100).toFixed(1)}%，显示强护城河`);
+  } else yellowFlags.push("ROE 数据缺失，需手动确认");
+
+  // 2. 毛利率检查：<20% → 黄牌（弱护城河/价格战）
+  if (m.grossMargin !== null) {
+    if (m.grossMargin < 0.20)      yellowFlags.push(`毛利率 ${(m.grossMargin * 100).toFixed(1)}%，低于 20%（弱护城河风险）`);
+    else if (m.grossMargin >= 0.40) greenHighlights.push(`高毛利率 ${(m.grossMargin * 100).toFixed(1)}%，通常意味差异化/护城河`);
+  } else yellowFlags.push("毛利率数据缺失");
+
+  // 3. 净利率检查：<5% → 黄牌
+  if (m.netMargin !== null) {
+    if (m.netMargin < 0.05)       yellowFlags.push(`净利率 ${(m.netMargin * 100).toFixed(1)}%，低于 5%，价格敏感度高`);
+    else if (m.netMargin >= 0.20) greenHighlights.push(`净利率 ${(m.netMargin * 100).toFixed(1)}%，出色的费用控制或定价权`);
+  } else yellowFlags.push("净利率数据缺失");
+
+  // 4. 现金流质量：OCF/NI < 0.8 连续两年 → 红牌；<0.5 → 严重红牌
+  if (m.ocfToNi !== null) {
+    if (m.ocfToNi < 0.5)        redFlags.push(`经营现金流/净利润仅 ${m.ocfToNi.toFixed(2)}，低于 0.5（严重盈利质量隐患）`);
+    else if (m.ocfToNi < 0.8)   yellowFlags.push(`经营现金流/净利润 ${m.ocfToNi.toFixed(2)}，低于 0.8（利润含金量存疑）`);
+    else if (m.ocfToNi >= 1.2)  greenHighlights.push(`经营现金流/净利润 ${m.ocfToNi.toFixed(2)}，高含金量利润`);
+  } else yellowFlags.push("现金流/净利比数据缺失，无法判断盈利质量");
+
+  // 5. 资产负债率：>70% → 红牌（金融行业除外，需手动豁免）；>50% → 黄牌
+  if (m.debtRatio !== null) {
+    if (m.debtRatio > 0.70)     redFlags.push(`资产负债率 ${(m.debtRatio * 100).toFixed(1)}%，超过 70% 高杠杆红线`);
+    else if (m.debtRatio > 0.50) yellowFlags.push(`资产负债率 ${(m.debtRatio * 100).toFixed(1)}%，超过 50%，杠杆偏高`);
+    else if (m.debtRatio < 0.30) greenHighlights.push(`资产负债率仅 ${(m.debtRatio * 100).toFixed(1)}%，财务结构稳健`);
+  } else yellowFlags.push("资产负债率数据缺失");
+
+  // 6. PE(TTM) 检查：>40 → 黄牌（除非超高增长豁免）；<0（亏损）→ 红牌
+  if (m.peTtm !== null) {
+    if (m.peTtm < 0)             redFlags.push(`PE(TTM) 为负值（公司亏损，${m.peTtm.toFixed(1)}）`);
+    else if (m.peTtm > 40) {
+      const hasHighGrowth = (m.revenueGrowth ?? 0) >= 0.20 && (m.earningsGrowth ?? 0) >= 0.25;
+      if (!hasHighGrowth)        yellowFlags.push(`PE(TTM) ${m.peTtm.toFixed(1)} > 40 且无 20%+ 高增长支撑，估值偏贵`);
+    } else if (m.peTtm < 15 && m.peTtm > 0) greenHighlights.push(`PE(TTM) ${m.peTtm.toFixed(1)} < 15，估值有一定吸引力`);
+  } else yellowFlags.push("PE(TTM) 数据缺失，估值判断缺失");
+
+  // 7. 成长性：营收 + 净利 双负增长 → 黄牌；营收连续下降 >2 年 → 红牌（此处仅按当期判断）
+  if (m.revenueGrowth !== null) {
+    if (m.revenueGrowth < -0.10) redFlags.push(`营收同比下降 ${(m.revenueGrowth * 100).toFixed(1)}%，大幅萎缩`);
+    else if (m.revenueGrowth < 0) yellowFlags.push(`营收同比 ${(m.revenueGrowth * 100).toFixed(1)}%，负增长`);
+    else if (m.revenueGrowth >= 0.15) greenHighlights.push(`营收增长 ${(m.revenueGrowth * 100).toFixed(1)}%，强成长`);
+  } else yellowFlags.push("营收增长率数据缺失");
+
+  if (m.earningsGrowth !== null) {
+    if (m.earningsGrowth < -0.20) redFlags.push(`净利同比下降 ${(m.earningsGrowth * 100).toFixed(1)}%，严重恶化`);
+    else if (m.earningsGrowth < 0) yellowFlags.push(`净利同比 ${(m.earningsGrowth * 100).toFixed(1)}%，利润下滑`);
+    else if (m.earningsGrowth >= 0.20) greenHighlights.push(`净利增长 ${(m.earningsGrowth * 100).toFixed(1)}%，利润增长强劲`);
+  } else yellowFlags.push("净利增长率数据缺失");
+
+  // 8. 双杀风险：营收负增长 + 净利负增长 + 高估值 → 红牌
+  if (m.revenueGrowth !== null && m.earningsGrowth !== null && m.peTtm !== null) {
+    if (m.revenueGrowth < 0 && m.earningsGrowth < 0 && m.peTtm > 30) {
+      redFlags.push("⚠️ 戴维斯双杀预警：营收下滑+净利下滑+PE>30，估值泡沫化");
+    }
+  }
+
+  // ==== 财务排雷扩展红牌（方法论：现金收入比/利息覆盖/应收存货增速/债务期限/存贷双高/商誉/监管记录）====
+  // 仅当用户显式提供扩展指标时启用；未提供时静默跳过，不产生"数据缺失"噪音
+  const extendedKeys: (keyof CompanyMetrics)[] = ["cashToRevenue", "interestCoverage", "receivablesGrowth", "inventoryGrowth", "shortDebtRatio", "cashAssetRatio", "goodwillRatio", "regulatoryViolations"];
+  const extendedProvided = extendedKeys.some(k => m[k] != null);
+
+  // 9. 现金收入比：<0.7 → 红牌；<0.9 → 黄牌（收入端利润质量，先于利润表预警）
+  if (m.cashToRevenue == null) {
+    if (extendedProvided) yellowFlags.push("现金收入比数据缺失（扩展排雷未覆盖）");
+  } else if (m.cashToRevenue < 0.7) {
+    redFlags.push(`现金收入比仅 ${m.cashToRevenue.toFixed(2)}，低于 0.7（收入确认激进/回款恶化，盈利质量红灯）`);
+  } else if (m.cashToRevenue < 0.9) {
+    yellowFlags.push(`现金收入比 ${m.cashToRevenue.toFixed(2)}，低于 0.9（回款质量存疑）`);
+  }
+
+  // 10. 利息覆盖倍数（经营现金流/利息支出）：<1 → 红牌；<2 → 黄牌（现金流偿息能力）
+  if (m.interestCoverage == null) {
+    if (extendedProvided) yellowFlags.push("利息覆盖倍数数据缺失（扩展排雷未覆盖）");
+  } else if (m.interestCoverage < 1) {
+    redFlags.push(`利息覆盖倍数仅 ${m.interestCoverage.toFixed(2)}，低于 1（经营现金流无法覆盖利息，偿债红灯）`);
+  } else if (m.interestCoverage < 2) {
+    yellowFlags.push(`利息覆盖倍数 ${m.interestCoverage.toFixed(2)}，低于 2（偿息缓冲不足）`);
+  }
+
+  // 11. 应收账款增速 vs 收入增速：>2x → 红牌；>1.5x → 黄牌（收入注水/放宽信用政策）
+  if (m.receivablesGrowth != null && m.revenueGrowth != null) {
+    if (m.receivablesGrowth > Math.max(m.revenueGrowth * 2, m.revenueGrowth + 0.30)) {
+      redFlags.push(`应收账款增速 ${(m.receivablesGrowth * 100).toFixed(1)}% 远超收入增速 ${(m.revenueGrowth * 100).toFixed(1)}%（收入注水/回款承压）`);
+    } else if (m.receivablesGrowth > m.revenueGrowth * 1.5) {
+      yellowFlags.push(`应收账款增速 ${(m.receivablesGrowth * 100).toFixed(1)}% 高于收入增速 ${(m.revenueGrowth * 100).toFixed(1)}%（信用政策放宽）`);
+    }
+  }
+
+  // 12. 存货增速 vs 收入增速：收入负增而存货高增 → 红牌；>2x → 黄牌（存货积压/跌价风险）
+  if (m.inventoryGrowth != null && m.revenueGrowth != null) {
+    if (m.revenueGrowth < 0 && m.inventoryGrowth > 0.30) {
+      redFlags.push(`收入负增 ${(m.revenueGrowth * 100).toFixed(1)}% 而存货高增 ${(m.inventoryGrowth * 100).toFixed(1)}%（存货积压，跌价风险）`);
+    } else if (m.inventoryGrowth > Math.max(m.revenueGrowth * 2, m.revenueGrowth + 0.30)) {
+      yellowFlags.push(`存货增速 ${(m.inventoryGrowth * 100).toFixed(1)}% 远超收入增速 ${(m.revenueGrowth * 100).toFixed(1)}%（存货积压）`);
+    }
+  }
+
+  // 13. 债务期限结构：短期有息负债占比 >70% → 黄牌（短债长投/期限错配预警）
+  if (m.shortDebtRatio == null) {
+    if (extendedProvided) yellowFlags.push("短期有息负债占比数据缺失（扩展排雷未覆盖）");
+  } else if (m.shortDebtRatio > 0.7) {
+    yellowFlags.push(`短期有息负债占比 ${(m.shortDebtRatio * 100).toFixed(1)}%，超过 70%（短债长投/期限错配风险）`);
+  }
+
+  // 14. 存贷双高：货币资金/总资产 ≥30% 且 资产负债率 ≥60% → 红牌（账面资金与有息负债同时高企）
+  if (m.cashAssetRatio != null && m.debtRatio != null) {
+    if (m.cashAssetRatio >= 0.30 && m.debtRatio >= 0.60) {
+      redFlags.push(`存贷双高疑似：货币资金占比 ${(m.cashAssetRatio * 100).toFixed(1)}% + 资产负债率 ${(m.debtRatio * 100).toFixed(1)}%（资金与负债同时高企，警惕资金占用/造假）`);
+    }
+  }
+
+  // 15. 商誉/净资产：>50% → 红牌；>30% → 黄牌（减值地雷）
+  if (m.goodwillRatio == null) {
+    if (extendedProvided) yellowFlags.push("商誉/净资产数据缺失（扩展排雷未覆盖）");
+  } else if (m.goodwillRatio > 0.5) {
+    redFlags.push(`商誉/净资产 ${(m.goodwillRatio * 100).toFixed(1)}%，超过 50%（减值地雷高风险）`);
+  } else if (m.goodwillRatio > 0.3) {
+    yellowFlags.push(`商誉/净资产 ${(m.goodwillRatio * 100).toFixed(1)}%，超过 30%（需关注减值风险）`);
+  }
+
+  // 16. 监管记录：存在监管处罚/立案 → 红牌（管理层诚信/合规红灯）
+  if (m.regulatoryViolations === true) {
+    redFlags.push("存在监管处罚/立案记录（合规与诚信红灯，须核查详情）");
+  }
+
+  // ======== 7 项质量评分 (0-10) ========
+  const score = (cond: number, passHigh: number, failLow: number, inverse = false): number => {
+    // inverse = true 表示值越小越好（如 debt/PE）
+    const v = inverse ? -cond : cond;
+    const p = inverse ? -passHigh : passHigh;
+    const f = inverse ? -failLow : failLow;
+    if (v >= p) return 9;
+    if (v >= (p + f) / 2) return 7;
+    if (v >= f) return 5;
+    if (v >= f * 0.5) return 3;
+    return 1;
+  };
+  const clamp10 = (n: number | null, min = 0, max = 10) => n === null ? 5 : Math.max(min, Math.min(max, n));
+
+  // 盈利性（ROE 60% + 毛利率 20% + 净利率 20%）
+  const profitability = clamp10(
+    (m.roe !== null ? score(m.roe, 0.18, 0.08) * 0.6 : 5 * 0.6) +
+    (m.grossMargin !== null ? score(m.grossMargin, 0.35, 0.15) * 0.2 : 5 * 0.2) +
+    (m.netMargin !== null ? score(m.netMargin, 0.15, 0.05) * 0.2 : 5 * 0.2)
+  );
+
+  // 现金流质量
+  const cashQuality = m.ocfToNi !== null
+    ? clamp10(m.ocfToNi >= 1.2 ? 10 : m.ocfToNi >= 1 ? 8 : m.ocfToNi >= 0.8 ? 6 : m.ocfToNi >= 0.5 ? 3 : 1)
+    : 5;
+
+  // 杠杆安全性（反向）
+  const leverageSafety = m.debtRatio !== null
+    ? clamp10(score(m.debtRatio, 0.25, 0.55, true))
+    : 5;
+
+  // 估值（反向，低 PE 高分）
+  const valuation = m.peTtm !== null
+    ? clamp10(
+        m.peTtm < 0 ? 1
+          : m.peTtm <= 15 ? 10
+          : m.peTtm <= 25 ? 8
+          : m.peTtm <= 35 ? 6
+          : m.peTtm <= 50 ? 3
+          : 2
+      )
+    : 5;
+
+  // 成长性（营收 40% + 净利 60%）
+  const growth = clamp10(
+    (m.revenueGrowth !== null ? score(m.revenueGrowth, 0.15, 0) * 0.4 : 5 * 0.4) +
+    (m.earningsGrowth !== null ? score(m.earningsGrowth, 0.20, 0) * 0.6 : 5 * 0.6)
+  );
+
+  // 生意模式护城河（毛利率 40% + ROE 40% + 净利率 20% 的合成）
+  const businessMoat = clamp10(
+    (m.grossMargin !== null ? score(m.grossMargin, 0.40, 0.20) * 0.4 : 5 * 0.4) +
+    (m.roe !== null ? score(m.roe, 0.20, 0.10) * 0.4 : 5 * 0.4) +
+    (m.netMargin !== null ? score(m.netMargin, 0.18, 0.08) * 0.2 : 5 * 0.2)
+  );
+
+  // 盈利质量（净利 vs 现金流匹配度 + 可持续性）
+  const earningsQuality = clamp10(
+    cashQuality * 0.6 +
+    (m.netMargin !== null && m.roe !== null ? (m.netMargin > 0.12 && m.roe > 0.15 ? 9 : 6) : 5) * 0.4
+  );
+
+  // ======== 综合评分 ========
+  const weights = { profitability: 0.18, cashQuality: 0.18, leverageSafety: 0.14,
+                    valuation: 0.12, growth: 0.14, businessMoat: 0.16, earningsQuality: 0.08 };
+  const sevenQuality = { profitability, cashQuality, leverageSafety, valuation, growth, businessMoat, earningsQuality };
+  let overallScore =
+    profitability * weights.profitability +
+    cashQuality * weights.cashQuality +
+    leverageSafety * weights.leverageSafety +
+    valuation * weights.valuation +
+    growth * weights.growth +
+    businessMoat * weights.businessMoat +
+    earningsQuality * weights.earningsQuality;
+  overallScore = Math.round(overallScore * 10) / 10;
+
+  // 红牌扣总分（每张红牌 -2），黄牌 -0.5
+  overallScore -= redFlags.length * 2.0;
+  overallScore -= yellowFlags.length * 0.5;
+  overallScore = Math.max(0, Math.min(10, overallScore));
+
+  // 最终结论
+  let verdict: "GREEN" | "YELLOW" | "RED" = "YELLOW";
+  let verdictText = "质量中性，需结合护城河/管理层定性进一步评估";
+  const nullCount = [m.roe, m.grossMargin, m.netMargin, m.ocfToNi, m.debtRatio, m.peTtm, m.revenueGrowth, m.earningsGrowth].filter(v => v === null).length;
+  if (nullCount >= 6 && redFlags.length === 0) {
+    verdict = "YELLOW";
+    verdictText = "数据严重不足，无法完成筛查，请补充财务数据";
+  } else if (redFlags.length >= 2 || overallScore < 4.5) {
+    verdict = "RED";
+    verdictText = "质量存疑 ⛔ — 建议暂缓跟踪或排除，除非出现重大转机";
+  } else if (redFlags.length === 0 && overallScore >= 7.5 && greenHighlights.length >= 2) {
+    verdict = "GREEN";
+    verdictText = "质量优秀 ✅ — 符合巴菲特标准，可纳入深入研究池";
+  }
+
+  // ======== Markdown 报告 ========
+  const companyLabel = [m.name, m.code ? String(m.code) : ""].filter(Boolean).join(" (") + (m.code ? ")" : "");
+  const s = sevenQuality;
+  const emojiVerdict = verdict === "GREEN" ? "🟢" : verdict === "RED" ? "🔴" : "🟡";
+  const markdown = `
+## 🧪 质量筛查报告（Quality Screen）${companyLabel ? ` · ${companyLabel}` : ""}
+*ai-berkshire quality-screen · 7 项质量评分 + 基础 8 项财务红牌 + 排雷扩展红牌筛查*
+
+> **综合质量分：${overallScore.toFixed(1)} / 10  ${emojiVerdict} ${verdictText}**
+
+### 7 项质量评分卡
+| 维度 | 得分 (0-10) | 权重 | 说明 |
+|------|------------:|-----:|------|
+| 盈利能力 Profitability | **${s.profitability.toFixed(0)}** | 18% | ROE/毛利率/净利率加权 |
+| 现金流质量 Cash Quality | **${s.cashQuality.toFixed(0)}** | 18% | 经营现金流 / 净利润 |
+| 杠杆安全 Leverage Safety | **${s.leverageSafety.toFixed(0)}** | 14% | 资产负债率反向评分 |
+| 估值合理性 Valuation | **${s.valuation.toFixed(0)}** | 12% | PE(TTM) 区间评分 |
+| 成长性 Growth | **${s.growth.toFixed(0)}** | 14% | 营收+净利增长 |
+| 生意模式护城河 Business Moat | **${s.businessMoat.toFixed(0)}** | 16% | 高毛利+高ROE持续性信号 |
+| 盈利质量 Earnings Quality | **${s.earningsQuality.toFixed(0)}** | 8%  | 净利真实性匹配度 |
+
+### 绿牌亮点（加分项）
+${greenHighlights.length === 0 ? "- （暂无突出亮点）" : greenHighlights.map(g => `- ✅ ${g}`).join("\n")}
+
+### 黄牌警告（需关注）
+${yellowFlags.length === 0 ? "- （无）" : yellowFlags.map(y => `- ⚠️ ${y}`).join("\n")}
+
+### 🔴 红牌警告（高度警惕）
+${redFlags.length === 0 ? "- （无）" : redFlags.map(r => `- 🚨 ${r}`).join("\n")}
+
+### 财务筛查输入
+| 指标 | 数值 | 单位 | 阈值对比 |
+|------|-----:|------|----------|
+| ROE | ${m.roe === null ? "N/A" : (m.roe * 100).toFixed(2) + "%"} | % | 🟩≥20% 🟨10-20% 🟥<5% |
+| 毛利率 | ${m.grossMargin === null ? "N/A" : (m.grossMargin * 100).toFixed(2) + "%"} | % | 🟩≥40% 🟨20-40% 🟥<20% |
+| 净利率 | ${m.netMargin === null ? "N/A" : (m.netMargin * 100).toFixed(2) + "%"} | % | 🟩≥20% 🟨5-20% 🟥<5% |
+| 经营CF/净利 | ${m.ocfToNi === null ? "N/A" : m.ocfToNi.toFixed(2)} | x | 🟩≥1.2 🟨0.8-1.2 🟥<0.5 |
+| 资产负债率 | ${m.debtRatio === null ? "N/A" : (m.debtRatio * 100).toFixed(2) + "%"} | % | 🟩<30% 🟨30-70% 🟥>70% |
+| PE(TTM) | ${m.peTtm === null ? "N/A" : m.peTtm.toFixed(1)} | x | 🟩<15 🟨15-40 🟥>40或<0 |
+| 营收同比 | ${m.revenueGrowth === null ? "N/A" : (m.revenueGrowth * 100).toFixed(2) + "%"} | % | 🟩≥15% 🟨0-15% 🟥<-10% |
+| 净利同比 | ${m.earningsGrowth === null ? "N/A" : (m.earningsGrowth * 100).toFixed(2) + "%"} | % | 🟩≥20% 🟨0-20% 🟥<-20% |
+| 现金收入比 | ${m.cashToRevenue == null ? "N/A" : m.cashToRevenue.toFixed(2)} | x | 🟩≥0.9 🟨0.7-0.9 🟥<0.7 |
+| 利息覆盖倍数 | ${m.interestCoverage == null ? "N/A" : m.interestCoverage.toFixed(2)} | x | 🟩≥2 🟨1-2 🟥<1 |
+| 应收增速 | ${m.receivablesGrowth == null ? "N/A" : (m.receivablesGrowth * 100).toFixed(2) + "%"} | % | 🟥>收入增速×2 |
+| 存货增速 | ${m.inventoryGrowth == null ? "N/A" : (m.inventoryGrowth * 100).toFixed(2) + "%"} | % | 🟥收入负增+存货高增 |
+| 短债占比 | ${m.shortDebtRatio == null ? "N/A" : (m.shortDebtRatio * 100).toFixed(2) + "%"} | % | 🟥>70%（期限错配） |
+| 货币资金/总资产 | ${m.cashAssetRatio == null ? "N/A" : (m.cashAssetRatio * 100).toFixed(2) + "%"} | % | 🟥≥30%且负债≥60%（存贷双高） |
+| 商誉/净资产 | ${m.goodwillRatio == null ? "N/A" : (m.goodwillRatio * 100).toFixed(2) + "%"} | % | 🟥>50% 🟨>30% |
+| 监管处罚记录 | ${m.regulatoryViolations === undefined ? "N/A" : (m.regulatoryViolations ? "有 🚨" : "无 ✅")} | — | 有 → 红牌 |
+
+### 筛查结论
+${emojiVerdict} **${verdict}** → ${verdictText}
+
+*本报告仅供初筛。红牌≠必然失败，需结合行业特性（如金融行业高杠杆属正常）、管理层、周期性位置做定性判断。*
+`.trim();
+
+  return { overallScore, redFlags, yellowFlags, greenHighlights, sevenQuality, verdict, verdictText, markdown };
+}
+
+// ======== 报告模式：从公司 Markdown 笔记提取财务指标（最新财年优先）========
+
+interface YearTable {
+  years: string[];      // 年份（按表格列序）
+  colIndex: number[];   // 各年份对应的表格列下标（与数据行 cells 对齐）
+  rows: Array<{ label: string; cells: string[] }>;
+}
+
+interface MetricSpec {
+  key: keyof CompanyMetrics;
+  finKey?: string;      // financials frontmatter 键名
+  finPercent?: boolean; // financials 值为百分数（÷100）
+  label?: RegExp;       // 财务表行标签
+  growth?: boolean;     // 优先取括号内同比
+  fallback: RegExp[];   // 正文兜底正则（阈值/警示措辞排除）
+}
+
+function parseFrontmatter(content: string): Record<string, string> {
+  const fm = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!fm) return {};
+  const out: Record<string, string> = {};
+  let block = "";
+  for (const line of fm[1].split(/\r?\n/)) {
+    const top = line.match(/^([a-z_]+)\s*:\s*(.*)$/i);
+    const sub = line.match(/^\s+([a-z_]+)\s*:\s*(.*)$/i);
+    if (top) { block = top[1]; out[block] = top[2].trim().replace(/^["']|["']$/g, ""); }
+    else if (sub) out[`${block}.${sub[1]}`] = sub[2].trim().replace(/^["']|["']$/g, "");
+  }
+  return out;
+}
+
+function parseYearTables(content: string): YearTable[] {
+  const tables: YearTable[] = [];
+  const lines = content.split(/\r?\n/);
+  const cols = (row: string) => row.split("|").slice(1, -1).map(c => c.trim());
+  let i = 0;
+  while (i < lines.length) {
+    if (!lines[i].trim().startsWith("|")) { i++; continue; }
+    const block: string[] = [];
+    while (i < lines.length && lines[i].trim().startsWith("|")) { block.push(lines[i].trim()); i++; }
+    const header = cols(block[0]);
+    const years: string[] = [];
+    const colIndex: number[] = [];
+    header.forEach((cell, idx) => { if (/^\d{4}$/.test(cell)) { years.push(cell); colIndex.push(idx); } });
+    if (years.length < 2) continue;
+    const rows = block.slice(2).map(r => {
+      const cells = cols(r);
+      return { label: cells[0] ?? "", cells };
+    });
+    tables.push({ years, colIndex, rows });
+  }
+  return tables;
+}
+
+// 单元格取值：优先括号内同比（如 57.56（+16.54%）→ 16.54%），否则主数值；含 % 一律 ÷100
+function parseCellValue(cell: string, preferGrowth: boolean): number | null {
+  const parenNum = cell.match(/[（(]\s*([-+]?\d+(?:\.\d+)?)\s*%/);
+  const mainNum = cell.match(/(-?\d+(?:\.\d+)?)/);
+  let raw: string | null = null;
+  if (preferGrowth && parenNum) raw = parenNum[1];
+  else if (mainNum) raw = mainNum[1];
+  if (raw === null) return null;
+  const v = parseFloat(raw);
+  if (isNaN(v)) return null;
+  return /%/.test(cell) ? v / 100 : v;
+}
+
+// 财务表按最新财年列取值（表格末列或 report_period 锚定列）
+function tableValue(tables: YearTable[], labelRe: RegExp, latestYear: string | null, preferGrowth: boolean): number | null {
+  for (const t of tables) {
+    const yearPos = latestYear ? t.years.indexOf(latestYear) : -1;
+    const col = yearPos >= 0 ? t.colIndex[yearPos] : t.colIndex[t.colIndex.length - 1];
+    for (const row of t.rows) {
+      if (!labelRe.test(row.label)) continue;
+      const cell = row.cells[col];
+      if (cell === undefined) continue;
+      const v = parseCellValue(cell, preferGrowth);
+      if (v !== null) return v;
+    }
+  }
+  return null;
+}
+
+// 正文兜底：排除阈值/警示措辞（捕获数字在匹配串内紧邻 < > ≥ ≤ ~ 时跳过），多值取最后一个（最新财年），括号同比优先
+function fallbackMatch(content: string, patterns: RegExp[], preferGrowth = false): number | null {
+  for (const p of patterns) {
+    const re = new RegExp(p.source, p.flags.includes("g") ? p.flags : `${p.flags}g`);
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(content)) !== null) {
+      const captured = m[1] ?? m[0].match(/(-?\d+(?:\.\d+)?)/)?.[1];
+      if (captured === undefined || captured === null) continue;
+      // 阈值/警示措辞：捕获数字在匹配串内紧邻 < > ≥ ≤ ~ 时跳过（如「商誉/净资产 <30%」「ROE 三年 <3%」）
+      const numStart = m[0].lastIndexOf(String(captured));
+      if (numStart > 0 && "<>≥≤~".includes(m[0][numStart - 1])) continue;
+      const nums = m[0].match(/-?\d+(?:\.\d+)?/g) ?? [];
+      const raw = nums.length > 1 ? nums[nums.length - 1] : captured;
+      const v = parseFloat(raw);
+      if (isNaN(v)) continue;
+      if (preferGrowth) {
+        const paren = m[0].match(/[（(][^）)]*?([-+]?\d+(?:\.\d+)?)\s*%[^）)]*[）)]/);
+        if (paren) return parseFloat(paren[1]) / 100;
+      }
+      return /%/.test(m[0]) ? v / 100 : v;
+    }
+  }
+  return null;
+}
+
+function parseGoodwillRatio(content: string): number | null {
+  if (/商誉[^\d]{0,6}(?:0|无|不存在|没有)/.test(content) || /无(?:大额)?商誉/.test(content) || /商誉\s*[:：=]?\s*0/.test(content)) return 0;
+  return fallbackMatch(content, [/商誉[^\d]{0,8}净资产[^\d]{0,8}([\d.]+)%/, /商誉[^\d]{0,8}占比[^\d]{0,8}([\d.]+)%/]);
+}
+
+const REPORT_METRIC_SPECS: MetricSpec[] = [
+  { key: "roe", finKey: "roe", finPercent: true, label: /^ROE$|^净资产收益率$/i, fallback: [/ROE[^\d]{0,10}([\d.]+)%/i, /roe\s*[:：]\s*([\d.]+)/i] },
+  { key: "grossMargin", finKey: "gross_margin", finPercent: true, label: /^毛利率$/, fallback: [/毛利[^\d]{0,8}([\d.]+)%/, /gross\s*margin[^\d]{0,8}([\d.]+)%?/i] },
+  { key: "netMargin", finKey: "net_margin", finPercent: true, label: /^净利率$/, fallback: [/净利[^\d]{0,8}([\d.]+)%/, /net\s*margin[^\d]{0,8}([\d.]+)%?/i] },
+  { key: "ocfToNi", finKey: "ocf_to_ni", label: /^经营现金流\/净利$|^OCF\/NI$/i, fallback: [/OCF\/NI\s*[:：]\s*([\d.]+)/, /OCF[^\d]{0,10}净利[^\d]{0,12}([-\d.]+(?:\s*\/\s*[-\d.]+)*)/i, /经营[^\d]{0,8}现金流[^\d]{0,8}净利[^\d]{0,8}([\d.]+)/] },
+  { key: "debtRatio", finKey: "asset_liability_ratio", finPercent: true, label: /^资产负债率$/, fallback: [/资产负债[^\d]{0,8}([\d.]+)%/, /debt\s*ratio[^\d]{0,8}([\d.]+)%?/i] },
+  { key: "peTtm", label: /^PE\s*\(TTM\)$|^PE-TTM$/i, fallback: [/PE\s*\(TTM\)\s*[:：]?\s*([-\d.]+)/i, /PE-TTM\s*[:：]?\s*([-\d.]+)/i] },
+  { key: "revenueGrowth", finKey: "revenue_yoy", finPercent: true, label: /^营收/, growth: true, fallback: [/营收[^\d]{0,6}同比[^\d]{0,6}([-\d.]+)%/, /revenue\s*growth[^\d]{0,6}([-\d.]+)%?/i] },
+  { key: "earningsGrowth", finKey: "net_profit_yoy", finPercent: true, label: /^归母净利润/, growth: true, fallback: [/净利[^\d]{0,6}同比[^\d]{0,6}([-\d.]+)%/, /earnings\s*growth[^\d]{0,6}([-\d.]+)%?/i] },
+  // ==== 排雷扩展字段（financials 块无对应键，仅表格/正文兜底）====
+  { key: "cashToRevenue", label: /^现金收入比$/, fallback: [/现金收入[^\d]{0,8}([\d.]+)/] },
+  { key: "interestCoverage", label: /^利息覆盖/, fallback: [/利息覆盖[^\d]{0,8}([\d.]+)/] },
+  { key: "receivablesGrowth", label: /^应收(?:账款)?(?:同比|增速)|^应收增速/, fallback: [/应收[^\d]{0,6}增速[^\d]{0,6}([-\d.]+)%/] },
+  { key: "inventoryGrowth", label: /^存货(?:同比|增速)/, fallback: [/存货[^\d]{0,6}增速[^\d]{0,6}([-\d.]+)%/] },
+  { key: "shortDebtRatio", label: /^短期(?:有息)?负债占比|^短债占比/, fallback: [/短期[^\d]{0,8}负债占比[^\d]{0,8}([\d.]+)%/, /短债占比[^\d]{0,8}([\d.]+)%/] },
+  { key: "cashAssetRatio", label: /^货币资金(?:占比)?/, fallback: [/货币资金[^\d]{0,8}占比[^\d]{0,8}([\d.]+)%/, /货币资金[^\d]{0,8}总资产[^\d]{0,8}([\d.]+)%/] },
+];
+
+// 降级链：financials frontmatter 块 → 财务表最新财年列 → 正文兜底（阈值措辞排除）
+export function parseCompanyNoteMetrics(content: string): CompanyMetrics {
+  const empty = (): CompanyMetrics => ({ roe: null, grossMargin: null, netMargin: null, ocfToNi: null, debtRatio: null, peTtm: null, revenueGrowth: null, earningsGrowth: null, cashToRevenue: null, interestCoverage: null, receivablesGrowth: null, inventoryGrowth: null, shortDebtRatio: null, cashAssetRatio: null, goodwillRatio: null, regulatoryViolations: undefined });
+  if (!content) return empty();
+  const fm = parseFrontmatter(content);
+  const tables = parseYearTables(content);
+  const latestYear = (() => {
+    const raw = fm["financials.report_period"] ?? fm["research_cutoff.report_period"] ?? "";
+    const m = raw.match(/\d{4}/);
+    if (m) return m[0];
+    return tables.length ? tables[tables.length - 1].years[tables[tables.length - 1].years.length - 1] : null;
+  })();
+  const metrics = empty();
+  for (const spec of REPORT_METRIC_SPECS) {
+    let v: number | null = null;
+    if (spec.finKey) {
+      const raw = fm[`financials.${spec.finKey}`];
+      const n = raw === undefined || raw === "" ? NaN : parseFloat(raw);
+      if (!isNaN(n)) v = spec.finPercent ? n / 100 : n;
+    }
+    if (v === null && spec.label) v = tableValue(tables, spec.label, latestYear, spec.growth ?? false);
+    if (v === null) v = fallbackMatch(content, spec.fallback, spec.growth ?? false);
+    (metrics as unknown as Record<string, unknown>)[spec.key] = v;
+  }
+  metrics.goodwillRatio = parseGoodwillRatio(content);
+  metrics.regulatoryViolations = /监管处罚|行政处罚|立案调查/.test(content) ? true : undefined;
+  return metrics;
+}
+
+// ======== CLI 入口 ========
+if (import.meta.main) {
+  // 从现有文件（公司 Markdown 笔记）提取财务指标并评分
+  function tryParseReportFile(filePath: string): CompanyMetrics {
+    try {
+      const content = require("node:fs").readFileSync(filePath, "utf-8");
+      return parseCompanyNoteMetrics(content);
+    } catch {
+      return parseCompanyNoteMetrics("");
+    }
+  }
+
+  const { values } = parseArgs({
+    args: Bun.argv.slice(2),
+    options: {
+      mode:     { type: "string", short: "m", default: "auto" }, // auto|report|batch
+      roe:      { type: "string" },
+      "gross-margin": { type: "string" },
+      "net-margin":   { type: "string" },
+      "ocf-to-ni":    { type: "string" },
+      debt:     { type: "string" },
+      "pe-ttm": { type: "string" },
+      "revenue-growth":  { type: "string" },
+      "earnings-growth": { type: "string" },
+      // ==== 排雷扩展 CLI 参数 ====
+      "cash-to-revenue":      { type: "string" },
+      "interest-coverage":    { type: "string" },
+      "receivables-growth":   { type: "string" },
+      "inventory-growth":     { type: "string" },
+      "short-debt-ratio":     { type: "string" },
+      "cash-asset-ratio":     { type: "string" },
+      "goodwill-ratio":       { type: "string" },
+      "regulatory-violations":{ type: "boolean" },
+      name:     { type: "string" },
+      code:     { type: "string" },
+      file:     { type: "string", short: "f" },
+      csv:      { type: "string" }
+    }
+  });
+
+  const toNum = (s: string | undefined): NumOpt => (s === undefined || s === "" ? null : parseFloat(s));
+  const metricFromCli: CompanyMetrics = {
+    name: values.name, code: values.code ? (isNaN(Number(values.code)) ? values.code : Number(values.code)) : undefined,
+    roe: toNum(values.roe), grossMargin: toNum(values["gross-margin"]), netMargin: toNum(values["net-margin"]),
+    ocfToNi: toNum(values["ocf-to-ni"]), debtRatio: toNum(values.debt), peTtm: toNum(values["pe-ttm"]),
+    revenueGrowth: toNum(values["revenue-growth"]), earningsGrowth: toNum(values["earnings-growth"]),
+    cashToRevenue: toNum(values["cash-to-revenue"]), interestCoverage: toNum(values["interest-coverage"]),
+    receivablesGrowth: toNum(values["receivables-growth"]), inventoryGrowth: toNum(values["inventory-growth"]),
+    shortDebtRatio: toNum(values["short-debt-ratio"]), cashAssetRatio: toNum(values["cash-asset-ratio"]),
+    goodwillRatio: toNum(values["goodwill-ratio"]),
+    regulatoryViolations: values["regulatory-violations"] === true ? true : undefined,
+  };
+
+  if (values.file) {
+    const fromFile = tryParseReportFile(values.file);
+    const merged: CompanyMetrics = { ...metricFromCli };
+    (Object.keys(fromFile) as (keyof CompanyMetrics)[]).forEach(k => {
+      if (merged[k] === null || merged[k] === undefined) (merged as any)[k] = (fromFile as any)[k];
+    });
+    if (!merged.name) merged.name = require("node:path").basename(values.file).replace(/\.md$/, "");
+    const r = screenCompany(merged);
+    console.log(r.markdown);
+    console.log(`\n# JSON\`\`\`json\n${JSON.stringify({ ...r, markdown: undefined }, null, 2)}\n\`\`\``);
+    process.exit(r.verdict === "RED" ? 2 : 0);
+  }
+
+  // 默认模式：cli 参数直接跑
+  if (Object.values(metricFromCli).some(v => v !== null && v !== undefined) || values.mode === "auto") {
+    const r = screenCompany(metricFromCli);
+    console.log(r.markdown);
+    console.log(`\n# JSON\`\`\`json\n${JSON.stringify({ ...r, markdown: undefined }, null, 2)}\n\`\`\``);
+    process.exit(r.verdict === "RED" ? 2 : 0);
+  }
+}

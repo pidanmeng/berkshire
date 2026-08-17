@@ -1,0 +1,24 @@
+{
+  "id": "conv-1785627172488-97mn7bhcn",
+  "providerId": "opencode",
+  "title": "/research 猪周期",
+  "titleGenerationStatus": "failed",
+  "createdAt": 1785627172488,
+  "updatedAt": 1785765924675,
+  "lastResponseAt": 1785765920401,
+  "sessionId": "ses_0380f3d01ffekhFy95gPifmuhL",
+  "selectedModel": "opencode:deepseek/deepseek-v4-flash",
+  "providerState": {
+    "databasePath": "C:\\Users\\Administrator.DESKTOP-TOIASJ8\\AppData\\Roaming\\opencode\\opencode.db"
+  },
+  "usage": {
+    "cacheCreationInputTokens": 0,
+    "cacheReadInputTokens": 248704,
+    "contextTokens": 249173,
+    "contextWindow": 1000000,
+    "contextWindowIsAuthoritative": true,
+    "inputTokens": 469,
+    "model": "opencode:deepseek/deepseek-v4-flash",
+    "percentage": 25
+  }
+}

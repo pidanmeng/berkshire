@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>吉比特（603444.SH）深度调研报告</title>
+<style>
+:root {
+  --color-canvas: #000000;
+  --color-surface: #0a0a0a;
+  --color-surface-raised: #111111;
+  --color-border: #1a1a1a;
+  --color-ink: #ffffff;
+  --color-ink-muted: #a1a1a1;
+  --color-ink-subtle: #666666;
+  --color-accent: #0070f3;
+  --color-accent-hover: #3291ff;
+  --color-danger: #ee0000;
+  --color-up: #f04141;
+  --color-down: #2e9e5b;
+  --star-on: #fbbf24;
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: "Geist", Inter, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  line-height: 1.6;
+  padding-bottom: 80px;
+}
+.container { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+header {
+  border-bottom: 1px solid var(--color-border);
+  padding: 56px 0 40px;
+  background: linear-gradient(180deg, #0a0a0a 0%, #000000 100%);
+}
+h1 { font-size: 40px; font-weight: 600; letter-spacing: -1.28px; margin-bottom: 12px; }
+h2 { font-size: 24px; font-weight: 600; letter-spacing: -0.96px; margin: 48px 0 20px; padding-bottom: 8px; border-bottom: 1px solid var(--color-border); }
+h3 { font-size: 18px; font-weight: 600; margin: 24px 0 12px; }
+p, li { color: var(--color-ink-muted); font-size: 15px; }
+a { color: var(--color-accent); text-decoration: none; }
+a:hover { color: var(--color-accent-hover); }
+.subtitle { color: var(--color-ink-subtle); font-size: 14px; }
+.tag { display: inline-block; padding: 2px 10px; border: 1px solid var(--color-border); border-radius: 9999px; font-size: 12px; color: var(--color-ink-muted); margin-right: 8px; margin-bottom: 8px; }
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card h3 { margin-top: 0; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+@media (max-width: 800px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+.stat { text-align: center; padding: 20px 12px; }
+.stat .value { font-size: 28px; font-weight: 600; letter-spacing: -0.8px; }
+.stat .label { font-size: 12px; color: var(--color-ink-subtle); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+.up { color: var(--color-up); }
+.down { color: var(--color-down); }
+.warn { color: #fbbf24; }
+.star { color: var(--star-on); letter-spacing: 2px; }
+.star-off { color: #333; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13.5px; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--color-border); }
+th { color: var(--color-ink-subtle); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+td { color: var(--color-ink-muted); }
+.verdict-red { color: var(--color-danger); font-weight: 600; }
+.verdict-green { color: var(--color-down); font-weight: 600; }
+.verdict-yellow { color: #fbbf24; font-weight: 600; }
+.chart-box { width: 100%; height: 340px; margin: 16px 0; }
+.chart-note { font-size: 12px; color: var(--color-ink-subtle); margin-top: -8px; }
+.quote { border-left: 3px solid var(--color-accent); padding: 12px 16px; background: var(--color-surface-raised); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; margin: 12px 0; font-size: 14px; color: var(--color-ink-muted); }
+.badge { display: inline-block; padding: 2px 8px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 500; }
+.badge-red { background: rgba(238,0,0,0.15); color: var(--color-danger); border: 1px solid rgba(238,0,0,0.4); }
+.badge-green { background: rgba(46,158,91,0.15); color: var(--color-down); border: 1px solid rgba(46,158,91,0.4); }
+.badge-yellow { background: rgba(251,191,36,0.15); color: #fbbf24; border: 1px solid rgba(251,191,36,0.4); }
+footer { border-top: 1px solid var(--color-border); margin-top: 64px; padding-top: 24px; font-size: 12px; color: var(--color-ink-subtle); }
+.conclusion-item { margin-bottom: 14px; padding-left: 16px; border-left: 2px solid var(--color-accent); }
+.conclusion-item h4 { font-size: 15px; margin-bottom: 4px; }
+ol.track li { padding: 8px 0; border-bottom: 1px solid var(--color-border); }
+ul.risk { list-style: none; padding: 0; }
+ul.risk li { padding: 10px 0; border-bottom: 1px solid var(--color-border); }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js" onerror="window.__ECHARTS_FAIL=true"></script>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <div style="margin-bottom:16px;">
+      <span class="tag">603444.SH</span><span class="tag">游戏 · 放置/回合制RPG</span><span class="tag">deep-dive</span>
+    </div>
+    <h1>吉比特 深度调研报告</h1>
+    <p class="subtitle">数据时点：2026-08-16（估值快照）｜ 财报基准：2023/2024/2025 年报（毕马威审计）+ 2026H1 中报 ｜ 生成：2026-08-16</p>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- 1. 核心结论 -->
+  <section>
+    <h2>核心结论</h2>
+    <div class="conclusion-item">
+      <h4>① 类收息资产 + 新品期权的混合体（置信度：高）</h4>
+      <p>OCF/净利 1.30、零有息负债、净现金约 56-57 亿（≈归母净资产 101%）、2025 分红率 78.41%、股息率约 5.0%、三年毕马威标准无保留、管理层诚实。但安全边际呈<strong>"存量防御、流量风险"</strong>结构——净现金与股息托底真实，托不住增长下修的估值中枢。</p>
+    </div>
+    <div class="conclusion-item">
+      <h4>② 2025 反转是新品一次性周期红利，非结构性改善（置信度：高）</h4>
+      <p>营收 62.05 亿（+67.89%）、归母 17.94 亿（+89.82%）增量 100% 来自当年四款新品（流水 39.22 亿），老产品全线下滑；2026E 一致预期仅 +7.67%（19.31 亿），<strong>隐含 2026H2 归母同比 -27%</strong>；递延收入池 2026H1 仅 +0.13 亿（vs 2025 全年 +2.89 亿）——增长弹药放缓已先行兑现在数据中。</p>
+    </div>
+    <div class="conclusion-item">
+      <h4>③ 护城河中等偏窄 6.0/10，毛利端变宽、获客端被侵蚀（置信度：中高）</h4>
+      <p>毛利率 93.90% 行业第一（结构性、不可逆）；但销售费用率三年 +9.3pp 至 35.82%、研发人员两年减半（919→551）、新品生命周期缩短（杖剑大陆 Q2 环比 -32.3%、畅销榜 34→69 名）三重侵蚀；2023-2024 断档先例证明<strong>产品方法论 ≠ 产品确定性</strong>。</p>
+    </div>
+    <div class="conclusion-item">
+      <h4>④ 当前价处合理区上沿，不构成买入安全边际（置信度：中）</h4>
+      <p>三情景目标价：悲观 241 / 中性 322 / 乐观 402 元；目标买入价约 193 元、目标卖出价约 402 元。现价 390.30 元距中性目标价 -17.5%、距乐观目标价仅 +3.0%。<strong>操作建议：观望/逢低关注</strong>——等待回调至 322 元以下分批建仓，或 2026Q3 财报两个验证点（杖剑 Q3 流水、递延池是否恢复增厚）落地后重新定价。</p>
+    </div>
+    <div class="conclusion-item">
+      <h4>⑤ 多空裁决：财务质量多方完胜、成长性空方完胜（置信度：高）</h4>
+      <p>多方最强：类收息底座 + 一致预期隐含 H2 -27% 过于悲观（可被新品接力超越）；空方最强：2025 反转一次性 + 2026E 增速断崖 + 递延弹药骤减 + 买量依赖 + 研发减员 40% + 境外三年半未盈利。结合外围因素（版号常态化利好存量、流量成本攀升利空买量、AI 降本中性偏利好、出海利好但短期不盈利），<strong>行业贝塔向上但公司阿尔法待验证</strong>。</p>
+    </div>
+    <div class="card" style="margin-top:16px;">
+      <h3>四大师综合评分 <span style="font-size:13px;color:var(--color-ink-subtle);">综合星级由系统按 scores 加权计算</span></h3>
+      <table>
+        <tr><th>维度</th><th>大师</th><th>星级</th><th>0-10 分</th><th>核心判断</th></tr>
+        <tr><td>能力圈</td><td>巴菲特</td><td><span class="star">★★★</span><span class="star-off">☆☆</span></td><td>7.0</td><td>游戏生意本质可理解（先充值后消耗、零存货、现金流前置）；但爆款生命周期预测难，新品确定性无法用财报线性外推</td></tr>
+        <tr><td>护城河</td><td>巴菲特</td><td><span class="star">★★★</span><span class="star-off">☆☆</span></td><td>6.0</td><td>毛利率 93.90% 行业第一 + 问道 IP 近 20 年长线运营 + 出版平台 203 款；但买量依赖、新品生命周期缩短、研发减员三重侵蚀</td></tr>
+        <tr><td>生意模式</td><td>段永平</td><td><span class="star">★★★★</span><span class="star-off">☆</span></td><td>7.5</td><td>轻资产、高毛利、OCF/净利 1.30、零有息负债、高分红——好生意 6/6 特征；但增长靠买量投放（发行费用占销售费用 94.5%）</td></tr>
+        <tr><td>管理层诚信</td><td>段永平</td><td><span class="star">★★★★</span><span class="star-off">☆</span></td><td>7.5</td><td>三年毕马威标准无保留、分红纪律极强（累计 74.22 亿 = IPO 募资 8.25 倍）、主动披露不利信息；唯"经调整口径"2025 年消失有轻微存疑</td></tr>
+        <tr><td>反向检查清单</td><td>芒格</td><td><span class="star">★★★</span><span class="star-off">☆☆</span></td><td>6.5</td><td>财务地雷排查干净（零有息负债/商誉 0.04%/现金收入比>1），但新品断档风险（2024 先例）与增长可持续性风险大</td></tr>
+        <tr><td>历史类比</td><td>李录</td><td><span class="star">★★★</span><span class="star-off">☆☆</span></td><td>6.5</td><td>恺英/三七/完美世界买量折价先例清晰（11-15x PE）；问道类比网易《梦幻西游》20 年现金牛；时间框架 1-3 年（新品+出海兑现）</td></tr>
+      </table>
+      <p style="font-size:13px;color:var(--color-ink-subtle);">scores: capability 7.0 / moat 6.0 / business_model 7.5 / management 7.5 / inversion 6.5 / historical 6.5 ｜ 星级说明：★=1 分，☆=0.5 分，✩=0 分（5 星制）</p>
+    </div>
+  </section>
+
+  <!-- 2. 关键财务数据可视化 -->
+  <section>
+    <h2>关键财务数据（2023-2025 + 2026H1）</h2>
+    <div class="grid-3" style="margin-bottom:16px;">
+      <div class="card stat"><div class="value">390.30<span style="font-size:14px;">元</span></div><div class="label">最新股价</div></div>
+      <div class="card stat"><div class="value">281<span style="font-size:14px;">亿</span></div><div class="label">总市值</div></div>
+      <div class="card stat"><div class="value">12.55</div><div class="label">PE-TTM（历史下沿）</div></div>
+    </div>
+    <div class="card">
+      <h3>营收 / 归母净利 / 扣非净利（亿元）</h3>
+      <div id="chart-revenue" class="chart-box"></div>
+      <p class="chart-note">数据来源：[[2026-08-16-吉比特-processed]] F1-F3｜2023-2025 年报主要会计数据 + 2026H1 中报（2026H1 为半年度）</p>
+    </div>
+    <div class="card">
+      <h3>盈利能力趋势：毛利率 / 销售费用率 / 净利率 / ROE（%）</h3>
+      <div id="chart-margin" class="chart-box"></div>
+      <p class="chart-note">数据来源：[[2026-08-16-吉比特-processed]] F6-F9｜毛利率 93.9% 行业第一 vs 销售费用率三年 +9.3pp——毛利优势一半被获客成本吞噬（净利率仅 +3.34pp）</p>
+    </div>
+    <div class="card">
+      <h3>2026H1 产品流水结构（亿元，流水口径含渠道分成前）</h3>
+      <div id="chart-products" class="chart-box"></div>
+      <p class="chart-note">数据来源：[[2026-08-16-吉比特-processed]] F12｜2026H1 中报 L205-206（前五产品合计 30.71 亿；问道+杖剑系依赖结构）</p>
+    </div>
+  </section>
+
+  <!-- 3. 估值区间与目标价 -->
+  <section>
+    <h2>估值区间与目标价（安全边际视角）</h2>
+    <div class="card">
+      <h3>三情景目标价（基于 2026E 一致预期净利 19.31 亿）</h3>
+      <div id="chart-target" class="chart-box"></div>
+      <p class="chart-note">估值基准：2026E 归母一致预期 19.31 亿（28 家机构，同花顺 iFinD 2026-08-14）｜PE 9/12/15x 三情景｜预测主体：本系统基于一致预期测算，时点 2026-08-16</p>
+      <table style="margin-top:16px;">
+        <tr><th>情景</th><th>假设</th><th>目标价</th><th>目标市值</th><th>隐含涨跌幅</th></tr>
+        <tr><td>悲观</td><td>19.31 亿 × 9x（周期折价，2027 双降）</td><td>241 元</td><td>174 亿</td><td class="down">-38.3%</td></tr>
+        <tr><td>中性</td><td>19.31 亿 × 12x（增长放缓但企稳）</td><td>322 元</td><td>232 亿</td><td class="down">-17.5%</td></tr>
+        <tr><td>乐观</td><td>19.31 亿 × 15x + 出海/新品超预期</td><td>402 元</td><td>290 亿</td><td class="up">+3.0%</td></tr>
+      </table>
+      <div class="quote">
+        <strong>目标买入价（安全边际）：193 元</strong>（悲观 × 0.8，对应市值 139 亿 / PE 7.2x）｜ <strong>目标卖出价（高估）：402 元</strong><br>
+        <strong>当前操作建议：观望 / 逢低关注</strong>——现价 390.30 元处于合理区上沿（中性 322 元 ~ 乐观 402 元之间），距目标卖出价仅 +3%；不追高，等待回调至中性目标价以下分批建仓，或 2026Q3 财报验证递延池与杖剑流水企稳后再评估。
+      </div>
+      <table>
+        <tr><th>估值维度</th><th>当前值</th><th>评价</th></tr>
+        <tr><td>PE-TTM</td><td>12.55x（TTM 净利 22.41 亿）</td><td>便宜（52 周高点对应约 26.6x；恺英/三七 11-15x 折价区间）</td></tr>
+        <tr><td>Forward PE（2026E）</td><td>14.6x（281 亿 / 19.31 亿）</td><td>对应 +7.67% 增速，PEG≈1.64，不便宜（空方论点）</td></tr>
+        <tr><td>PB-MRQ</td><td>4.64x</td><td>P/ROE≈14%（ROE 33.27%），隐含高 ROE 可持续定价</td></tr>
+        <tr><td>PS-TTM / PCF-TTM</td><td>3.79x / 9.40x</td><td>现金流估值最便宜（OCF TTM 约 29.9 亿）</td></tr>
+        <tr><td>股息率</td><td>约 5.0%（2025 分红 14.06 亿 / 281 亿）</td><td>高于 10 年期国债收益率，类收息托底</td></tr>
+        <tr><td>52 周区间 / 股价分位</td><td>323.41 - 662.01 / 62.4%</td><td>距高点 -41%，不在绝对底部</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 4. 护城河评估 -->
+  <section>
+    <h2>护城河评估（巴菲特框架）</h2>
+    <div class="card">
+      <table>
+        <tr><th>类型</th><th>是否存在</th><th>量化证据</th><th>趋势</th></tr>
+        <tr><td>成本优势</td><td><span class="badge badge-green">强</span></td><td>毛利率 93.90% 行业第一（巨人 91.03%/恺英 80.84%/三七 75.86%）；自研零分成+虚拟道具边际成本≈0</td><td>变宽（自研占比提升不可逆）</td></tr>
+        <tr><td>品牌/定价权</td><td><span class="badge badge-yellow">弱-中</span></td><td>问道 IP 20 年用户沉淀、C 端道具定价自主；但品牌自流量弱，依赖买量（销售费用率 35.82%）</td><td>承压（买量成本攀升）</td></tr>
+        <tr><td>网络效应/转换成本</td><td><span class="badge badge-yellow">部分</span></td><td>《问道》手游十年 MMORPG 社交绑定、十周年庆回流（Q2 流水环比回暖）</td><td>老 IP 黏性真实但逐年失血（-4.48%/年）</td></tr>
+        <tr><td>技术壁垒</td><td><span class="badge badge-green">中强</span></td><td>研发投入 8.87 亿（14.30%）、著作权 474 件、专利 23 件、AI 工具（AIWebHub/G-pilot）</td><td>侵蚀（研发人员 919→551，-40%）</td></tr>
+        <tr><td>规模效应</td><td><span class="badge badge-yellow">有限</span></td><td>研发中台复用、人均创收 2026Q1 同比 +138.57%</td><td>改善（减员增效）</td></tr>
+        <tr><td>牌照/特许</td><td><span class="badge badge-green">中强</span></td><td>版号获取连续（杖剑/问剑/道友/九牧之野/失落城堡2 均获批）；艺忛科技出版 203 款</td><td>稳定（行业版号总量受限）</td></tr>
+      </table>
+      <p style="margin-top:12px;"><strong>宽度评分：6.0/10（中等偏窄）</strong> ｜ 能否持续 10 年以上：<strong>不确定</strong>——《问道》IP 类资产可再维持 5-10 年（端游已 20 年），但整体护城河可持续性取决于新品流水线，2023-2024 年曾断档。</p>
+      <p style="font-size:13px;color:var(--color-ink-subtle);">侵蚀信号（三方独立交叉）：① 销售费用率 26.52%→33.58%→35.82%，毛利优势被获客成本吞噬（净利率仅 +3.34pp）；② 研发人员两年减半；③ 新品生命周期缩短（杖剑大陆畅销榜 34→69 名，上线 7 个月）。</p>
+    </div>
+  </section>
+
+  <!-- 5. 生意模式评价 -->
+  <section>
+    <h2>生意模式评价（段永平框架）</h2>
+    <div class="card">
+      <table>
+        <tr><th>问题</th><th>回答</th></tr>
+        <tr><td>怎么赚钱</td><td>自研（或代理）游戏 → 免费模式+虚拟道具内购 → 玩家充值先确认为合同负债 → 道具按生命周期摊销确认收入 → 扣除渠道分成（苹果/安卓约 30%）与发行买量费用后留下毛利</td></tr>
+        <tr><td>谁付钱</td><td>C 端付费玩家（先款后货，无应收账款风险）；渠道商（苹果/华为/vivo/Google Play）代收分成，前五大客户 28.43% 且均为非关联方</td></tr>
+        <tr><td>为什么选它</td><td>毛利率行业第一（自研+不依赖外部分成）+ 20 年长线运营 IP + 版号/出版平台壁垒 + 高分红记录；对比三七买量更克制、对比恺英产品矩阵更宽</td></tr>
+        <tr><td>现金流特征</td><td>OCF/净利 1.30（2025）、现金收入比连续四年 >1、自由现金流约 27 亿（资本开支/OCF &lt;5%）——利润是真钱；但 2026Q2 单季 OCF 同比 -19.78% 需跟踪</td></tr>
+        <tr><td>资本密集度</td><td>轻资产（无存货、零有息负债）；"获客资本开支"（发行费用 19.43 亿）当期费用化，回报周期 3-12 个月——隐性资本消耗点</td></tr>
+      </table>
+      <div class="quote"><strong>整体评价：好生意（财务底座）但增长是"押注型"</strong>——收息属性与产品飞轮并存；结构性（毛利护城河/人效/出海体系）与周期性（新品红利/买量）已分离，2025 年反转主体是周期性。</div>
+    </div>
+  </section>
+
+  <!-- 6. 多空辩论摘要 -->
+  <section>
+    <h2>多空辩论摘要（综合裁决）</h2>
+    <div class="card">
+      <div id="chart-bullbear" class="chart-box"></div>
+      <p class="chart-note">多空论点证据强度对比（0-10，基于 [[2026-08-16-吉比特-bull]] / [[2026-08-16-吉比特-bear]] 自评置信度）</p>
+      <table>
+        <tr><th>维度</th><th>🟢 多方（证据强度）</th><th>🔴 空方（证据强度）</th><th>综合裁决</th></tr>
+        <tr><td>增长</td><td>一致预期可被超：H1 已实现全年预期 56.6%，H2 只需同比 -27% 即达标，2026H2 新品接力（中强）</td><td>增长 100% 来自当年新品、杖剑 Q2 环比 -32.3%、畅销榜 34→69、2026E 仅 +7.67%、2024 断档先例（强）</td><td><span class="badge badge-red">空方胜（增长）</span>：流水硬数据+一致预期共识；2026H2 大幅放缓基本确定，幅度（-10%~-27%）取决于新品管线</td></tr>
+        <tr><td>护城河</td><td>毛利 93.9% 厚垫消化获客成本 +5pct、AI 优化买量 ROI（中）</td><td>销售费用率三年 +9.3pp、发行费用占销售费用 94.5%、投放一停流水退潮、研发 -40%（强）</td><td><span class="badge badge-red">空方占优</span>：厚垫只保不亏，不保证可持续；ROI 无外部验证</td></tr>
+        <tr><td>财务质量</td><td>OCF/NI 1.30、零负债、净现金 56 亿≈净资产、扣非/归母 99.6%（强）</td><td>Q2 单季 OCF -19.78% vs 归母 +58.84% 背离、递延池 +0.13 亿、连续减值（中强）</td><td><span class="badge badge-green">多方胜（存量）</span>：财务底座真实无雷；但 Q2 利润现金背离是拐点先行信号，需跟踪</td></tr>
+        <tr><td>境外</td><td>收入 +201.39% 规模先行、美国畅销榜最高第 26 名、"从 0 到 1"（中）</td><td>三年半从未盈利、欧美首周流水仅 1500 万/Google Play 未进榜、汇兑损失 7212 万（中强）</td><td><span class="badge badge-red">空方暂占优</span>：盈利时点不可测；但出海 +30.22% 贝塔+政策背书为结构性期权——境外是期权而非估值支撑</td></tr>
+        <tr><td>估值</td><td>PE 12.55 已含增长趋零定价、5% 股息+20% 净现金下行保护、上行期权免费（中强）</td><td>14.6x Forward PE 对应 +7.67% 增速 PEG≈1.64、与恺英/三七 11-15x 折价逻辑同构（中）</td><td><span class="badge badge-yellow">多方部分占优</span>：低 PE+高股息提供不对称性；但当前价处合理区上沿，安全边际不足</td></tr>
+        <tr><td>周期/政策/国际</td><td>行业 2026H1 +12.17% 加速、版号常态化、十五五鼓励出海、AI 政策背书（中）</td><td>流量成本攀升（超 50% 上市游戏公司净利下降）、汇率单边暴露、版号总量控制（中强）</td><td><span class="badge badge-yellow">行业贝塔向上、公司阿尔法待验证</span>：外围利好存量与出海方向，但放大买量模式与新品断档的个体风险</td></tr>
+      </table>
+      <div class="quote" style="margin-top:16px;">
+        <strong>最大分歧点</strong>：2026H2 增长斜率（多方：一致预期隐含 -27% 过于悲观，新品接力可超；空方：生命周期回落+递延弹药骤减，-27% 是合理共识）。<br>
+        <strong>裁决理由</strong>：结合产业理解——游戏新品流水曲线 3-9 个月见顶是普遍规律（杖剑大陆 Q2 环比 -32.3%、畅销榜 34→69 名已实证），递延池 +0.13 亿说明收入确认弹药未补充；但 2026H2 确有三款新品上线且版号已获，H2 降幅大概率落在 -10%~-27% 区间，<strong>不会好于空方中枢、也不会差于空方最悲观假设——增长维度不支持当前价</strong>。
+      </div>
+      <p style="font-size:13px;color:var(--color-ink-subtle);">空方整体失效条件（满足 ≥2 条则空方主线降级）：① 2026H2 三款新品 ≥1 款达杖剑大陆级（年流水 10 亿+）；② 境外 2026 年内扭亏；③ 递延池 2026 年末恢复 +2 亿级增厚；④ 2026E 业绩上修至 +20% 以上。</p>
+    </div>
+  </section>
+
+  <!-- 7. 质量筛查与投资清单 -->
+  <section>
+    <h2>质量筛查与投资清单</h2>
+    <div class="grid-2">
+      <div class="card">
+        <h3>质量筛查 <span class="badge badge-green" style="margin-left:8px;">GREEN</span></h3>
+        <p>质量评分：<strong>8.8/10 🟢 质量优秀</strong>（2025 全年数据跑分）</p>
+        <table>
+          <tr><td>盈利能力</td><td>9</td><td>现金流质量</td><td>10</td></tr>
+          <tr><td>杠杆安全</td><td>9</td><td>估值合理性</td><td>10</td></tr>
+          <tr><td>成长性</td><td>9</td><td>生意护城河</td><td>9</td></tr>
+          <tr><td>盈利质量</td><td>9.6</td><td>红黄牌</td><td class="verdict-yellow">1 黄牌</td></tr>
+        </table>
+        <p style="font-size:13px;color:var(--color-ink-subtle);">黄牌：利息覆盖倍数缺失（因零有息负债，无利息支出可覆盖）。红牌观察项：① 2026E 隐含 H2 归母 -27%；② Q2 利润现金背离；③ 销售费用率三年 +9.3pp——若以 2026H1 数据跑分，成长与现金流项将显著回落。</p>
+      </div>
+      <div class="card">
+        <h3>50 项投资清单 AUTO</h3>
+        <p>综合结论：<span class="badge badge-green">✅ 放行</span></p>
+        <table>
+          <tr><td>🔴 CRITICAL</td><td>0 / 2 未通过</td><td class="verdict-green">✅（OCF/NI 1.30、零有息负债）</td></tr>
+          <tr><td>🟠 IMPORTANT</td><td>0 / 7 未通过</td><td class="verdict-green">✅（ROE 33.27%、PE 12.55、无大额减值）</td></tr>
+          <tr><td>⚪️ NORMAL</td><td>1 / 3 未通过*</td><td>* #8 财报 PDF 下载为扫描器关键词未命中误报（pdf-texts/吉比特/ 实际存在）；#14/#27 人工核验通过</td></tr>
+        </table>
+        <p style="font-size:13px;color:var(--color-ink-subtle);">无 CRITICAL 级 No-Go 触发（三年年报连贯 ✅、管理层诚实 🟢、财务地雷无真实触发）｜ 扫描：investment-checklist-auto.ts，2026-08-16</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. 管理层与诚信 -->
+  <section>
+    <h2>管理层与诚信（本分原则）</h2>
+    <div class="card">
+      <table>
+        <tr><th>维度</th><th>情况</th><th>判断</th></tr>
+        <tr><td>股权结构</td><td>实控人卢竑岩持股约 21%，无质押/大额减持；2017 上市以来零增发/配股再融资</td><td class="verdict-green">✅ 无稀释</td></tr>
+        <tr><td>分红兑现</td><td>2025-2027 承诺每年三次分红 + ≥50% 净利；兑现 2024 75.94% / 2025 78.41%（14.06 亿）/ 2026H1 中期 65.74%；累计分红 74.22 亿 = IPO 募资 8.25 倍</td><td class="verdict-green">✅ 纪律极强</td></tr>
+        <tr><td>审计与披露</td><td>三年毕马威标准无保留；MD&A 坦诚度三年一致（问道老化/新品亏损/投资减值/房产事故/减员/流水回落如实披露）；业绩预告准确（2026H1 落区间上沿 70%）</td><td class="verdict-green">✅ 诚实</td></tr>
+        <tr><td>存疑项①</td><td>2023/2024 连续披露"经调整净利润"，2025 年未再披露（空方指选择性披露；多方指影响占比下降 3.4%&lt;4.2%）</td><td class="verdict-yellow">🟡 低危（裁决：口径变化非逻辑断裂）</td></tr>
+        <tr><td>存疑项②</td><td>对外投资长期拖累利润（2024 减值 4937.7 万 / 2025 减值 1468.7 万 / 2026H1 减值 2204.8 万）；"投资回血"依赖青瓷游戏权益法收益</td><td class="verdict-yellow">🟡 低危（不具稳定性）</td></tr>
+      </table>
+      <p style="margin-top:12px;"><strong>一票否决项：未触发</strong>（🟢 三年诚实，deep-read 9.3 红线结论）。无诚信问题，可继续跟踪。</p>
+    </div>
+  </section>
+
+  <!-- 9. 风险提示 -->
+  <section>
+    <h2>风险提示（芒格框架）</h2>
+    <div class="card">
+      <h3>这家公司可能怎么死？</h3>
+      <ul class="risk">
+        <li>🔴 <strong>失败剧本 A：新品断档（最高概率）</strong>——2026Q4 三款新品（杖剑韩东南亚/问剑欧美/失落城堡2）流水均不及预期 → 2027 重演 2024 式双降（营收 -11.69%/归母 -16.02%），估值从"类收息"塌回"周期折价"（9x 以下）。2024 年先例证明方法论≠确定性。</li>
+        <li>🔴 <strong>失败剧本 B：买量成本失控</strong>——销售费用率三年 +9.3pp 至 35.82% 且仍在升，行业流量成本持续攀升；每推一款新品需 5-10 亿级发行投入，若流水不及预期形成"研发沉没+发行沉没"双输，净利率 25% 分水岭被打穿。</li>
+        <li>🟠 <strong>失败剧本 C：境外扩张黑洞</strong>——境外三年半从未盈利；欧美版首周流水仅 1500 万、Google Play 未进畅销榜，若欧美叙事不达预期，境外发行费用长期侵蚀利润 + 汇兑损失放大（2026H1 7212 万）。</li>
+        <li>🟠 <strong>失败剧本 D：研发萎缩</strong>——研发人员 919→551（-40%）、研发费用率降至 11.58%（2026H1），长期储备能力受损，新品管线后继乏力。</li>
+        <li>🟠 <strong>失败剧本 E：产品集中风险</strong>——公司自认"收入利润来自问道 IP 系列与《杖剑传说》比例较高"；依赖清单从"问道+一念+杖剑"收窄到"问道+杖剑"。</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>反向检查清单（什么情况下我们会错？）</h3>
+      <ul class="risk">
+        <li><strong>买贵了</strong>：390 元以上买入 = 为"2025 新品周期可复制"支付全额价格；若新品断档，估值向 9x 回归，最大回撤 -38%</li>
+        <li><strong>误把周期当成长</strong>：以 2025 年增速线性外推即落入近因偏差（2025 四款全爆是 20 年首次小概率事件）</li>
+        <li><strong>高估分红托底</strong>：分红是盈利的函数——若 2027 复制 2024 双降，每股股息从 19.5 元缩至 ~6.5 元，5% 股息率逻辑同步缩水（2023 年不分红先例）</li>
+        <li><strong>忽视 Q2 利润现金背离</strong>：2026Q2 OCF -19.78% vs 归母 +58.84%，若连续两季背离，盈利质量实质恶化，PCF 9.4x 估值锚失效</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 10. 周期位置与驱动 -->
+  <section>
+    <h2>周期位置与核心驱动</h2>
+    <div class="grid-2">
+      <div class="card">
+        <h3>周期位置</h3>
+        <p><strong>行业周期</strong>：中国游戏市场 2025 年 3507.89 亿（+7.68%）→ 2026H1 1884.50 亿（+12.17%），行业处于<strong>温和复苏上行期</strong>；出海是最确定增量方向（2026H1 +30.22%）。</p>
+        <p style="margin-top:8px;"><strong>公司周期</strong>：2023-2024 底部 → 2025 新品周期高点（+89.82%）→ <strong>2026H2 起进入新品红利消化期</strong>（一致预期隐含负增长）。当前处"周期高点回落初期"——利润拐点已现（Q2 OCF 背离、杖剑环比 -32.3%），但老 IP 现金牛 + 净现金提供缓冲，非全面衰退。</p>
+        <p style="margin-top:8px;font-size:13px;color:var(--color-ink-subtle);">历史类比：恺英/三七 11-15x 买量折价 ｜ 完美世界 ROE 30%+→个位数警示 ｜ 网易《梦幻西游》20 年现金牛启示 IP 韧性——吉比特处"问道现金牛+新品押注"混合态，恰似网易早期但体量/储备远逊。</p>
+      </div>
+      <div class="card">
+        <h3>核心驱动因素</h3>
+        <ol style="padding-left:20px;">
+          <li>新品管线兑现度：2026H2-2027 杖剑韩东南亚/问剑欧美/失落城堡2/甄嬛传/大圣牌上线进度与首月流水</li>
+          <li>递延收入池：2026 年末是否恢复 +2 亿级增厚（H1 仅 +0.13 亿）</li>
+          <li>买量与毛利赛跑：销售费用率 vs 毛利率（93.9%）——净利率守住 25% 分水岭</li>
+          <li>问道 IP 韧性：十周年后衰减斜率（守住年化 -5% 以内）</li>
+          <li>境外转盈时点：杖剑欧美/港澳台日全生命周期 ROI 与 2027 年前扭亏概率</li>
+          <li>汇率：美元兑人民币走势（H1 损失 7212 万）</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11. 跟踪指标 -->
+  <section>
+    <h2>核心跟踪指标（与投资论点直接挂钩）</h2>
+    <div class="card">
+      <ol class="track">
+        <li><strong>递延收入池季度增量</strong>：2026Q3/Q4 环比——&gt;+0.5 亿/季为健康（H1 仅 +0.13 亿）；全年 &lt;+1 亿则 2027 收入确认基础收窄，打穿收息+成长复合论点</li>
+        <li><strong>《杖剑传说（大陆版）》季度流水与畅销榜排名</strong>：Q3 环比跌幅收窄至 -15% 以内 + 守 TOP100；连续两季跌出 TOP100 且无新游补位 = 空方情景 A 触发</li>
+        <li><strong>销售费用率与归母净利率</strong>：费用率突破 40% 且净利率跌破 25% = 买量失控</li>
+        <li><strong>2026Q3/Q4 单季 OCF 同比</strong>：恢复正增长（Q2 为 -19.78%）；连续两季负增长 = 盈利质量实质恶化</li>
+        <li><strong>2026H2 三款新品上线进度与首月流水</strong>：≥1 款达杖剑大陆级（年流水 10 亿+）→ 空方主线降级；全部不及预期 → 2027 双降概率大增</li>
+        <li><strong>境外业务盈亏状态</strong>：2026 年报是否仍"尚未盈利"；2027 年前扭亏 → 第二曲线成立</li>
+        <li><strong>问道手游流水衰减斜率</strong>：2026H2 同比降幅收窄至 -5% 以内；加速失血则现金牛根基松动</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 12. 附录 -->
+  <section>
+    <h2>附录</h2>
+    <div class="card">
+      <h3>document-reader 精读摘要</h3>
+      <p>三年年报趋势：<strong>波动（非逐年向好）</strong>——2023-2024 连续两年恶化（营收 -19.02%/-11.69%），2025 年靠新品周期大幅反转（+67.89%），V 型而非线性向好。｜ 三年连贯性：<strong>连贯，无断裂</strong>（会计政策三年一致、无重述/追溯调整、期初期末勾稽一致）。｜ 管理层诚实度：<strong>🟢 诚实（无 No-Go）</strong>——表述与数据自洽、主动披露不利信息、业绩预告准确落区间上沿 70%。</p>
+      <p style="font-size:13px;color:var(--color-ink-subtle);">关键逻辑核查：扣非归因（2025 差额 3.47% 为公允价值变动+理财+补助等小额项，无警示）｜指标波动归因（毛利 +6.03pp=自研占比提升良性；研发费用 +17.13% 与人员 -40% 并存=基本薪酬减少+奖金计提增加，逻辑自洽）｜红旗信号：Q2 单季 OCF -19.78%、递延池 +0.13 亿、杖剑畅销榜 34→69。置信度自评 8/10（2026H1 分产品流水披露不全、买量 ROI 内部数据不可外部验证）。</p>
+    </div>
+    <div class="card">
+      <h3>财报精读 10 项检查清单</h3>
+      <table>
+        <tr><th>#</th><th>检查项</th><th>结果</th><th>说明</th></tr>
+        <tr><td>1</td><td>审计意见</td><td class="verdict-green">✅</td><td>2023/2024/2025 三年毕马威标准无保留</td></tr>
+        <tr><td>2</td><td>收入确认</td><td class="verdict-green">✅</td><td>自主+联合运营占主营 95.13%，毕马威执行 9 项审计程序</td></tr>
+        <tr><td>3</td><td>会计政策一致性</td><td class="verdict-green">✅</td><td>三年收入确认/摊销/减值政策一致，无重大变更</td></tr>
+        <tr><td>4</td><td>现金收入比</td><td class="verdict-green">✅</td><td>1.022/1.071/1.062/1.026，连续四年 &gt;1</td></tr>
+        <tr><td>5</td><td>扣非质量</td><td class="verdict-green">✅</td><td>2026H1 扣非/归母 99.6%、2025 差额 3.47%，无警示</td></tr>
+        <tr><td>6</td><td>营收趋势</td><td class="verdict-green">✅</td><td>三年 V 型；但 2026H2 一致预期隐含负增长</td></tr>
+        <tr><td>7</td><td>商誉</td><td class="verdict-green">✅</td><td>380.8 万（占总资产 0.04%），三年未减值</td></tr>
+        <tr><td>8</td><td>大额减值</td><td class="verdict-green">✅</td><td>2025 年减值 7573.8 万占净利 &lt;5%，逐项披露充分</td></tr>
+        <tr><td>9</td><td>负债与偿债</td><td class="verdict-green">✅</td><td>零有息负债（仅租赁负债 1456 万），净现金 ≈ 净资产 101%</td></tr>
+        <tr><td>10</td><td>MD&A 坦诚度</td><td class="verdict-green">✅</td><td>主动披露经调整净利/房产事故/减员/流水回落，🟢 诚实</td></tr>
+      </table>
+      <p><strong>10 项 ❌ = 0，全部通过</strong>。观察点（非硬指标）：2026Q2 OCF -19.78%、递延池 +0.13 亿、杖剑畅销榜 34→69。</p>
+    </div>
+    <div class="card">
+      <h3>关键数据基线（回溯锚点）</h3>
+      <table>
+        <tr><th>指标</th><th>2023</th><th>2024</th><th>2025</th><th>2026H1</th></tr>
+        <tr><td>营收（亿元）</td><td>41.85</td><td>36.96</td><td>62.05</td><td>37.27</td></tr>
+        <tr><td>归母净利（亿元）</td><td>11.25</td><td>9.45</td><td>17.94</td><td>10.92</td></tr>
+        <tr><td>扣非净利（亿元）</td><td>11.19</td><td>8.77</td><td>17.31</td><td>10.87</td></tr>
+        <tr><td>经营现金流（亿元）</td><td>11.86</td><td>12.49</td><td>27.96</td><td>12.73</td></tr>
+        <tr><td>毛利率 / 销售费用率</td><td>88.53 / 26.93</td><td>87.87 / 26.52</td><td>93.90 / 33.58</td><td>93.71 / 35.82</td></tr>
+        <tr><td>ROE（加权，%）</td><td>26.04</td><td>19.79</td><td>33.27</td><td>18.57（H1）</td></tr>
+        <tr><td>分红率（%）</td><td>44.82</td><td>75.94</td><td>78.41</td><td>65.74（中期）</td></tr>
+        <tr><td>递延收入池（亿元，年末/半年末）</td><td>4.41</td><td>4.78</td><td>7.67</td><td>7.80</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <h3>相关研究</h3>
+      <p style="font-size:14px;">
+        吉比特-公司研究 ｜ 游戏-行业概览 ｜ 2026-08-16-吉比特-deep-read ｜ 2026-08-16-吉比特-processed ｜ 2026-08-16-吉比特-bull ｜ 2026-08-16-吉比特-bear
+      </p>
+    </div>
+  </section>
+
+  <footer>
+    <p>本报告由本系统基于公开信息生成（2023/2024/2025 年报原文 + 2026H1 中报 + 公告 + 28 家券商研报摘要 + 多空辩论 + 质量筛查）。数据时点：2026-08-16。仅供内部研究参考，不构成投资建议。</p>
+    <p style="margin-top:8px;">相关笔记：[[吉比特-公司研究]] ｜ [[游戏-行业概览]] ｜ [[2026-08-16-吉比特-deep-read]] ｜ [[2026-08-16-吉比特-bull]] ｜ [[2026-08-16-吉比特-bear]]</p>
+  </footer>
+</div>
+
+<script>
+if (window.__ECHARTS_FAIL) {
+  document.querySelectorAll("[id^='chart-']").forEach(function(el){
+    el.innerHTML = '<div style="padding:16px;border:1px dashed #333;color:#666;border-radius:8px;">图表加载失败（CDN 不可用），请查阅 Markdown 报告数据表</div>';
+  });
+}
+
+var DARK = {
+  text: "#a1a1a1", axis: "#666666", split: "#1a1a1a", accent: "#0070f3"
+};
+var PALETTE = ["#0070f3", "#2e9e5b", "#fbbf24", "#f04141", "#a1a1a1"];
+
+// 1. 营收/归母/扣非
+(function(){
+  var el = document.getElementById("chart-revenue");
+  if (!el || !window.echarts) return;
+  var c = echarts.init(el);
+  c.setOption({
+    backgroundColor: "transparent",
+    color: PALETTE,
+    tooltip: { trigger: "axis" },
+    legend: { top: 0, textStyle: { color: DARK.text } },
+    grid: { left: 60, right: 20, top: 44, bottom: 30 },
+    xAxis: { type: "category", data: ["2023", "2024", "2025", "2026H1"], axisLine: { lineStyle: { color: DARK.axis } }, axisLabel: { color: DARK.text } },
+    yAxis: { type: "value", name: "亿元", nameTextStyle: { color: DARK.axis }, axisLabel: { color: DARK.text }, splitLine: { lineStyle: { color: DARK.split } } },
+    series: [
+      { name: "营业收入", type: "bar", barWidth: 22, data: [41.85, 36.96, 62.05, 37.27], label: { show: true, position: "top", color: "#0070f3" } },
+      { name: "归母净利润", type: "bar", barWidth: 22, data: [11.25, 9.45, 17.94, 10.92], label: { show: true, position: "top", color: "#2e9e5b" } },
+      { name: "扣非净利润", type: "line", smooth: true, data: [11.19, 8.77, 17.31, 10.87], label: { show: true, position: "top", color: "#fbbf24" } }
+    ]
+  });
+})();
+
+// 2. 盈利能力趋势
+(function(){
+  var el = document.getElementById("chart-margin");
+  if (!el || !window.echarts) return;
+  var c = echarts.init(el);
+  c.setOption({
+    backgroundColor: "transparent",
+    color: PALETTE,
+    tooltip: { trigger: "axis" },
+    legend: { top: 0, textStyle: { color: DARK.text } },
+    grid: { left: 60, right: 20, top: 44, bottom: 30 },
+    xAxis: { type: "category", data: ["2023", "2024", "2025", "2026H1"], axisLine: { lineStyle: { color: DARK.axis } }, axisLabel: { color: DARK.text } },
+    yAxis: { type: "value", name: "%", nameTextStyle: { color: DARK.axis }, axisLabel: { color: DARK.text }, splitLine: { lineStyle: { color: DARK.split } } },
+    series: [
+      { name: "毛利率", type: "line", smooth: true, data: [88.53, 87.87, 93.90, 93.71], label: { show: true, position: "top", color: "#0070f3" } },
+      { name: "销售费用率", type: "line", smooth: true, data: [26.93, 26.52, 33.58, 35.82], label: { show: true, position: "top", color: "#f04141" } },
+      { name: "归母净利率", type: "line", smooth: true, data: [26.88, 25.57, 28.91, 29.30], label: { show: true, position: "top", color: "#2e9e5b" } },
+      { name: "ROE(加权)", type: "line", smooth: true, data: [26.04, 19.79, 33.27, 18.57], label: { show: true, position: "bottom", color: "#fbbf24" } }
+    ]
+  });
+})();
+
+// 3. 2026H1 产品流水结构
+(function(){
+  var el = document.getElementById("chart-products");
+  if (!el || !window.echarts) return;
+  var c = echarts.init(el);
+  c.setOption({
+    backgroundColor: "transparent",
+    color: ["#0070f3", "#2e9e5b", "#fbbf24", "#f04141", "#a1a1a1", "#4b5563"],
+    tooltip: { trigger: "item", formatter: "{b}: {c} 亿 ({d}%)" },
+    legend: { top: 0, textStyle: { color: DARK.text } },
+    series: [{
+      name: "2026H1 流水", type: "pie", radius: ["35%", "68%"], center: ["50%", "55%"],
+      label: { color: DARK.text, formatter: "{b}\n{c} 亿" },
+      data: [
+        { value: 10.23, name: "问道手游" },
+        { value: 9.19, name: "杖剑大陆" },
+        { value: 5.89, name: "道友来挖宝" },
+        { value: 3.33, name: "杖剑港澳台日" },
+        { value: 2.07, name: "杖剑欧美" }
+      ]
+    }]
+  });
+})();
+
+// 4. 三情景目标价
+(function(){
+  var el = document.getElementById("chart-target");
+  if (!el || !window.echarts) return;
+  var c = echarts.init(el);
+  var cur = 390.30;
+  c.setOption({
+    backgroundColor: "transparent",
+    color: ["#f04141", "#fbbf24", "#2e9e5b", "#0070f3"],
+    tooltip: { trigger: "axis" },
+    legend: { top: 0, textStyle: { color: DARK.text } },
+    grid: { left: 60, right: 20, top: 44, bottom: 30 },
+    xAxis: { type: "category", data: ["悲观 241", "中性 322", "乐观 402", "当前 390.30"], axisLine: { lineStyle: { color: DARK.axis } }, axisLabel: { color: DARK.text } },
+    yAxis: { type: "value", name: "元/股", nameTextStyle: { color: DARK.axis }, axisLabel: { color: DARK.text }, splitLine: { lineStyle: { color: DARK.split } } },
+    series: [{
+      name: "目标价", type: "bar", barWidth: 52,
+      data: [
+        { value: 241, itemStyle: { color: "#f04141" } },
+        { value: 322, itemStyle: { color: "#fbbf24" } },
+        { value: 402, itemStyle: { color: "#2e9e5b" } },
+        { value: 390.30, itemStyle: { color: "#0070f3" } }
+      ],
+      label: { show: true, position: "top", color: DARK.text, formatter: function(p){ return p.value + " 元"; } },
+      markLine: { data: [{ yAxis: cur, lineStyle: { color: "#0070f3", type: "dashed" }, label: { formatter: "当前价 390.30", color: "#0070f3" } }] }
+    }]
+  });
+})();
+
+// 5. 多空证据强度对比
+(function(){
+  var el = document.getElementById("chart-bullbear");
+  if (!el || !window.echarts) return;
+  var c = echarts.init(el);
+  c.setOption({
+    backgroundColor: "transparent",
+    color: ["#2e9e5b", "#f04141"],
+    tooltip: { trigger: "axis" },
+    legend: { top: 0, textStyle: { color: DARK.text } },
+    grid: { left: 100, right: 40, top: 44, bottom: 30 },
+    xAxis: { type: "value", name: "证据强度 0-10", nameTextStyle: { color: DARK.axis }, axisLabel: { color: DARK.text }, splitLine: { lineStyle: { color: DARK.split } } },
+    yAxis: { type: "category", data: ["估值/安全边际", "境外第二曲线", "财务质量", "护城河", "增长可持续"], axisLine: { lineStyle: { color: DARK.axis } }, axisLabel: { color: DARK.text } },
+    series: [
+      { name: "🟢 多方", type: "bar", barWidth: 14, data: [7.5, 6, 9, 6, 7], label: { show: true, position: "right", color: "#2e9e5b" } },
+      { name: "🔴 空方", type: "bar", barWidth: 14, data: [6, 7, 7, 8, 9], label: { show: true, position: "right", color: "#f04141" } }
+    ]
+  });
+})();
+</script>
+
+</body>
+</html>

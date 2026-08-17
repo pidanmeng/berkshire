@@ -1,0 +1,73 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "deep-dive-中石科技-20260817-cd4f",
+  "origin": "process-improvement",
+  "command": "deep-dive 中石科技",
+  "status": "success",
+  "issues": [
+    {
+      "problemCode": "evaluate-yoy-metric-misparse",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "symptom": "evaluate.ts 输出营收同比 1713.73%、净利同比 6811.97%，与 2025 年报原文（营收 +17.14%、归母 +68.12%、扣非 +95.30%）严重不符；且触发 quality-screen auto 模式『净利含大额一次性损益』红牌与 RED 误判（正确为 YELLOW 6.5/10）",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-17 evaluate.ts --code 300684 输出同比 1713.73%/6811.97% 并警告 PE-TTM 与 PEG 失真；document-reader 精读 2025 年报『第二节主要财务指标』原文确认 +17.14%/+68.12%；quality-screen auto 模式首次运行因该值触发一次性损益误报，改传 0.1714/0.6812 后输出 YELLOW 6.5/10 无红牌" }
+      ],
+      "rootCauseHypothesis": "evaluate.ts 同比字段来自同花顺 hithink API 的同比接口（或 TTM 口径拼错），对 2025 年报口径取数错误；该字段被 quality-screen/估值判断直接消费，属数据源口径问题而非公司业务事实",
+      "goal": "evaluate.ts 同比字段改以年报原文口径核验（或标注接口同比存疑并引导以财报为准）；quality-screen 等下游在同比异常（|同比|>500%）时显式拦截而非自动触发一次性损益判定",
+      "severity": "high",
+      "confidence": 0.9,
+      "benefit": "估值快照与自动化质量筛查结论正确性提升，避免误导多空论证与估值判断",
+      "risk": "修改取数逻辑需回归测试其他公司",
+      "acceptance": "evaluate.ts --code 300684 输出营收同比 +17.14%、净利同比 +68.12%，且不再误触发一次性损益警告"
+    },
+    {
+      "problemCode": "checklist-auto-threshold-text-misread",
+      "targetKind": "script",
+      "targetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "symptom": "investment-checklist-auto 扫描中石科技报告与笔记误报 2 项：#28『有息负债/OCF 流动性红线』命中『短期借款』关键词误判债务风险（实际有息负债仅 660 万、现金+理财 10.8 亿）；#15『商誉占比』把『商誉/净资产 <30%』阈值文本读作实际值 30% 触发警示（实际商誉 1,009.18 万、占总资产 0.37%）",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-17 运行 investment-checklist-auto.ts 扫描中石科技报告+公司笔记：AUTO 判『⚠️ 有条件放行』且 CRITICAL 1/2 未通过；逐项核对 deep-read 4.4 年报原文（商誉 1,009.18 万减值测试通过、有息负债 660 万）确认 2 项均为扫描器误报；与生益科技 review（deep-dive-生益科技-20260816-3d9a #checklist-auto-year-ambiguity）的阈值文本误读同型，跨任务复现" }
+      ],
+      "rootCauseHypothesis": "扫描器按关键词/正则机械匹配：『短期借款』出现在负债/流动性检查语境即触发债务风险；『商誉/净资产 <30%』的阈值表述被当作实际数值；未结合上下文判定（有息负债绝对值、商誉占净资产比例需与阈值比较而非直接取文本）",
+      "goal": "AUTO 扫描对负债/商誉类检查项做上下文消歧：区分『阈值表述』与『实际数值』；有息负债检查应结合现金余额与绝对值判断",
+      "severity": "medium",
+      "confidence": 0.85,
+      "benefit": "50 项投资决策清单 AUTO 扫描结论可信度提升，减少 CRITICAL 误判与人工核验成本",
+      "risk": "消歧规则可能漏检真实债务风险，需测试覆盖",
+      "acceptance": "对中石科技报告+笔记扫描不再误报 #28/#15；真实债务风险公司（高有息负债/高商誉）仍能正确警示"
+    },
+    {
+      "problemCode": "deep-dive-bear-report-coverage-gap",
+      "targetKind": "process",
+      "targetPath": "deep-dive 流程·步骤 2.4（研报采集）",
+      "symptom": "中石科技近 365 天研报仅 2 篇且均为买入（中邮/华鑫），无看空/谨慎研报；多空论证的 Bear Case 主要依赖 document-reader 自建（大客户集中/估值透支），缺少卖方谨慎视角的外部佐证",
+      "evidence": [
+        { "grade": "C", "detail": "2026-08-17 stock.ts --code 300684 --reports --days 365 仅返回 2 条研报且均为买入评级；多空论证空方论点全部由 document-reader 从财报原文构建，无券商谨慎/中性研报交叉验证" }
+      ],
+      "rootCauseHypothesis": "A 股研报市场整体偏多（卖方鲜少看空），近一年该股仅 2 篇研报覆盖；stock.ts 未提供跨券商（慧博/研报客等）补充检索或『谨慎评级』定向筛选",
+      "goal": "研报采集在卖方看空稀缺时，补充检索中性/谨慎评级或负面观点新闻作为空方外部证据源；多空论证标注『空方外部佐证缺失』",
+      "severity": "medium",
+      "confidence": 0.6,
+      "benefit": "多空论证外部证据链更完整，减少单边依赖",
+      "risk": "增加采集步骤耗时；负面观点信源质量参差需人工甄别",
+      "acceptance": "多空论证空方至少 1 条外部佐证（或显式标注缺失原因）"
+    },
+    {
+      "problemCode": "document-reader-selfcheck-missing",
+      "targetKind": "agent",
+      "targetPath": ".trae/agents/document-reader.md",
+      "symptom": "document-reader 角色无同名 .self-check.ts 自检脚本（info-alchemist/cross-validator/knowledge-architect/report-writer 均有），其产出（deep-read 9 大精读目标+多空论证）缺乏自动化校验，本次仅靠人工按质量标准自检（17 项全过）",
+      "evidence": [
+        { "grade": "C", "detail": "2026-08-17 document-reader 子任务回报明确『.trae/agents/ 下不存在 document-reader.md.self-check.ts（Glob 确认仅有本体）』；AGENTS.md 列示的 6 个 Agent 自检脚本清单中 document-reader 项为空白" }
+      ],
+      "rootCauseHypothesis": "document-reader 角色先于自检脚本体系建立（或自检脚本一直未补），deep-read 的九大目标/多空论证覆盖率无脚本化验收",
+      "goal": "为 document-reader 补建 document-reader.md.self-check.ts（校验 9 大精读目标覆盖率、三年年报覆盖、No-Go 红线标注、多空论证第十章完整性），纳入 Phase 1.5 验收",
+      "severity": "low",
+      "confidence": 0.7,
+      "benefit": "deep-read 产出质量验收自动化，与其余角色自检体系对齐",
+      "risk": "新增脚本需测试；多空论证为自由文本，校验规则需谨慎设计避免误判",
+      "acceptance": ".trae/agents/document-reader.md.self-check.ts 存在且能对中石科技 deep-read 返回通过结论"
+    }
+  ]
+}

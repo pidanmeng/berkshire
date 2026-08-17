@@ -1,0 +1,105 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "deep-dive-长电科技-20260817-7k2m",
+  "origin": "process-improvement",
+  "command": "deep-dive 长电科技",
+  "status": "success",
+  "issues": [
+    {
+      "problemCode": "evaluate-yoy-metric-misparse",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "symptom": "evaluate.ts 输出净利同比 -275.46%、营收同比存疑（实际 2025 年报：营收 +8.09%、归母净利 -2.75%、扣非 -11.51%），接口同比字段口径错误；脚本虽自标『同比存疑，以年报为准』，但误导质量筛查与估值判断需人工纠偏",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-17 evaluate.ts --code 600584 输出净利同比 -275.46% 与营收同比异常，明显偏离年报原文（+8.09%/-2.75%）；document-reader 精读 2025 年报『主要会计数据』及 4 篇券商研报交叉确认真实值；与中石科技 review（deep-dive-中石科技-20260817-cd4f #evaluate-yoy-metric-misparse）同型，跨任务复现" }
+      ],
+      "rootCauseHypothesis": "evaluate.ts 同比字段来自同花顺 hithink API 的同比接口，对 2025 年报口径取数错误；该字段被 quality-screen/估值判断直接消费，属数据源口径问题而非公司业务事实",
+      "goal": "evaluate.ts 同比字段改以年报原文口径核验（或标注接口同比存疑并强制引导以财报为准）；quality-screen 等下游在同比异常（|同比|>500%）时显式拦截而非自动触发一次性损益判定",
+      "severity": "high",
+      "confidence": 0.9,
+      "benefit": "估值快照与自动化质量筛查结论正确性提升，避免误导多空论证与估值判断",
+      "risk": "修改取数逻辑需回归测试其他公司",
+      "acceptance": "evaluate.ts --code 600584 输出营收同比 +8.09%、归母净利同比 -2.75%、扣非 -11.51%，且不再输出 -275.46% 类异常值"
+    },
+    {
+      "problemCode": "deep-dive-bear-report-coverage-gap",
+      "targetKind": "process",
+      "targetPath": "deep-dive 流程·步骤 2.4（研报采集）",
+      "symptom": "长电科技近 365 天 11 篇研报全部为『买入/优于大市』，无看空/谨慎评级研报；多空论证的 Bear Case 主要依赖 document-reader 自建（估值透支/资本黑洞/扣非恶化），外部空方佐证仅国金『利润承压』标题的谨慎视角，缺独立卖方看空观点交叉验证",
+      "evidence": [
+        { "grade": "C", "detail": "2026-08-17 stock.ts --code 600584 --reports --days 365 返回 11 条研报均为买入/优于大市评级（中邮/华鑫/开源/国信/华金/华安/国金），无看空或谨慎评级；多空论证空方论点主要由 document-reader 从财报原文自建；与中石科技 review（deep-dive-中石科技-20260817-cd4f #deep-dive-bear-report-coverage-gap）同型，跨任务复现" }
+      ],
+      "rootCauseHypothesis": "A 股研报市场整体偏多（卖方鲜少看空），stock.ts 未提供跨券商补充检索或『谨慎评级』定向筛选；导致深度调研的多空论证空方缺乏外部佐证",
+      "goal": "研报采集在卖方看空稀缺时，补充检索中性/谨慎评级或负面观点新闻作为空方外部证据源；多空论证标注『空方外部佐证缺失』",
+      "severity": "medium",
+      "confidence": 0.65,
+      "benefit": "多空论证外部证据链更完整，减少单边依赖",
+      "risk": "增加采集步骤耗时；负面观点信源质量参差需人工甄别",
+      "acceptance": "多空论证空方至少 1 条外部佐证（或显式标注缺失原因）"
+    },
+    {
+      "problemCode": "quality-screen-auto-growth-param-unit",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "quality-screen --mode auto 的 growth 参数单位与负值格式易误用：`--earnings-growth -2.75` 因 bun parseArgs 将负值误判为选项报 ERR_PARSE_ARGS_INVALID_OPTION_VALUE（须用 `--earnings-growth=-2.75` 等号格式）；`--revenue-growth 8.09` 被当作 809% 强成长（须传小数 0.0809）；AGENTS.md 共享脚本表未标注单位约定，编排器需翻源码确认",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-17 两次运行 quality-screen.ts --mode auto（长电科技 QS-1~QS-8 数据）：首次 `--earnings-growth -2.75` 报错 exit 1；二次 `--revenue-growth 8.09 --earnings-growth=-2.75` 输出营收同比 809.00%（误判强成长绿牌）；改传 0.0809/-0.0275 后输出正确 8.09%/-2.75%；脚本头部注释虽标注『--revenue-growth 0.12（12%）』但 AGENTS.md 共享脚本表未载明，且负值等号格式为 bun parseArgs 硬限制" }
+      ],
+      "rootCauseHypothesis": "quality-screen auto 模式 growth 参数单位约定仅写在脚本头部注释，未同步至 AGENTS.md 共享脚本表与命令文档；bun parseArgs 对以 - 开头的选项值需等号格式的限制未在用法说明中提示",
+      "goal": "AGENTS.md 共享脚本表补充 quality-screen auto 模式参数单位说明（growth 传小数、负值用等号格式）；或脚本内对 growth>1（如 >5）显式警告疑似百分比误传",
+      "severity": "medium",
+      "confidence": 0.8,
+      "benefit": "降低编排器/Agent 使用 quality-screen auto 模式的参数误用率，避免质量筛查结论失真",
+      "risk": "改动小，需同步文档与脚本帮助文本",
+      "acceptance": "AGENTS.md 共享脚本表含 growth 单位说明；或脚本对 growth>5 的疑似误传给出显式警告"
+    },
+    {
+      "problemCode": "deep-dive-no-cross-validator",
+      "targetKind": "process",
+      "targetPath": "deep-dive 流程·步骤 4（结构化提取与质量筛查）",
+      "symptom": "deep-dive 命令流程步骤 4 仅含 info-alchemist + quality-screen，无 /research 流程的 Phase 3 cross-validator 阶段；document-reader 提出的 4 个存疑点（分红口径 2.33 vs 2.68 亿、应收周转率 6.5 vs 激励目标 7.25、华润同业竞争无进展、产能利用率不透明）直接透传到知识笔记与报告，无独立多源交叉验证环节",
+      "evidence": [
+        { "grade": "C", "detail": "2026-08-17 deep-dive 长电科技执行中，document-reader 回报『4 个 🟡 存疑点交 CrossValidator』，但命令流程步骤 4 未定义 cross-validator 阶段，存疑点由 knowledge-architect/report-writer 直接承接，未独立验证" }
+      ],
+      "rootCauseHypothesis": "deep-dive 命令为单公司简版流程，精简了 cross-validator 阶段，但 document-reader 定义仍以『交 CrossValidator』为存疑点出口，二者衔接存在真空",
+      "goal": "deep-dive 命令在步骤 4 明确存疑点处理路径（或由编排器对存疑点做轻量多源核验后放行，或显式标注存疑点未验证）",
+      "severity": "low",
+      "confidence": 0.6,
+      "benefit": "存疑点处理路径清晰，避免『交 CrossValidator』后无承接方",
+      "risk": "轻量核验增加编排器负担",
+      "acceptance": "deep-dive 命令文档明确存疑点承接方与处理规则"
+    },
+    {
+      "problemCode": "quality-screen-industry-threshold-bias",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "quality-screen 对低毛利重资产强周期行业（封测 OSAT）机械评分系统性低估：长电科技毛利率 14.15%（封测行业常态，日月光亦仅 20%+）、ROE 5.56% 触发多项黄牌与估值 0 分，综合 0.0/10 RED；需人工结合行业特性定性修正，增加编排器判断成本",
+      "evidence": [
+        { "grade": "C", "detail": "2026-08-17 quality-screen auto 模式（长电科技）输出 RED 0.0/10，其中毛利率 14.15%<20%、净利率 4.04%<5% 黄牌为封测行业结构性属性；knowledge-architect 补充行业特性修正说明后『修正后仍为 RED』（估值透支+扣非下滑），但机械评分的行业偏置无法量化" }
+      ],
+      "rootCauseHypothesis": "quality-screen 阈值基于一般消费/制造行业设计，无行业参数（如半导体封测低毛利高周转）支持，重资产低毛利行业的盈利维度系统性低分",
+      "goal": "quality-screen 支持可选的行业阈值参数（如 --industry osat）或输出『行业属性修正』提示，减少机械评分对特定行业的系统性误判",
+      "severity": "low",
+      "confidence": 0.6,
+      "benefit": "质量筛查对低毛利行业公司结论更贴近业务实质，减少人工修正成本",
+      "risk": "行业参数引入复杂度，需维护行业阈值表",
+      "acceptance": "quality-screen 对封测类公司可通过行业参数或明确提示避免系统性 RED 误判"
+    },
+    {
+      "problemCode": "evaluate-api-rate-limit",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "symptom": "evaluate.ts 调用同花顺 hithink API 首次运行返回 HTTP 429 Too Many Requests（限流），需编排器手动重试，影响流程连续性",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-17 evaluate.ts --code 600584 首次运行 exit 1 输出『❌ HTTP 429 Too Many Requests』；重试后成功（间隔约 1 分钟），同花顺 API 限流为外部依赖偶发" }
+      ],
+      "rootCauseHypothesis": "同花顺 hithink API 对并发/频繁请求限流；evaluate.ts 无自动重试或退避机制",
+      "goal": "evaluate.ts（或 hithink.ts API 库）增加 429 自动重试（指数退避）与限流提示，减少人工干预",
+      "severity": "low",
+      "confidence": 0.7,
+      "benefit": "流程连续性与自动化程度提升",
+      "risk": "重试逻辑需测试，避免无限重试",
+      "acceptance": "evaluate.ts 遇 429 自动退避重试（如 3 次）后仍失败才报错"
+    }
+  ]
+}

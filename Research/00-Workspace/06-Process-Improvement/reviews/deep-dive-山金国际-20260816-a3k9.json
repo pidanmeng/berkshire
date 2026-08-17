@@ -1,0 +1,74 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "deep-dive-山金国际-20260816-a3k9",
+  "origin": "process-improvement",
+  "command": "deep-dive 山金国际",
+  "status": "success",
+  "issues": [
+    {
+      "problemCode": "fetch-file-ocr-ratio-limit-too-strict",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/file-ingestion/fetch-file.ts",
+      "symptom": "山金国际 2025 年年报（148 页）OCR 页占比 6.76%（10 页：封面/目录/重要提示/公司简介/MD&A54/附注65,71,73/尾页148），超过 --allow-ocr-pages 的 5% 硬限制，脚本仍判失败（exit 4）并保留源文件；实际正文已可提取 188KB，仅 10 页缺失。为覆盖三年年报需编写临时脚本绕过并手动拼装 frontmatter（易违反 --name 命名与 frontmatter 规范）",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-16 运行 fetch-file.ts --allow-ocr-pages 对 000975 2025 年报输出 exit 4『PDF 需要 OCR，涉及页面: 1,2,3,5,7,54,65,71,73,148』；用临时脚本调用 processPdf 成功提取 188,359 字符正文，仅 10 页缺失。同型问题在 deep-dive-生益科技-20260816-3d9a review 已记录（fetch-file-ocr-fails-annual-report，已修复新增 --allow-ocr-pages），本次为阈值仍偏严的新变体" },
+        { "grade": "B", "detail": "年报为文本层+少量扫描页混合型 PDF 是常态；5% 阈值覆盖不了『10 页扫描封面/目录/声明』的合法年报" }
+      ],
+      "rootCauseHypothesis": "OCR_PAGE_RATIO_LIMIT=0.05 一刀切且无强制覆盖开关，未区分『扫描封面/目录/声明页』（可安全占位）与『正文关键页』；--allow-ocr-pages 已解决 0 页 OCR 但 5% 上限仍过严",
+      "goal": "放宽或参数化 OCR 页占比阈值（如默认 ≤10% 或允许 --ocr-ratio-limit N 覆盖），并在占位符中提示缺失页性质，保证三年年报覆盖自动化且符合 --name/frontmatter 规范",
+      "severity": "medium",
+      "confidence": 0.85,
+      "benefit": "减少深调流程对含少量扫描页年报的人工干预与临时脚本滥用，保证三年年报覆盖自动化与产物规范一致性",
+      "risk": "OCR 页占位内容可能被下游误用，需 frontmatter 显式记录 pages_needing_ocr 并降权 parse_confidence",
+      "acceptance": "对 OCR 页占比 ≤10% 的 PDF（如山金国际 2025 年报），传 --allow-ocr-pages 即正常产出 Markdown 并在 frontmatter 标注 OCR 页清单与 parse_confidence 降权"
+    },
+    {
+      "problemCode": "evaluate-yoy-data-anomaly",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "symptom": "evaluate.ts --code 000975 输出的营收同比 2585.98%、净利同比 3674.65%（实际 2025 年报 +25.86%/+36.75%），与年报原文严重不符；下游 PEG 0.01、『PE-TTM vs 净利同比 3674.65%』、Forward PE 反推全部失真，对 document-reader 与多空辩论形成误导，需人工剔除并以年报原文为准",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-16 evaluate.ts 完整输出：营收同比 2585.98%、净利同比 3674.65%、PEG 0.01；对照 2025 年报原文营收 170.99 亿（+25.86%）、归母净利 29.72 亿（+36.75%），矛盾无法调和，判定为底层财务 API yoy 字段口径异常" }
+      ],
+      "rootCauseHypothesis": "底层 hithink/同花顺财务 API 的 yoy 字段在某些标的返回异常值（疑似累计值/单期值错配或数据源脏数据），evaluate.ts 未做跨期数值合理性校验（yoy 与两年绝对数勾稽）",
+      "goal": "evaluate.ts 对 yoy 字段增加合理性校验：与两年绝对数勾稽（|Δ/Base| 偏差 >50% 时告警或降级为『由绝对数推算』），避免异常值污染 PEG/Forward PE 等派生指标",
+      "severity": "high",
+      "confidence": 0.85,
+      "benefit": "估值快照与派生指标可信度提升，避免 document-reader/多空辩论基于失真同比数据下结论",
+      "risk": "校验逻辑需覆盖正常标的避免误报；异常时降级提示而非硬失败",
+      "acceptance": "对山金国际（及同类异常标的），evaluate.ts 输出同比与两年绝对数勾稽一致或显式标注『同比数据异常，以年报为准』，PEG/Forward PE 不基于异常值计算"
+    },
+    {
+      "problemCode": "checklist-auto-false-positives",
+      "targetKind": "script",
+      "targetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "symptom": "investment-checklist-auto.ts 扫描山金国际报告与笔记出现 3 项误报：#4 三层结构覆盖（单公司 deep-dive 命令定义不含行业全景，行业/细分/公司三层链接已建但关键词未匹配）、#8 财报 PDF 下载（已下载至 pdf-texts 但无检测记录）、#30 大额减值>30%净利（命中审计『减值测试为关键审计事项』标准表述，实际商誉 4.52 亿零减值、无大额减值），需人工逐项核实排除",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-16 运行 investment-checklist-auto.ts：输出 #4/#8/#30 未通过；经原文核实三项均为误报（见 deep-dive 报告附录 5 修正说明）。同型误报问题已在 deep-dive-生益科技-20260816-3d9a review 记录（checklist-auto-year-ambiguity），本次为新误报变体（上下文/关键词匹配）" }
+      ],
+      "rootCauseHypothesis": "AUTO 扫描为关键词匹配、缺乏上下文语义：①单公司 deep-dive 报告结构触发『三层结构』误报；②『减值测试』为审计标准表述被误判为大额减值；③PDF 下载检测依赖报告中固定关键词",
+      "goal": "AUTO 扫描增加上下文消歧：①识别 deep-dive 单公司报告类型豁免三层结构检查（或改为链接检测）；②减值项仅命中『计提/减值损失/减值准备余额』等实际计提表述；③PDF 下载检测支持 pdf-texts 目录存在性",
+      "severity": "medium",
+      "confidence": 0.8,
+      "benefit": "50 项投资决策清单 AUTO 扫描结论可信度提升，减少人工逐项核实成本；避免 CRITICAL/IMPORTANT 误报干扰放行决策",
+      "risk": "消歧规则复杂化可能引入漏报，需回归多公司样本测试",
+      "acceptance": "对山金国际报告扫描不再误报 #4/#8/#30，放行结论无需人工修正；回归历史 15 家公司样本无新增误判"
+    },
+    {
+      "problemCode": "pdf-inspector-parse-table-anomaly",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/file-ingestion/fetch-file.ts",
+      "symptom": "2023 年年报『主要矿产品种销售情况』表被上游 @firecrawl/pdf-inspector 解析为异常单位（销量 194.63 非吨），document-reader 无法直接采信 2023 年销量/均价，需人工按 2024/2025 年数据反推，标注推算值降档置信度",
+      "evidence": [
+        { "grade": "C", "detail": "2026-08-16 document-reader 精读 2023 年报时发现产销表格式解析异常（194.63 无法匹配吨单位口径），已在 deep-read 标注『2023 年销量/均价为推算值（产销表格式异常），置信度降档』" }
+      ],
+      "rootCauseHypothesis": "上游 pdf-inspector 对跨页/合并单元格复杂表格的数值-单位映射不稳定，单次观察未完成归因",
+      "goal": "对解析异常表格在 frontmatter 或文档内显式标记 parse_confidence 降档，并列入 pdf-inspector 上游兼容性观察项",
+      "severity": "low",
+      "confidence": 0.5,
+      "benefit": "下游精读对异常表格自动降权，减少推算值混入正式序列",
+      "risk": "上游修复不可控，仅能做检测与标记",
+      "acceptance": "解析异常表格在文档内显式标注且 parse_confidence 降档，后续如复现则升级为 candidate"
+    }
+  ]
+}

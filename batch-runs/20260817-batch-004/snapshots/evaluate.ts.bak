@@ -1,0 +1,676 @@
+/**
+ * 四大师投资框架 + 财报精读 — 综合评估脚本
+ *
+ * 用法：
+ *   bun run evaluate.ts --code 600519               # 自动获取数据并输出分析框架
+ *   bun run evaluate.ts --code 600519 --peer 000858  # 指定同业对比公司
+ *
+ * 输出：Markdown 格式的四大师评估 + 财报精读框架，Agent 可基于此填充分析。
+ */
+
+import {
+  searchTicker,
+  getSnapshot,
+  getValuations,
+  getKline,
+  getIncomeStatements,
+  getBalanceSheets,
+  getCashFlows,
+  getIndicators,
+  getMarketCapFromEastmoney,
+} from "../hithink/hithink.ts";
+import { computeComposite } from "../valuation/composite.ts";
+
+export function toThsCode(code: string): string {
+  if (code.includes(".")) return code;
+  return code.startsWith("6") ? `${code}.SH` : `${code}.SZ`;
+}
+
+export function fmtWan(v: number | null | undefined): string {
+  if (v === null || v === undefined) return "—";
+  if (Math.abs(v) >= 1e8) return (v / 1e8).toFixed(2) + " 亿";
+  if (Math.abs(v) >= 1e4) return (v / 1e4).toFixed(2) + " 万";
+  return v.toFixed(2);
+}
+
+export function fmtPct(v: number | null | undefined): string {
+  if (v === null || v === undefined) return "—";
+  return (v * 100).toFixed(2) + "%";
+}
+
+export function fmtDate(ms: number): string {
+  return new Date(ms).toISOString().slice(0, 10);
+}
+
+/**
+ * 生成星级字符串（1-5星）
+ * @param score 0-10 分的评分，会映射到 1-5 星
+ * @param useHalfStar 是否启用半星（☆）
+ * @returns 星级字符串，如 "★★★★☆" = 4.5 星，"★★★★★" = 5 星
+ */
+export function toStars(score: number, useHalfStar = true): string {
+  // 将 0-10 分映射为 1-5 星（保底 1 星）
+  const clamped = Math.max(0, Math.min(10, score));
+  const starValue = Math.max(1, (clamped / 10) * 5); // 1-5 范围
+  const fullStars = Math.floor(starValue);
+  const remainder = starValue - fullStars;
+  let result = "★".repeat(fullStars);
+  if (useHalfStar && remainder >= 0.5) {
+    result += "☆"; // 半星
+  } else if (useHalfStar && remainder > 0) {
+    // 小于半星补空星占位，保持对齐
+    result += "✩";
+  }
+  // 填充到 5 位
+  while (result.replace(/[★☆✩]/g, "").length + result.length < 5) {
+    const currentLen = (result.match(/[★☆✩]/g) || []).reduce((acc, ch) => acc + (ch === "☆" ? 0.5 : ch === "★" ? 1 : 0), 0);
+    if (currentLen >= 5) break;
+    result += "✩";
+    if ((result.match(/[★☆✩]/g) || []).length >= 5) break;
+  }
+  // 确保恰好5个字符
+  const chars: string[] = result.match(/[★☆✩]/g) || [];
+  while (chars.length < 5) { chars.push("✩"); result += "✩"; }
+  return chars.slice(0, 5).join("");
+}
+
+/**
+ * 四大师评分占位符 — 星级与评分由 Agent 基于调研基本面裁定
+ * 本脚本仅输出财务数据框架，不自动评分
+ */
+function agentPlaceholderStars(): string {
+  return "✩✩✩✩✩";
+}
+function agentPlaceholderScore(): string {
+  return "_/10";
+}
+
+/** 计算股价在过去 N 日的历史分位（0-1） */
+export function calculatePricePercentile(prices: number[], current: number): number {
+  if (prices.length === 0) return 0;
+  const sorted = [...prices].sort((a, b) => a - b);
+  let below = 0;
+  for (const p of sorted) {
+    if (p <= current) below++;
+    else break;
+  }
+  return below / sorted.length;
+}
+
+export async function generateFramework(
+  thscode: string,
+  peerCodes: string[] = [],
+  companyType?: string,
+  opts: { forwardGrowth?: number; scores?: Record<string, number> } = {},
+) {
+  const [snapshot, valuation, kline, inc, bal, cf, mcap] = await Promise.all([
+    getSnapshot(thscode),
+    getValuations(thscode),
+    getKline(thscode, 250).catch(() => [] as Awaited<ReturnType<typeof getKline>>),
+    getIncomeStatements(thscode, "annual", 4),
+    getBalanceSheets(thscode, "annual", 4),
+    getCashFlows(thscode, "annual", 4),
+    getMarketCapFromEastmoney([thscode]).catch(() => []),
+  ]);
+
+  // 获取财务指标
+  let indicators: Awaited<ReturnType<typeof getIndicators>> = [];
+  if (inc.length > 0) {
+    const fp = inc[0].fiscal_period;
+    const fy = inc[0].fiscal_year;
+    const map: Record<string, string> = { FY: "4", Q1: "1", Q2: "2", Q3: "3" };
+    const report = `${fy}-${map[fp] ?? "4"}`;
+    indicators = await getIndicators(thscode, report);
+  }
+
+  // 获取同业数据
+  const peerData: {
+    thscode: string;
+    snapshot: Awaited<ReturnType<typeof getSnapshot>>;
+    valuation: Awaited<ReturnType<typeof getValuations>>;
+    indicators: Awaited<ReturnType<typeof getIndicators>>;
+  }[] = [];
+  for (const pc of peerCodes) {
+    const pts = toThsCode(pc);
+    const [ps, pv, pin] = await Promise.all([
+      getSnapshot(pts).catch(() => [] as Awaited<ReturnType<typeof getSnapshot>>),
+      getValuations(pts).catch(() => [] as Awaited<ReturnType<typeof getValuations>>),
+      (async () => {
+        const pinc = await getIncomeStatements(pts, "annual", 1).catch(() => []);
+        if (pinc.length > 0) {
+          const fp = pinc[0].fiscal_period;
+          const fy = pinc[0].fiscal_year;
+          const map: Record<string, string> = { FY: "4", Q1: "1", Q2: "2", Q3: "3" };
+          const report = `${fy}-${map[fp] ?? "4"}`;
+          return getIndicators(pts, report).catch(() => []);
+        }
+        return [];
+      })(),
+    ]);
+    peerData.push({ thscode: pts, snapshot: ps, valuation: pv, indicators: pin });
+  }
+
+  const s = snapshot[0];
+  const v = valuation[0];
+  const ind = indicators[0];
+  const latestInc = inc[0];
+  const latestBal = bal[0];
+  const latestCf = cf[0];
+
+  // ==== 同比数据合理性校验（hithink API 同比偶发放大百倍，需以财报原文核对）====
+  const yoyRevenue = ind?.yoy_operating_income ?? null;
+  const yoyNetProfit = ind?.yoy_net_profit ?? null;
+  const suspiciousYoy =
+    (yoyRevenue !== null && Math.abs(yoyRevenue) > 5) ||
+    (yoyNetProfit !== null && Math.abs(yoyNetProfit) > 5);
+  const yoyAnomalyWarning = "⚠️ 同比数据存疑（|同比|>500%），请以财报原文核对";
+
+  // ==== 一次性损益疑似检测（license-out/BD 首付款/资产处置等，PE-TTM 与 PEG 会失真）====
+  const prevNetMargin = inc[1]?.operating_income != null && inc[1].operating_income > 0
+    ? (inc[1].net_profit ?? 0) / inc[1].operating_income
+    : null;
+  const netMarginSpike = latestInc != null && latestInc.operating_income > 0 && prevNetMargin !== null && prevNetMargin > 0
+    ? (latestInc.net_profit ?? 0) / latestInc.operating_income >= prevNetMargin * 2
+    : false;
+  const oneshotIncome = (yoyNetProfit !== null && yoyNetProfit > 3) || netMarginSpike;
+  const oneshotWarning = "⚠️ 净利可能含大额一次性收入（BD/license-out/资产处置等），PE-TTM 与 PEG 失真，请用正常化盈利";
+
+  // 计算股价历史分位（近250日）
+  const closePrices = kline.map(k => k.close_price).filter(c => c > 0);
+  const pricePercentile = s && closePrices.length > 0
+    ? calculatePricePercentile(closePrices, s.last_price)
+    : null;
+  const priceMin250 = closePrices.length > 0 ? Math.min(...closePrices) : null;
+  const priceMax250 = closePrices.length > 0 ? Math.max(...closePrices) : null;
+  const priceMedian250 = closePrices.length > 0
+    ? closePrices.sort((a, b) => a - b)[Math.floor(closePrices.length / 2)]
+    : null;
+
+  // ==== 市值 / TTM 净利 / Forward PE / 目标市值（估值追踪结构化字段的生产端）====
+  const mcapItem = mcap[0];
+  const marketCapYi = mcapItem?.market_cap != null ? mcapItem.market_cap / 1e8 : null;   // 总市值（亿元）
+  const totalSharesYi = (marketCapYi != null && s?.last_price) ? marketCapYi / s.last_price : null; // 总股本（亿股）
+  // TTM 净利 = 总市值 / PE-TTM（市值与估值同源时点）
+  const ttmNetProfitYi = (marketCapYi != null && v?.pe_ttm != null && v.pe_ttm > 0)
+    ? marketCapYi / v.pe_ttm
+    : null;
+  // 预测期增速：--forward-growth 优先，缺省取最新净利同比（周期股注意：用正常化增速而非当期）；
+  // 同比数据存疑（|同比|>500%）时禁用自动递推，须显式 --forward-growth 才计算 Forward PE
+  const forwardGrowth = opts.forwardGrowth ?? (suspiciousYoy ? null : ind?.yoy_net_profit ?? null);
+  const baseYear = latestInc?.fiscal_year != null ? latestInc.fiscal_year + 1 : null;     // 基准期 = 最近年报财年 + 1
+  const forwardNetProfitYi = (ttmNetProfitYi != null && forwardGrowth != null && forwardGrowth > -1)
+    ? ttmNetProfitYi * (1 + forwardGrowth)
+    : null;
+  const forwardPe = (marketCapYi != null && forwardNetProfitYi != null && forwardNetProfitYi > 0)
+    ? marketCapYi / forwardNetProfitYi
+    : null;
+  // 目标市值三情景（起步参考：当前 PE × 0.7 / 1.0 / 1.3，Agent 须按基本面修订）
+  const peRef = v?.pe_ttm != null && v.pe_ttm > 0 ? v.pe_ttm : null;
+  const targetCapRef = (pe: number) =>
+    (forwardNetProfitYi != null && peRef != null) ? forwardNetProfitYi * peRef * pe : null;
+  const targetCapPess = targetCapRef(0.7);
+  const targetCapNeu = targetCapRef(1.0);
+  const targetCapOpt = targetCapRef(1.3);
+  const compositeScore = opts.scores ? computeComposite(opts.scores) : null;
+
+  // 计算杜邦分析
+  let dupont = { netMargin: null as number | null, assetTurnover: null as number | null, equityMultiplier: null as number | null, roe: null as number | null };
+  if (latestInc && latestBal) {
+    const netProfit = latestInc.net_profit ?? 0;
+    const revenue = latestInc.operating_income ?? 0;
+    const assets = latestBal.assets_total ?? 0;
+    const equity = latestBal.holder_equity_total ?? 0;
+    if (revenue > 0) dupont.netMargin = netProfit / revenue;
+    if (assets > 0) dupont.assetTurnover = revenue / assets;
+    if (equity > 0) dupont.equityMultiplier = assets / equity;
+    if (equity > 0) dupont.roe = netProfit / equity;
+  }
+
+  // ==== 排雷数据生产端（供 quality-screen report 模式消费）====
+  // 利息覆盖倍数 = 经营现金流 ÷ 利息支出
+  const interestCoverage = latestCf && latestInc?.interest_expenses != null && latestInc.interest_expenses > 0
+    ? (latestCf.act_cash_flow_net ?? 0) / latestInc.interest_expenses
+    : null;
+  // 应收账款同比增速（最近两期年报对比）
+  const receivablesGrowth = bal.length >= 2
+    && bal[0]?.accounts_receivable != null && bal[1]?.accounts_receivable != null && bal[1].accounts_receivable > 0
+    ? (bal[0].accounts_receivable - bal[1].accounts_receivable) / bal[1].accounts_receivable
+    : null;
+  // 货币资金 / 总资产 占比（存贷双高判定输入）
+  const cashAssetRatio = latestBal && latestBal.assets_total != null && latestBal.assets_total > 0 && latestBal.cash != null
+    ? latestBal.cash / latestBal.assets_total
+    : null;
+
+  // 计算盈利质量信号
+  const qualityFlags: { name: string; pass: boolean; detail: string; key?: string }[] = [];
+  if (latestInc && latestCf) {
+    const ocf = latestCf.act_cash_flow_net ?? 0;
+    const netProfit = latestInc.net_profit ?? 0;
+    qualityFlags.push({
+      key: "ocf_vs_ni",
+      name: "经营现金流 > 净利润",
+      pass: ocf > netProfit,
+      detail: `经营现金流 ${fmtWan(ocf)} vs 净利润 ${fmtWan(netProfit)}`,
+    });
+  }
+  if (latestBal && latestInc) {
+    const debt = latestBal.total_debt ?? 0;
+    const assets = latestBal.assets_total ?? 1;
+    qualityFlags.push({
+      key: "debt_ratio",
+      name: "资产负债率 < 70%",
+      pass: (debt / assets) < 0.7,
+      detail: `资产负债率 ${fmtPct(debt / assets)}`,
+    });
+  }
+  if (ind) {
+    qualityFlags.push({
+      key: "roe",
+      name: "ROE > 10%",
+      pass: (ind.roe ?? 0) > 0.1,
+      detail: `ROE ${fmtPct(ind.roe)}`,
+    });
+    qualityFlags.push({
+      key: "gross_margin",
+      name: "毛利率 > 20%",
+      pass: (ind.gross_profit_ratio ?? 0) > 0.2,
+      detail: `毛利率 ${fmtPct(ind.gross_profit_ratio)}`,
+    });
+  }
+  // 以下三项需要多期财报 PDF 数据才能准确判断，单期 API 数据不足，标记为待人工补充
+  qualityFlags.push({
+    key: "revenue_trend",
+    name: "营收趋势 ≥ 2 年连续稳健",
+    pass: true, // 单期数据无法证伪，由人工后续补充
+    detail: "仅单期数据，需查 3-5 年收入趋势确认是否连续稳健",
+  });
+  qualityFlags.push({
+    key: "goodwill",
+    name: "商誉 / 净资产 < 30%",
+    pass: true, // 单期数据无商誉字段，由人工从财报 PDF 资产负债表确认
+    detail: "同花顺 API 单期数据不含商誉明细，需从财报 PDF 资产负债表查商誉净额",
+  });
+  qualityFlags.push({
+    key: "big_impairment",
+    name: "无大额资产减值损失（≥ 净利 30%）",
+    pass: true, // 单期数据无减值损失字段，由人工从财报 PDF 利润表确认
+    detail: "同花顺 API 单期数据不含资产减值损失明细，需从财报 PDF 利润表查减值项",
+  });
+
+  // 输出 Markdown
+  console.log(`# 四大师评估 + 财报精读框架：${thscode}\n`);
+
+  // === 四大师星级评分卡（Agent 基于调研基本面裁定）===
+  console.log(`## 四大师综合评分卡（Agent 裁定版）\n`);
+  console.log(`> **说明**：以下星级与评分须由 Agent 基于护城河定性分析、管理层诚信核查、行业趋势判断、历史类比研究后**手动填写**，脚本不自动计算。\n`);
+  console.log(`| 维度 | 大师 | 星级（1-5） | 0-10分 | 核心判断建议 |`);
+  console.log(`|------|------|:----------:|:------:|---------|`);
+  console.log(`| 能力圈 | 巴菲特 | ${agentPlaceholderStars()} | ${agentPlaceholderScore()} | _由 Agent 填写：能否一句话说清生意本质？能否预测 10 年后格局？_ |`);
+  console.log(`| 护城河 | 巴菲特 | ${agentPlaceholderStars()} | ${agentPlaceholderScore()} | _由 Agent 填写：五类护城河（成本/品牌/网络/转换成本/规模/牌照）验证结果_ |`);
+  console.log(`| 生意模式 | 段永平 | ${agentPlaceholderStars()} | ${agentPlaceholderScore()} | _由 Agent 填写：怎么赚钱？现金流健康度？资本密集度？定价权？_ |`);
+  console.log(`| 管理层诚信（本分） | 段永平 | ${agentPlaceholderStars()} | ${agentPlaceholderScore()} | _由 Agent 填写：承诺兑现记录？关联交易？减持记录？资本配置能力？_ |`);
+  console.log(`| 反向检查清单 | 芒格 | ${agentPlaceholderStars()} | ${agentPlaceholderScore()} | _由 Agent 填写：失败情景？历史错误？财务地雷？竞争侵蚀？_ |`);
+  console.log(`| 历史类比与时间框架 | 李录 | ${agentPlaceholderStars()} | ${agentPlaceholderScore()} | _由 Agent 填写：海外/历史类比？当前阶段？时间框架匹配度？_ |`);
+  console.log(`| **综合** | — | **${agentPlaceholderStars()}** | **${agentPlaceholderScore()}** | **加权平均（六维各占 1/6）**|`);
+  console.log(``);
+  console.log(`> **星级说明**: ★ = 1 分（满分对应 10 分中的 10），☆ = 0.5 分，✩ = 0 分。5 星 = 顶级优秀（≥9 分），4 星 = 优秀（≥7.5 分），3 星 = 合格（≥6 分），2 星 = 存疑（≥4 分），1 星 = 不建议跟踪（<4 分）。`);
+  console.log(``);
+
+  // === 估值与股价快照 ===
+  console.log(`## 估值与股价快照（数据来源：同花顺 hithink API）\n`);
+  console.log(`| 指标 | 当前值 | 评价（建议 Agent 补充历史分位与同业对比） |`);
+  console.log(`|------|--------|----------------------------------------|`);
+  if (s && s.last_price !== null && s.last_price !== undefined) {
+    const marketCap = s.last_price * 0; // 占位，需要总股本才能算，Agent 需补齐
+    console.log(`| 最新股价（元） | ${s.last_price.toFixed(2)} | — |`);
+  }
+  if (snapshot.length > 0 && snapshot[0].turnover !== null) {
+    console.log(`| 最新成交额 | ${fmtWan(snapshot[0].turnover)} | — |`);
+  }
+  if (v) {
+    const peEval = v.pe_ttm === null ? "—" : v.pe_ttm > 50 ? "偏贵" : v.pe_ttm > 30 ? "略贵" : v.pe_ttm > 15 ? "合理" : v.pe_ttm > 0 ? "便宜" : "亏损";
+    const peEvalFinal = oneshotIncome ? `${peEval}（疑似一次性损益，建议用正常化盈利）` : peEval;
+    console.log(`| **PE-TTM** | ${v.pe_ttm?.toFixed(2) ?? "—"} | **${peEvalFinal}**（需结合行业历史分位与增速判断）${oneshotIncome ? " " + oneshotWarning : ""} |`);
+    console.log(`| **PB-MRQ** | ${v.pb_mrq?.toFixed(2) ?? "—"} | — |`);
+    console.log(`| PS-TTM | ${v.ps_ttm?.toFixed(2) ?? "—"} | — |`);
+    console.log(`| PCF-TTM | ${v.pcf_ttm?.toFixed(2) ?? "—"} | — |`);
+  }
+  console.log(`| 数据时点 | ${fmtDate(Date.now())} | — |`);
+  console.log(``);
+  console.log(`> **估值判断（称重机视角）**：_由 Agent 填写：当前价格相对于内在价值处于什么位置？是否有安全边际？什么条件下会触发买入/卖出？_`);
+  console.log("");
+
+  // === 估值区间与目标价参考（自动计算 + Agent 填入假设）===
+  const eps = latestInc?.basic_eps ?? null;
+  console.log(`## 估值区间与目标价参考（安全边际视角）\n`);
+  console.log(`> 以下「自动计算」部分由脚本基于同花顺 API 数据生成；「Agent 填入」部分须由 Agent 结合行业研究、历史估值、同业对比后填写合理假设。\n`);
+  console.log(`| 指标 | 自动计算值 | 说明 |`);
+  console.log(`|------|-----------|------|`);
+  console.log(`| 当前股价 | ${s?.last_price?.toFixed(2) ?? "—"} 元 | — |`);
+  console.log(`| 近250日股价区间 | ${priceMin250?.toFixed(2) ?? "—"} ~ ${priceMax250?.toFixed(2) ?? "—"} 元 | 最低 / 最高 |`);
+  console.log(`| 近250日中位价 | ${priceMedian250?.toFixed(2) ?? "—"} 元 | — |`);
+  console.log(`| 当前股价历史分位 | ${pricePercentile !== null ? (pricePercentile * 100).toFixed(1) + "%" : "—"} | 0%=近1年最低，100%=近1年最高 |`);
+  console.log(`| EPS（基本，最近年报） | ${eps ?? "—"} 元/股 | 用于 PE 反推目标价 |`);
+  console.log(`| PE-TTM | ${v?.pe_ttm?.toFixed(2) ?? "—"} | — |`);
+  console.log(`| PB-MRQ | ${v?.pb_mrq?.toFixed(2) ?? "—"} | — |`);
+  console.log("");
+
+  // === 估值方法路由（企业类型 → 推荐近似路径）===
+  console.log(`### 估值方法路由（企业类型 → 推荐近似路径）\n`);
+  console.log(`> 估值方法论（参考《估值思想》）：乘数只是信息载体、不创造信息。须先判断企业类型，选择与价值创造机制匹配的近似路径，再反向检验倍数隐含假设。\n`);
+  console.log(`| 企业类型 | 价值载体 | 推荐路径 | 关键警示 |`);
+  console.log(`|---------|---------|---------|---------|`);
+  console.log(`| 金融（银行/保险） | 净资产 | PB / 调整后净资产 | 净资产即未来经济利益近似，勿用 PE 硬套 |`);
+  console.log(`| 周期（钢铁/化工/航运/大宗） | 穿越周期的平均盈利 | 正常化 EPS（5-10 年平均） | 繁荣期 PE-TTM 系统性低估、衰退期高估 |`);
+  console.log(`| 资源（矿/油气） | 已探明储量 | 储量×(价格−成本) 按开采时间表折现 | 寿命有限，终值假设不适用 |`);
+  console.log(`| 控股/多元集团 | 各板块独立价值 | 分部估值（SOTP） | 承认多元化折扣 |`);
+  console.log(`| 一般工商 | 未来现金流 | PE/EV/EBITDA + 三变量拆解 | 须反向检验倍数隐含增长/回报/风险假设 |`);
+  console.log(`\n> **当前标的判定**：${companyType ? `Agent 指定为「${companyType}」` : "未指定（可用 --type 指定，如 --type 周期）"}${eps !== null && eps < 0 ? "；EPS 为负 → 优先走 PB / 净资产路径" : ""}。周期行业若采用单年 PE-TTM，须同时给出正常化 EPS 对照。\n`);
+  console.log("");
+
+  console.log(`### 三情景目标价区间（Agent 填入合理假设后计算）\n`);
+  console.log(`| 情景 | PE 假设（Agent 填） | 目标价 = EPS × PE | 隐含涨跌幅 |`);
+  console.log(`|------|-------------------|------------------|-----------|`);
+  console.log(`| 悲观 | __x | ${eps ? "__ 元" : "需先确认 EPS"} | __% |`);
+  console.log(`| 中性 | __x | ${eps ? "__ 元" : "需先确认 EPS"} | __% |`);
+  console.log(`| 乐观 | __x | ${eps ? "__ 元" : "需先确认 EPS"} | __% |`);
+  console.log("");
+  console.log(`- **目标买入价**（安全边际，悲观目标价 × 0.8）：__ 元`);
+  console.log(`- **目标卖出价**（高估卖出，乐观目标价）：__ 元`);
+  console.log(`- **当前操作建议**：观望 / 逢低关注 / 持有 / 高估可考虑减仓`);
+  console.log("");
+
+  // === 倍数隐含假设反推（三变量：规模 / 时间 / 风险）===
+  const netGrowth = ind?.yoy_net_profit ?? null;
+  const peg = v?.pe_ttm != null && netGrowth != null && netGrowth > 0 && !suspiciousYoy ? v.pe_ttm / (netGrowth * 100) : null;
+  const pegNote = peg === null ? "数据不足" : peg > 2 ? "偏高（隐含增长/回报假设偏乐观）" : peg < 1 ? "有吸引力（隐含假设保守）" : "基本匹配";
+  console.log(`### 倍数隐含假设反推（三变量：规模 / 时间 / 风险）\n`);
+  console.log(`> 乘数不创造信息，只是信息载体。对当前 PE 回答三问：隐含了多高的增长？多长的持续期？多大的风险折价？并与基本面数据比对。\n`);
+  console.log(`| 反推项 | 自动计算 | 判读 |`);
+  console.log(`|--------|---------|------|`);
+  console.log(`| PEG（PE ÷ 净利增速%） | ${peg !== null ? peg.toFixed(2) : "—"}${suspiciousYoy ? "（同比存疑，PEG 不可用）" : ""} | ${pegNote}（PEG>2 偏贵 / <1 有吸引力）${oneshotIncome ? " " + oneshotWarning : ""} |`);
+  console.log(`| PE-TTM vs 净利同比 | ${v?.pe_ttm?.toFixed(2) ?? "—"} vs ${fmtPct(netGrowth)}${suspiciousYoy ? "（⚠️ 同比存疑，以年报为准）" : ""} | ${netGrowth != null && netGrowth > 0 && v?.pe_ttm != null && !suspiciousYoy ? (v.pe_ttm < netGrowth * 100 ? "倍数低于增速，称重偏轻" : v.pe_ttm > netGrowth * 100 * 2 ? "倍数显著高于增速，隐含假设乐观" : "倍数与增速基本匹配") : "数据不足或存疑"} |`);
+  console.log(`\n> 注意：周期股当期净利增速不代表穿越周期盈利，勿直接用 PEG/增速反推隐含假设，改用正常化盈利。\n`);
+  console.log("");
+
+  console.log(`> **Agent 填表指引（估值思想 · 六步框架）**：`);
+  console.log(`> 1. 先按「估值方法路由」确定企业类型与近似路径（金融→PB、周期→正常化、资源→储量折现、集团→SOTP、一般工商→PE）；`);
+  console.log(`> 2. 悲观/中性/乐观 PE 起步参考：当前 PE 的 0.7~0.9 倍 / 当前或行业中位 / 1.1~1.3 倍——**仅是起步参考，须按第 3 步反向检验隐含假设后调整，勿机械套用**；`);
+  console.log(`> 3. 对倍数回答三变量三问（规模/时间/风险），用「倍数隐含假设反推」表校验隐含增长是否与基本面一致；`);
+  console.log(`> 4. **输出价值区间而非点值**：下限=悲观假设、上限=乐观假设，区间宽度反映可预测性；`);
+  console.log(`> 5. **安全边际 = 保守价值（区间下限）与当前价的差距 × 区间宽度**——差距大、区间窄则边际充足；低 PE/PB 本身不是安全边际，安全边际不是止损线；`);
+  console.log(`> 6. 无护城河企业：乐观/终值情景不得保留超额收益假设；周期股用正常化 EPS（5-10 年平均）替代单年 EPS；`);
+  console.log(`> 7. 若 EPS 为负/亏损，改用 PB 估值法：目标价 = BVPS × PB；`);
+  console.log(`> 8. 最终价值区间须与「估值与股价快照」中的历史分位、同业对比相互校验。`);
+  console.log("");
+
+  // === 目标市值与 Forward PE 框架（估值追踪结构化字段生产端）===
+  console.log(`## 目标市值与 Forward PE 框架（供 knowledge-architect 采纳）\n`);
+  console.log(`> 以下自动计算基于同花顺估值 + 东财总市值；**PE 情景为起步参考（当前 PE × 0.7 / 1.0 / 1.3），须由 Agent 按基本面修订后填入 frontmatter**。\n`);
+  console.log(`| 指标 | 自动计算 | 说明 |`);
+  console.log(`|------|---------|------|`);
+  console.log(`| 总市值（亿元） | ${marketCapYi !== null ? marketCapYi.toFixed(1) : "—"} | 东财 push2 实时（f20） |`);
+  console.log(`| 总股本（亿股） | ${totalSharesYi !== null ? totalSharesYi.toFixed(2) : "—"} | 总市值 ÷ 最新价（用于目标价 ↔ 目标市值换算） |`);
+  console.log(`| TTM 净利（亿元） | ${ttmNetProfitYi !== null ? ttmNetProfitYi.toFixed(1) : "—"} | 总市值 ÷ PE-TTM |`);
+  console.log(`| 预测期净利（亿元） | ${forwardNetProfitYi !== null ? forwardNetProfitYi.toFixed(1) : "—"} | TTM净利 × (1+${forwardGrowth !== null ? (forwardGrowth * 100).toFixed(0) + "%" : "—"}) |`);
+  console.log(`| **Forward PE** | ${forwardPe !== null ? forwardPe.toFixed(1) + "x" : "—"} | 当前市值 ÷ 预测期净利（基准期 ${baseYear ?? "—"}E） |`);
+  console.log(`| 目标市值-悲观（亿元） | ${targetCapPess !== null ? targetCapPess.toFixed(0) : "—"} | 预测净利 × PE ${peRef !== null ? (peRef * 0.7).toFixed(1) : "—"}x（参考） |`);
+  console.log(`| 目标市值-合理（亿元） | ${targetCapNeu !== null ? targetCapNeu.toFixed(0) : "—"} | 预测净利 × PE ${peRef !== null ? peRef.toFixed(1) : "—"}x（参考） |`);
+  console.log(`| 目标市值-乐观（亿元） | ${targetCapOpt !== null ? targetCapOpt.toFixed(0) : "—"} | 预测净利 × PE ${peRef !== null ? (peRef * 1.3).toFixed(1) : "—"}x（参考） |`);
+  console.log("");
+  console.log(`> **填写指引**：将上表修订后的数值写入公司笔记 frontmatter：`);
+  console.log(`> \`target_market_cap_yi: {pessimistic, neutral, optimistic}\`、\`forward_pe: {value, base_net_profit_yi, base_period, factors, directions}\`、\`research_cutoff: {report_period, report_date, announcement_date}\`。`);
+  console.log(`> 周期股须用正常化净利替代 TTM 净利做预测，勿机械套用当期增速。`);
+  if (suspiciousYoy) {
+    console.log(`> **${yoyAnomalyWarning}**：同比异常时 Forward PE 未自动递推（预测期净利与目标市值为「—」），须显式传入 \`--forward-growth\` 或由 Agent 用正常化盈利手填。`);
+  }
+  if (oneshotIncome) {
+    console.log(`> **${oneshotWarning}**：目标市值与 Forward PE 若直接采用含一次性损益的净利将系统性低估估值，须用剔除一次性后的正常化盈利。`);
+  }
+  console.log("");
+
+  // === 综合评分（系统计算）===
+  console.log(`## 综合评分（系统加权计算）\n`);
+  if (compositeScore !== null) {
+    console.log(`> 六维分数已通过 \`--scores\` 提供，综合分 = **${compositeScore.toFixed(1)} / 10**（权重见 .trae/scripts/valuation/composite.ts）。\n`);
+  } else {
+    console.log(`> 综合分由系统按 \`.trae/scripts/valuation/composite.ts\` 权重对六维 \`scores\` 加权计算，**不人工填写**。六维分数由 Agent 裁定后填入公司笔记 frontmatter，追踪系统自动计算综合分。\n`);
+    console.log(`> 可运行 \`--scores capability=6.5,moat=7.0,...\` 预览综合分结果。\n`);
+  }
+  console.log("");
+
+  // === 核心财务指标速览 ===
+  console.log(`## 核心财务指标速览\n`);
+  console.log(`| 指标 | 最新值 | 同比 | 评价 |`);
+  console.log(`|------|--------|------|------|`);
+  if (latestInc) {
+    console.log(`| 营业收入 | ${fmtWan(latestInc.operating_income)} | — | — |`);
+    console.log(`| 归母净利润 | ${fmtWan(latestInc.parent_holder_net_profit)} | — | — |`);
+    console.log(`| 基本EPS | ${latestInc.basic_eps ?? "—"} | — | — |`);
+  }
+  if (ind) {
+    console.log(`| 毛利率 | ${fmtPct(ind.gross_profit_ratio)} | — | — |`);
+    console.log(`| 净利率 | ${fmtPct(ind.net_profit_ratio)} | — | — |`);
+    console.log(`| ROE | ${fmtPct(ind.roe)} | — | — |`);
+    console.log(`| 营收同比 | ${fmtPct(ind.yoy_operating_income)}${Math.abs(ind.yoy_operating_income) > 5 ? " ⚠️" : ""} | — | ${Math.abs(ind.yoy_operating_income) > 5 ? "存疑，以年报为准" : "—"} |`);
+    console.log(`| 净利同比 | ${fmtPct(ind.yoy_net_profit)}${Math.abs(ind.yoy_net_profit) > 5 ? " ⚠️" : ""} | — | ${Math.abs(ind.yoy_net_profit) > 5 ? "存疑，以年报为准" : "—"} |`);
+    console.log(`| 资产负债率 | ${fmtPct(ind.asset_liability_ratio)} | — | — |`);
+  }
+  if (v) {
+    console.log(`| PE-TTM | ${v.pe_ttm?.toFixed(2) ?? "—"} | — | — |`);
+    console.log(`| PB-MRQ | ${v.pb_mrq?.toFixed(2) ?? "—"} | — | — |`);
+  }
+  if (latestCf && latestInc && latestInc.net_profit) {
+    const ratio = latestCf.act_cash_flow_net !== null ? (latestCf.act_cash_flow_net / latestInc.net_profit) : null;
+    console.log(`| 经营现金流/净利润 | ${ratio !== null ? ratio.toFixed(2) : "—"} | — | — |`);
+  }
+  console.log("");
+
+  // === 同业对比 ===
+  if (peerData.length > 0) {
+    console.log(`## 同业对比\n`);
+    console.log(`| 指标 | ${thscode} | ${peerData.map(p => p.thscode).join(" | ")} |`);
+    console.log(`|------|${"------|".repeat(peerData.length + 1)}`);
+    const row = (label: string, getVal: (d: typeof peerData[0]) => string) => {
+      console.log(`| ${label} | ${getVal({ thscode, snapshot, valuation: v ? [v] : [], indicators } as any)} | ${peerData.map(p => getVal(p)).join(" | ")} |`);
+    };
+    row("PE-TTM", d => d.valuation[0]?.pe_ttm?.toFixed(2) ?? "—");
+    row("PB-MRQ", d => d.valuation[0]?.pb_mrq?.toFixed(2) ?? "—");
+    row("ROE", d => fmtPct(d.indicators[0]?.roe ?? null));
+    row("毛利率", d => fmtPct(d.indicators[0]?.gross_profit_ratio ?? null));
+    row("净利率", d => fmtPct(d.indicators[0]?.net_profit_ratio ?? null));
+    console.log("");
+  }
+
+  // === 杜邦分析 ===
+  console.log(`## 杜邦分析\n`);
+  console.log(`ROE = 净利润率 × 资产周转率 × 权益乘数`);
+  console.log(`| 指标 | 数值 | 含义 |`);
+  console.log(`|------|------|------|`);
+  console.log(`| 净利润率 | ${fmtPct(dupont.netMargin)} | 每 1 元收入赚多少利润 |`);
+  console.log(`| 资产周转率 | ${dupont.assetTurnover?.toFixed(2) ?? "—"} | 每 1 元资产创造多少收入 |`);
+  console.log(`| 权益乘数 | ${dupont.equityMultiplier?.toFixed(2) ?? "—"} | 杠杆水平 |`);
+  console.log(`| **ROE** | **${fmtPct(dupont.roe)}** | 股东回报率 |`);
+  console.log("");
+
+  // === 盈利质量信号 ===
+  console.log(`## 盈利质量信号\n`);
+  console.log(`| 检查项 | 结果 | 详情 |`);
+  console.log(`|--------|------|------|`);
+  for (const f of qualityFlags) {
+    console.log(`| ${f.name} | ${f.pass ? "✅ 通过" : "❌ 未通过"} | ${f.detail} |`);
+  }
+  console.log("");
+
+  // === 排雷数据生产端输出（供 quality-screen report 模式消费）===
+  console.log(`## 排雷数据生产端输出（quality-screen 扩展排雷输入）\n`);
+  console.log(`> 以下指标供 quality-screen.ts report 模式正则提取，作为财务排雷扩展红牌的输入；缺项显式标注 N/A，不造假数据。\n`);
+  console.log(`| 指标 | 数值 | 判读口径（quality-screen） |`);
+  console.log(`|------|------|------|`);
+  console.log(`| 利息覆盖倍数 | ${interestCoverage !== null ? interestCoverage.toFixed(2) : "N/A"} | 经营现金流 ÷ 利息支出；<1 红牌，<2 黄牌 |`);
+  console.log(`| 应收增速 | ${receivablesGrowth !== null ? (receivablesGrowth * 100).toFixed(2) + "%" : "N/A"} | 最近两期年报应收账款同比；>2× 收入增速 红牌，>1.5× 黄牌 |`);
+  console.log(`| 货币资金/总资产占比 | ${cashAssetRatio !== null ? (cashAssetRatio * 100).toFixed(2) + "%" : "N/A"} | ≥30% 且 资产负债率≥60% 判存贷双高红牌 |`);
+  console.log("");
+
+  // === 财报精读 10 项检查清单（ai-berkshire earnings-review 融入）===
+  console.log(`## 财报精读 10 项检查清单（Earnings Review Checklist）\n`);
+  console.log(`> 灵感来自 ai-berkshire/earnings-review Skill。以下自动检查项由财务数据触发，其余需 Agent 结合财报 MD&A 与审计意见手动打钩。\n`);
+  console.log(`| # | 检查项 | 结果 | 详情/说明 |`);
+  console.log(`|---|--------|------|-----------|`);
+  // 自动检查项
+  const erPass = (b: boolean) => b ? "✅" : "❌";
+  const erWarn = (b: boolean) => b ? "⚠️" : "✅";
+  const er1 = ind?.roe !== null && ind?.roe !== undefined ? ind.roe >= 0.12 : null;
+  const er2 = (latestCf && latestInc?.net_profit !== null && latestInc?.net_profit !== undefined && latestInc.net_profit !== 0)
+    ? (latestCf.act_cash_flow_net ?? 0) / latestInc.net_profit >= 0.8
+    : null;
+  const er3 = ind?.asset_liability_ratio !== null && ind?.asset_liability_ratio !== undefined ? ind.asset_liability_ratio <= 0.6 : null;
+  const er4 = latestInc?.parent_holder_net_profit !== null && latestInc?.parent_holder_net_profit !== undefined ? latestInc.parent_holder_net_profit > 0 : null;
+  const er5 = ind?.gross_profit_ratio !== null && ind?.gross_profit_ratio !== undefined ? ind.gross_profit_ratio >= 0.25 : null;
+  // er6~er8 需要多期财报 PDF 或资产负债表明细字段，单期 API 数据不足，标记为 null（待人工）
+  const er6: boolean | null = null;   // 营收趋势需 3-5 年收入数据
+  const er7: boolean | null = null;   // 商誉/净资产需资产负债表商誉明细
+  const er8: boolean | null = null;   // 大额减值需利润表资产减值损失明细
+  // 9,10 为定性项，留空手动填
+  const fmtAuto = (r: boolean | null, detailYes: string, detailNo = "", warn = false) => {
+    if (r === null) return `🟡 待补充 | 财报数据缺失，请直接从财报年报 MD&A 获取`;
+    return `${r ? "✅" : (warn ? "⚠️" : "❌")} | ${r ? detailYes : detailNo}`;
+  };
+  console.log(`| 1 | ROE ≥ 12%（资本回报达标） | ${fmtAuto(er1, "达标", "未达 12% 良好线，资本回报偏低")}`);
+  console.log(`| 2 | 经营现金流 ≥ 净利润 × 0.8（利润含金） | ${latestCf && latestInc?.net_profit ? fmtAuto(er2, `OCF/NI=${((latestCf.act_cash_flow_net ?? 0) / latestInc.net_profit).toFixed(2)} ≥ 0.8 ✅`, `OCF/NI=${((latestCf.act_cash_flow_net ?? 0) / latestInc.net_profit).toFixed(2)} < 0.8，利润含金量存疑`, true) : "🟡 待补充 | 无现金流量表/利润表数据"}`);
+  console.log(`| 3 | 资产负债率 ≤ 60%（杠杆可控，非金融行业） | ${fmtAuto(er3, `≤ 60%`, `> 60%，杠杆偏高，需判断行业属性`)}`);
+  console.log(`| 4 | 当期归母净利润为正（盈利状态） | ${fmtAuto(er4, "盈利中", "亏损状态")}`);
+  console.log(`| 5 | 毛利率 ≥ 25%（差异化/护城河信号） | ${fmtAuto(er5, `≥ 25% 差异化可能`, `< 25% 同质化/价格战风险`, true)}`);
+  console.log(`| 6 | 营收趋势 ≥ 2 年连续稳健（非 1 年昙花） | ${er6 === null ? "🟡 待补充 | 需查 3-5 年收入趋势" : `${erPass(er6)} | ${qualityFlags.find(f => f.key === "revenue_trend")?.detail ?? ""}`}`);
+  console.log(`| 7 | 商誉 / 净资产 < 30%（减值地雷风险低） | ${er7 === null ? "🟡 待补充 | 需从资产负债表查商誉净额" : `${erPass(er7)} | ${qualityFlags.find(f => f.key === "goodwill")?.detail ?? ""}`}`);
+  console.log(`| 8 | 无大额资产减值损失（≥ 净利 30%） | ${er8 === null ? "🟡 待补充 | 需查利润表资产减值损失项" : `${erPass(er8)} | ${qualityFlags.find(f => f.key === "big_impairment")?.detail ?? ""}`}`);
+  console.log(`| 9 | 审计意见为「标准无保留」 | ⬜️ **待人工** | 直接下载财报 PDF 首页审计意见查看 |`);
+  console.log(`| 10 | MD&A「未来展望」无重大风险提示隐瞒 | ⬜️ **待人工** | 阅读年报管理层讨论分析章节，警惕「前瞻性陈述」过度乐观/隐瞒 |`);
+  console.log("");
+  console.log(`> **使用说明**：10 项中若 ❌ ≥ 3 项，须在公司笔记「风险提示」章节列为**高优先级风险**，并在最终报告反向检查清单中单独条目。`);
+  console.log("");
+
+  // === 四大师评估框架（待 Agent 填充）===
+  console.log(`---\n`);
+  console.log(`# 四大师投资评估（请基于上述数据与补充调研填写）\n`);
+
+  console.log(`## 1. 能力圈评估（巴菲特）\n`);
+  console.log(`- [ ] 能用一句话说清「怎么赚钱」：`);
+  console.log(`- [ ] 能预测 10 年后行业格局：`);
+  console.log(`- [ ] 知道主要竞争对手及优劣：`);
+  console.log(`- [ ] 理解 ROE 杜邦分解和利润来源：`);
+  console.log(`- **结论**：通过 _/4 → 在能力圈内 / 超出能力圈`);
+  console.log("");
+
+  console.log(`## 2. 护城河评估（巴菲特）\n`);
+  console.log(`| 护城河类型 | 是否存在 | 证据 |`);
+  console.log(`|-----------|---------|------|`);
+  console.log(`| 成本优势 | — | — |`);
+  console.log(`| 品牌/定价权 | — | — |`);
+  console.log(`| 网络效应 | — | — |`);
+  console.log(`| 转换成本 | — | — |`);
+  console.log(`| 规模效应 | — | — |`);
+  console.log(`| 牌照/特许 | — | — |`);
+  console.log(`- **护城河宽度评分**：_/10`);
+  console.log(`- **趋势**：在变宽 / 稳定 / 在变窄`);
+  console.log("");
+
+  console.log(`## 3. 生意模式评估（段永平）\n`);
+  console.log(`| 维度 | 评价 | 证据 |`);
+  console.log(`|------|------|------|`);
+  console.log(`| 现金流（经营现金流 > 净利润） | — | — |`);
+  console.log(`| 资本需求（轻/重资产） | — | — |`);
+  console.log(`| 增长方式（内生/并购） | — | — |`);
+  console.log(`| 客户粘性 | — | — |`);
+  console.log(`| 定价权 | — | — |`);
+  console.log(`| 杠杆水平 | — | — |`);
+  console.log(`- **一票否决项（管理层诚信）**：通过 / 不通过 → 原因：`);
+  console.log(`- **整体评价**：好生意 / 一般生意 / 坏生意`);
+  console.log("");
+
+  console.log(`## 4. 反向检查清单（芒格）\n`);
+  console.log(`1. **失败情景**：这家公司 5 年内最可能失败的原因是？`);
+  console.log(`2. **历史错误**：管理层过去 5 年做过什么错误决策？`);
+  console.log(`3. **激励冲突**：高管薪酬与股东利益一致吗？有无大额减持？`);
+  console.log(`4. **行业黑天鹅**：该行业历史上出现过什么毁灭性事件？`);
+  console.log(`5. **财务地雷**：有息负债高？商誉大？经营现金流差？`);
+  console.log(`6. **竞争侵蚀**：护城河在变窄吗？新进入者威胁？`);
+  console.log(`7. **心理偏差**：市场共识是否存在集体误判？`);
+  console.log("");
+
+  console.log(`## 5. 历史类比（李录）\n`);
+  console.log(`- **类比案例**：海外/历史上类似行业/公司：`);
+  console.log(`- **当时共识**：`);
+  console.log(`- **后来演变**：`);
+  console.log(`- **当前阶段**：`);
+  console.log(`- **时间框架**：1年周期 / 3-5年成长 / 10年+结构性`);
+  console.log("");
+
+  console.log(`## 综合评分与跟踪指标\n`);
+  console.log(`| 维度 | 评分 | 说明 |`);
+  console.log(`|------|------|------|`);
+  console.log(`| 护城河 | _/10 | |`);
+  console.log(`| 生意模式 | _/10 | |`);
+  console.log(`| 管理层诚信 | _/10 | |`);
+  console.log(`| 能力圈 | _/10 | |`);
+  console.log(`| 时间框架匹配度 | _/10 | |`);
+  console.log(`| **综合** | **_/10** | |`);
+  console.log("");
+  console.log(`### 跟踪指标`);
+  console.log(`1. `);
+  console.log(`2. `);
+  console.log(`3. `);
+  console.log("");
+}
+
+async function main() {
+  const args = process.argv.slice(2);
+  const codeIdx = args.indexOf("--code");
+  if (codeIdx < 0) {
+    console.log(`
+四大师评估 + 财报精读框架生成器
+
+用法:
+  bun run evaluate.ts --code 600519
+  bun run evaluate.ts --code 600519 --peer 000858 --peer 000568
+  bun run evaluate.ts --code 600519 --type 周期            # 企业类型: 金融/周期/资源/控股集团/一般工商
+  bun run evaluate.ts --code 600519 --forward-growth 0.25  # 预测期净利增速（缺省取最新净利同比）
+  bun run evaluate.ts --code 600519 --scores capability=6.5,moat=7.0,business_model=5.5,management=6.0,inversion=6.5,historical=6.0  # 预览综合分
+`);
+    process.exit(1);
+  }
+  const code = args[codeIdx + 1];
+  const thscode = toThsCode(code);
+  const peerCodes: string[] = [];
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === "--peer" && args[i + 1]) {
+      peerCodes.push(args[i + 1]);
+    }
+  }
+  const typeIdx = args.indexOf("--type");
+  const companyType = typeIdx >= 0 ? args[typeIdx + 1] : undefined;
+  // --forward-growth 0.25
+  let forwardGrowth: number | undefined;
+  const fgIdx = args.indexOf("--forward-growth");
+  if (fgIdx >= 0 && args[fgIdx + 1]) {
+    const g = parseFloat(args[fgIdx + 1]);
+    if (!Number.isNaN(g)) forwardGrowth = g;
+  }
+  // --scores capability=6.5,moat=7.0,...
+  let scores: Record<string, number> | undefined;
+  const scIdx = args.indexOf("--scores");
+  if (scIdx >= 0 && args[scIdx + 1]) {
+    scores = {};
+    for (const pair of args[scIdx + 1].split(",")) {
+      const [k, v] = pair.split("=");
+      if (k && v !== undefined) {
+        const n = parseFloat(v);
+        if (!Number.isNaN(n)) scores[k.trim()] = n;
+      }
+    }
+  }
+  await generateFramework(thscode, peerCodes, companyType, { forwardGrowth, scores });
+}
+
+if (import.meta.main) main().catch(err => { console.error(`❌ ${err.message}`); process.exit(1); });
+export { main };

@@ -1,0 +1,78 @@
+/* HTML Viewer Plugin — Obsidian Community Plugin */
+/* All classes prefixed with "html-viewer-" to avoid theme/plugin conflicts */
+
+/* Root container — flex column so iframe fills remaining height */
+.html-viewer-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Content area — fills all space below toolbar */
+.html-viewer-content {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  min-height: 0;
+}
+
+/* Sandbox iframe */
+.html-viewer-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: var(--background-primary);
+}
+
+/* Source-code textarea */
+.html-viewer-source {
+  width: 100%;
+  height: 100%;
+  padding: 16px;
+  overflow: auto;
+  white-space: pre-wrap;
+  font-family: var(--font-monospace);
+  font-size: var(--font-text-size);
+  color: var(--text-normal);
+  background: var(--background-primary);
+  border: none;
+  resize: none;
+}
+
+/* Empty / error state */
+.html-viewer-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-muted);
+  font-size: 1.2em;
+}
+
+/* ── Toolbar ── */
+.html-viewer-toolbar {
+  display: flex;
+  gap: 4px;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+}
+
+.html-viewer-toolbar button {
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-primary);
+  color: var(--text-normal);
+}
+
+.html-viewer-toolbar button:hover {
+  background: var(--background-modifier-hover);
+}
+
+.html-viewer-toolbar button.active {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}

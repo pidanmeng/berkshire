@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>胜宏科技（300476.SZ）深度调研报告</title>
+<style>
+:root {
+  --color-canvas: #000000;
+  --color-surface: #0a0a0a;
+  --color-surface-raised: #111111;
+  --color-border: #1a1a1a;
+  --color-ink: #ffffff;
+  --color-ink-muted: #a1a1a1;
+  --color-ink-subtle: #666666;
+  --color-accent: #0070f3;
+  --color-accent-hover: #3291ff;
+  --color-danger: #ee0000;
+  --color-up: #f04141;
+  --color-down: #2e9e5b;
+  --star-on: #fbbf24;
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: "Geist", Inter, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  line-height: 1.6;
+  padding-bottom: 80px;
+}
+.container { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+header {
+  border-bottom: 1px solid var(--color-border);
+  padding: 56px 0 40px;
+  background: linear-gradient(180deg, #0a0a0a 0%, #000000 100%);
+}
+h1 { font-size: 40px; font-weight: 600; letter-spacing: -1.28px; margin-bottom: 12px; }
+h2 { font-size: 24px; font-weight: 600; letter-spacing: -0.96px; margin: 48px 0 20px; padding-bottom: 8px; border-bottom: 1px solid var(--color-border); }
+h3 { font-size: 18px; font-weight: 600; margin: 24px 0 12px; }
+h4 { font-size: 15px; margin-bottom: 4px; color: var(--color-ink); }
+p, li { color: var(--color-ink-muted); font-size: 15px; }
+a { color: var(--color-accent); text-decoration: none; }
+a:hover { color: var(--color-accent-hover); }
+.subtitle { color: var(--color-ink-subtle); font-size: 14px; }
+.tag { display: inline-block; padding: 2px 10px; border: 1px solid var(--color-border); border-radius: 9999px; font-size: 12px; color: var(--color-ink-muted); margin-right: 8px; margin-bottom: 8px; }
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card h3 { margin-top: 0; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+@media (max-width: 800px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } }
+.stat { text-align: center; padding: 20px 12px; }
+.stat .value { font-size: 28px; font-weight: 600; letter-spacing: -0.8px; }
+.stat .label { font-size: 12px; color: var(--color-ink-subtle); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+.up { color: var(--color-up); }
+.down { color: var(--color-down); }
+.warn { color: #fbbf24; }
+.star { color: var(--star-on); letter-spacing: 2px; }
+.star-off { color: #333; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13.5px; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--color-border); }
+th { color: var(--color-ink-subtle); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+td { color: var(--color-ink-muted); }
+.verdict-red { color: var(--color-danger); font-weight: 600; }
+.verdict-green { color: var(--color-down); font-weight: 600; }
+.verdict-yellow { color: #fbbf24; font-weight: 600; }
+.chart-box { width: 100%; height: 340px; margin: 16px 0; }
+.chart-note { font-size: 12px; color: var(--color-ink-subtle); margin-top: -8px; }
+.quote { border-left: 3px solid var(--color-accent); padding: 12px 16px; background: var(--color-surface-raised); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; margin: 12px 0; font-size: 14px; color: var(--color-ink-muted); }
+.badge { display: inline-block; padding: 2px 8px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 500; }
+.badge-red { background: rgba(238,0,0,0.15); color: var(--color-danger); border: 1px solid rgba(238,0,0,0.4); }
+.badge-green { background: rgba(46,158,91,0.15); color: var(--color-down); border: 1px solid rgba(46,158,91,0.4); }
+.badge-yellow { background: rgba(251,191,36,0.15); color: #fbbf24; border: 1px solid rgba(251,191,36,0.4); }
+footer { border-top: 1px solid var(--color-border); margin-top: 64px; padding-top: 24px; font-size: 12px; color: var(--color-ink-subtle); }
+.conclusion-item { margin-bottom: 14px; padding-left: 16px; border-left: 2px solid var(--color-accent); }
+ul.no-list { list-style: none; padding: 0; }
+ul.no-list li { padding: 10px 0; border-bottom: 1px solid var(--color-border); }
+ul.no-list li:last-child { border-bottom: none; }
+ol.track { padding-left: 20px; }
+ol.track li { padding: 6px 0; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js" onerror="window.__ECHARTS_FAIL=true"></script>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <div style="margin-bottom:16px;">
+      <span class="tag">300476.SZ</span><span class="tag">创业板 · PCB · AI 算力</span><span class="tag">deep-dive</span><span class="tag">2026 H 股上市</span>
+    </div>
+    <h1>胜宏科技 深度调研报告</h1>
+    <p class="subtitle">数据时点：2026-08-17（估值快照）｜ 财报基准：2023/2024/2025 年报 + 2026Q1 报告原文精读 ｜ 生成：2026-08-17</p>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- ① 核心结论 -->
+  <section>
+    <h2>核心结论</h2>
+    <div class="conclusion-item">
+      <h4>① 生意本质：全球 AI 算力高阶 PCB 龙头，增长飞轮真实且在爆发（置信度：高）</h4>
+      <p>三年营收 79.31→107.31→192.92 亿（2025 +79.77%）、归母 6.71→11.54→43.12 亿（2025 +273.52%）、ROE 9.35%→35.56%；2026Q1 营收 +27.99%、归母 +39.95% 延续高增。增长由「量减价升」驱动——销量 -2.72% 而单价约 +85%，AI 收入占比 6.6%→43.2%、HDI 毛利率 43.5%。<strong>分歧点</strong>：多方称 AI 结构性需求 + 订单至 2027-2028（置信度 8）；空方以「800 亿行业扩产 + 200 亿自身投资，2027-2028 产能集中释放」反驳（置信度 7.5）。<strong>裁决：2026-2027 高增确定性高，2028 年后增速显著回落。</strong></p>
+    </div>
+    <div class="conclusion-item">
+      <h4>② 护城河：宽且深（8.0/10），技术+认证绑定型，短期 2-3 年牢固，「10 年」存疑（置信度：中高）</h4>
+      <p>高阶 HDI 技术代差（6 阶 24 层全球首批量产、6→10 阶认证仅 18 个月 vs 行业 24-36 个月）+ 良率约 85% vs 行业 70%（第三方口径，领先 15-30pp）+ 认证周期 2-3 年 + 客户「非对称风险厌恶」（PCB 成本占比 &lt;3% 但可靠性权重极高）。<strong>裁决：多方「技术代差 + 认证壁垒」（置信度 7.5-8）为最硬证据；但空方「代差 3-5 年平台切换、英伟达多源供应（Rubin Ultra 背板已由沪电认证）」使「10 年」维度存疑——投资时间框架应定位 2-3 年。</strong></p>
+    </div>
+    <div class="conclusion-item">
+      <h4>③ 估值合理偏高，安全边际不足，当前评级：观望 / 逢低关注（置信度：中）</h4>
+      <p>股价 269.84 元、市值 2,652.4 亿；PE-TTM 56.67 / PB 15.24；近 250 日分位 28.5%。三情景目标价 198.4 / 268.6 / 381.5 元，<strong>当前价贴近中性估值（-0.5%）</strong>；目标买入价 158.7 元、目标卖出价 381.5 元。Forward PE 30.1x @2026E 净利 88 亿（美银/东莞/中邮三源交叉）——<strong>估值对 2026-2027 业绩兑现极度敏感，业绩不及一致预期将「业绩 + 估值」双杀</strong>（高点 402.6 元已回撤 33% 验证脆弱性）。</p>
+    </div>
+    <div class="conclusion-item">
+      <h4>④ 财务质量高、盈利真实，但资产负债表扩张激进（置信度：高）</h4>
+      <p>扣非/归母 99.8%（差额仅 812 万，无大额一次性损益）、OCF/净利 1.07、应收 +51.1% &lt; 营收 +79.77%、无商誉减值、三年立信所标准无保留；<strong>但自由现金流 -20.14 亿</strong>（OCF 46.03 - 资本开支 66.17）、有息负债 64.45 亿（短债 38.7%）、2026Q1 短借翻倍至 30.47 亿、2026 年投资计划 200 亿——重资产扩张依赖融资（H 股净募 198.9 亿港元到账后缓解）。</p>
+    </div>
+    <div class="conclusion-item">
+      <h4>⑤ 管理层诚信 🟢 通过（未触发 No-Go），治理信号为减分项（置信度：高）</h4>
+      <p>三年标准无保留审计（立信所）+ 指引兑现度高（「2026 年第二个百亿」提前一年兑现）+ MD&amp;A 坦诚（自认原材料传导滞后）；<strong>瑕疵</strong>：①实控人/高管 2025 年套现约 21.41 亿；②客户集中度一年翻倍（20.03%→41.98%）未在 MD&amp;A 单独提示；③「2030 年千亿产值目标」无量化路径。<strong>裁决：合规披露、不构成不诚实，但高位套现为「持续跟踪」信号。</strong></p>
+    </div>
+
+    <!-- ② 四大师综合评分 -->
+    <div class="card" style="margin-top:16px;">
+      <h3>四大师综合评分 <span style="font-size:13px;color:var(--color-ink-subtle);">综合 ★★★★（系统 composite.ts 等权加权输出 7.6）</span></h3>
+      <table>
+        <tr><th>维度</th><th>大师</th><th>星级</th><th>0-10 分</th><th>核心判断</th></tr>
+        <tr><td>能力圈</td><td>巴菲特</td><td><span class="star">★★★★</span><span class="star-off">✩</span></td><td>8.0</td><td>生意本质可理解（材料加工成 AI 高阶 PCB 卖给算力客户），但高阶 HDI 技术迭代（6阶→10阶→14阶）+ 英伟达平台节奏增加 10 年预测难度</td></tr>
+        <tr><td>护城河</td><td>巴菲特</td><td><span class="star">★★★★</span><span class="star-off">✩</span></td><td>8.0</td><td>高阶 HDI 全球第一（AI PCB 份额 13.8%）+ 良率 85% vs 70% + 认证 2-3 年 + 客户非对称风险厌恶；「10 年」维度存疑、英伟达多源供应与二供风险</td></tr>
+        <tr><td>生意模式</td><td>段永平</td><td><span class="star">★★★</span><span class="star">☆</span><span class="star-off">✩</span></td><td>7.5</td><td>OCF/净利 1.07、扣非/归母 99.8%、分红率 40.3%——盈利质量高；FCF 连续为负（-20.14 亿）、重资产高资本消耗（2026 计划 200 亿）扣分</td></tr>
+        <tr><td>管理层诚信（本分）</td><td>段永平</td><td><span class="star">★★★</span><span class="star">☆</span><span class="star-off">✩</span></td><td>7.5</td><td>三年标准无保留（立信所）+ 指引兑现度高 + MD&amp;A 坦诚（自认传导滞后）；实控人/高管 2025 套现 21.41 亿为诚信面减分信号</td></tr>
+        <tr><td>反向检查清单</td><td>芒格</td><td><span class="star">★★★</span><span class="star">☆</span><span class="star-off">✩</span></td><td>7.0</td><td>风险识别充分（8 项红旗 + 5 种失败情景 + 财务地雷排查）；FCF 为负/套现/客户集中等空方红旗证据充分但尚未坐实</td></tr>
+        <tr><td>历史类比与时间框架</td><td>李录</td><td><span class="star">★★★</span><span class="star">☆</span><span class="star-off">✩</span></td><td>7.5</td><td>2017 年 5G/矿机 PCB 周期、光伏/面板扩产周期类比恰当；「结构性成长 + 周期性放大」判断清晰，2026-2027 景气中段、2028 产能大考</td></tr>
+      </table>
+      <p style="font-size:13px;color:var(--color-ink-subtle);">scores: capability 8.0 / moat 8.0 / business_model 7.5 / management 7.5 / inversion 7.0 / historical 7.5 ｜ 综合分 7.6 = composite.ts 六维等权输出（(8+8+7.5+7.5+7+7.5)/6 = 7.583 → 7.6），综合星级按 7.5 档记 ★★★★</p>
+    </div>
+  </section>
+
+  <!-- ③ 估值快照 -->
+  <section>
+    <h2>估值与股价快照（数据时点：2026-08-17）</h2>
+    <div class="grid-4" style="margin-bottom:16px;">
+      <div class="card stat"><div class="value">269.84<span style="font-size:14px;">元</span></div><div class="label">最新股价（28.5% 分位）</div></div>
+      <div class="card stat"><div class="value">2,652.4<span style="font-size:14px;">亿</span></div><div class="label">总市值</div></div>
+      <div class="card stat"><div class="value warn">56.67x</div><div class="label">PE-TTM（偏贵）</div></div>
+      <div class="card stat"><div class="value warn">15.24x</div><div class="label">PB-MRQ（沪电 14.13）</div></div>
+    </div>
+    <div class="card">
+      <table>
+        <tr><th>指标</th><th>当前值</th><th>历史分位</th><th>同业对比</th><th>评价</th></tr>
+        <tr><td>股价（元）</td><td>269.84</td><td>28.5%（近250日）</td><td>—</td><td>2026-05-27 高点 402.6 元至今回撤约 33%</td></tr>
+        <tr><td>PE-TTM</td><td>56.67</td><td>中高</td><td>沪电股份 55.15</td><td class="verdict-yellow">偏贵（隐含 2026 净利翻倍预期）</td></tr>
+        <tr><td>PB-MRQ</td><td>15.24</td><td>高</td><td>沪电股份 14.13</td><td class="verdict-red">贵</td></tr>
+        <tr><td>PS-TTM / PCF-TTM</td><td>12.35 / 42.12</td><td>—</td><td>—</td><td>贵</td></tr>
+        <tr><td>股息率</td><td>约 0.66%（计算）</td><td>—</td><td>—</td><td>2025 年度每 10 股派 20 元，分红率 40.3%</td></tr>
+        <tr><td>52周最高 / 最低</td><td>392.95 / 180.36</td><td>—</td><td>—</td><td>距高点约 -31%</td></tr>
+      </table>
+      <div class="quote">
+        <strong>估值判断（称重机视角）</strong>：PE-TTM 56.67 对应 TTM 净利约 46.8 亿，隐含市场已按 2026E 净利约 88 亿（一致预期）翻倍定价；Forward PE（2026E）约 30.1x。历史分位 28.5% 说明回撤后估值分位已大幅回落，但绝对水平仍高（雪球口径 2022-2025 历史平均 PE 约 21 倍）。<strong>当前价格相对内在价值处于合理偏高位置，安全边际不足，对 2026-2027 业绩兑现极度敏感。</strong>美银目标价 455 元（2027E PE 30x，2026-2028 净利 CAGR 66%）为乐观情形。
+      </div>
+    </div>
+  </section>
+
+  <!-- ④ 财务数据 -->
+  <section>
+    <h2>关键财务数据（2023-2025 + 2026Q1）</h2>
+    <div class="card">
+      <h3>营收 / 归母净利润 / 毛利率趋势</h3>
+      <div id="chart-growth" class="chart-box"></div>
+      <p class="chart-note">数据来源：2023/2024/2025 年报主要会计数据（[[2026-08-17-胜宏科技-processed]] F1-F20）｜ 毛利率为合并报表口径（35.22%）；2023 毛利率 20.69% 为计算值</p>
+    </div>
+    <div class="card">
+      <h3>收入结构跃迁：AI 占比 / HDI 占比 / 出口占比 / 客户集中度（三年）</h3>
+      <div id="chart-structure" class="chart-box"></div>
+      <p class="chart-note">数据来源：港股全球发售公告 → 东莞证券深度报告表 1/2（间接来源，置信度上限 7）+ 2025 年报收入构成表｜ AI 与高性能计算收入占比 5.8%→6.6%→43.2%；HDI 收入占比 11.7%→14.2%→38.5%；直接出口占比 61.48%→60.88%→76.83%；前五大客户 21.57%→20.03%→41.98%</p>
+    </div>
+    <div class="card">
+      <h3>季度营收 / 归母净利序列（2025Q1-2026Q1）</h3>
+      <div id="chart-quarter" class="chart-box"></div>
+      <p class="chart-note">数据来源：2025 年报分季度财务指标 + 2026Q1 报告（[[2026-08-17-胜宏科技-processed]] F2.2）｜ 25Q4 归母环比 -3.2% 为爬坡成本信号；2026Q1 归母 +39.95% 延续高增</p>
+    </div>
+  </section>
+
+  <!-- ⑤ 估值区间与目标价 -->
+  <section>
+    <h2>估值区间与目标价（安全边际视角）</h2>
+    <div class="card">
+      <h3>三情景目标价 vs 当前价（元/股）</h3>
+      <div id="chart-target" class="chart-box"></div>
+      <p class="chart-note">估值锚：目标市值 = 预测净利 × 情景 PE，除以总股本 9.83 亿股｜悲观 1950 亿=2026E 净利 78 亿×25x；中性 2640 亿=2026E 88 亿×30x（美银/东莞/中邮交叉）；乐观 3750 亿=2027E 150 亿×25x（中邮证券）</p>
+      <table style="margin-top:16px;">
+        <tr><th>情景</th><th>目标市值（亿元）</th><th>假设</th><th>目标价（元）</th><th>隐含涨跌幅（vs 269.84）</th></tr>
+        <tr><td>悲观</td><td>1,950</td><td>2026E 净利 78 亿 × 25x（原材料侵蚀+扩产折旧+AI 需求回落）</td><td>198.4</td><td class="down">-26.5%</td></tr>
+        <tr><td>中性</td><td>2,640</td><td>2026E 净利 88 亿 × 30x（券商共识兑现）</td><td>268.6</td><td class="down">-0.5%</td></tr>
+        <tr><td>乐观</td><td>3,750</td><td>2027E 净利 150 亿 × 25x（AI 持续超预期）</td><td>381.5</td><td class="up">+41.4%</td></tr>
+        <tr><td>当前</td><td>2,652.4</td><td>2026-08-17 收盘</td><td>269.84</td><td>—</td></tr>
+      </table>
+      <div class="quote">
+        <strong>目标买入价（安全边际）：158.7 元</strong>（悲观 × 0.8）｜ <strong>目标卖出价（高估）：381.5 元</strong>（乐观上沿）<br>
+        <strong>当前操作建议：观望 / 逢低关注</strong>——当前价 269.84 元贴近中性估值 268.6 元，安全边际薄；回落至 200 元以下（悲观估值区）进入关注区间，跌破 160 元（安全边际买入区）才具备吸引力；追高风险与踏空风险并存，等待业绩兑现信号（2026H1 中报毛利率、2027 订单能见度）。
+      </div>
+      <p style="font-size:13px;color:var(--color-ink-subtle);">Forward PE 快照：30.1x @2026E（88 亿）｜ 2027E 150 亿→约 17.7x（若兑现）。核心变量：AI 资本开支 2026-28 可持续性、高阶 HDI/高多层占比与良率、原材料传导、2027-28 行业产能释放、泰国/越南爬坡与 H 股募资使用效率。</p>
+    </div>
+  </section>
+
+  <!-- ⑥ 护城河 -->
+  <section>
+    <h2>护城河评估（巴菲特框架）</h2>
+    <div class="card">
+      <table>
+        <tr><th>类型</th><th>是否存在</th><th>量化证据</th><th>趋势</th></tr>
+        <tr><td>技术壁垒</td><td><span class="badge badge-green">强</span></td><td>6 阶 24 层 HDI 全球首批量产、10 阶 30 层/16 层任意互联、100 层以上高多层储备；6→10 阶认证仅 18 个月（行业 24-36 个月）；研发 7.78 亿（+72.88%）、专利 381 项（发明 194 项）；良率约 85% vs 70%（第三方口径）</td><td>加强</td></tr>
+        <tr><td>客户认证壁垒</td><td><span class="badge badge-green">强</span></td><td>AI 服务器 PCB 认证周期 2-3 年，头部客户供应体系封闭；「技术营销 + NPI 第一」绑定客户迭代节奏</td><td>稳定</td></tr>
+        <tr><td>转换成本</td><td><span class="badge badge-green">强</span></td><td>PCB 占算力集群成本 &lt;3% 但可靠性权重极高，客户「非对称风险厌恶」→ 替换意愿低</td><td>稳定</td></tr>
+        <tr><td>规模与成本</td><td><span class="badge badge-yellow">中强</span></td><td>智慧工厂（行业率先建成）人均产值领先；但属重资产，护城河依赖持续资本投入维持</td><td>需持续投入</td></tr>
+        <tr><td>品牌/牌照</td><td><span class="badge badge-red">不适用</span></td><td>代工模式</td><td>—</td></tr>
+        <tr><td>网络效应</td><td><span class="badge badge-red">无</span></td><td>—</td><td>—</td></tr>
+      </table>
+      <p style="margin-top:12px;"><strong>宽度评分：8.0/10（宽且深）</strong> ｜ 能否持续 10 年以上：<strong>不确定</strong>（PCB 技术代差每 3-5 年平台切换；护城河可持续性取决于：①高阶 HDI 代差能否维持 2-3 年；②英伟达多源供应策略——Rubin Ultra 背板已由沪电认证；③2027 年行业产能释放后价格体系稳定性）</p>
+      <p style="font-size:13px;color:var(--color-ink-subtle);">裁决：🟢 多方「技术代差 + 良率领先 15-30pp + 认证壁垒」（置信度 7.5-8）与 🔴 空方「代差 3-5 年平台切换、英伟达多源供应、二供风险」（置信度 6.5-7）不矛盾——结合产业理解（认证 2-3 年 + 良率门槛使「扩产 ≠ 有效供给」）+ 行业周期（2026-2027 高端缺口 20-25%）+ 国际形势（英伟达平台节奏外生），护城河真实、短期 2-3 年牢固，但「10 年」维度存疑，投资时间框架应定位 2-3 年。</p>
+    </div>
+  </section>
+
+  <!-- ⑦ 多空辩论 -->
+  <section>
+    <h2>多空论证综合裁决</h2>
+    <div class="card">
+      <h3>多空论点置信度对照</h3>
+      <div id="chart-debate" class="chart-box"></div>
+      <p class="chart-note">置信度（1-10）取自 [[2026-08-17-胜宏科技-deep-read]] 第十章论点分级 ｜ 财务质量维度多方 9 为双方最强论点；估值维度为最大分歧点</p>
+      <table>
+        <tr><th>维度</th><th>🟢 多方</th><th>🔴 空方</th><th>裁决（结合外围因素）</th></tr>
+        <tr><td>增长</td><td>AI 收入占比 +36.6pp、单价 +85%、订单能见度至 2027-2028、2026Q1 营收 +27.99%/净利 +39.95%（强/8）</td><td>增长依赖单一赛道/单一客户，AI Capex 减速即止；2028 后高基数回落是数学必然（中强/7）</td><td><span class="badge badge-green">多方胜（2026-2027 视角）</span>：2026-2027 全球 AI 资本开支仍在上行周期（Rubin 放量 + 北美云厂商 capex 指引），订单能见度与高端缺口 20-25% 支撑高增；但 2026Q1 增速 27.99% 已较 2025 全年 79.77% 换挡，2028 后增速显著回落，市场已按 2026-2027 定价</td></tr>
+        <tr><td>护城河</td><td>高阶 HDI 技术代差（6 阶全球首批、6→10 阶仅 18 个月）、良率 85% vs 70%、认证 2-3 年 + 非对称风险厌恶（强/7.5）</td><td>技术代差 3-5 年平台切换；英伟达多源供应确定性趋势（Rubin Ultra 背板已由沪电认证）；二供随时可能（中/6.5）</td><td><span class="badge badge-green">多方胜（短期）+ 空方胜（长期）</span>：护城河真实但非永久——短期 2-3 年牢固（认证 + 良率 + 封闭供应体系），「10 年」维度存疑；投资时间框架应定位 2-3 年而非 10 年，评分维持 8.0</td></tr>
+        <tr><td>财务质量</td><td>扣非/归母 99.8%、OCF/净利 1.07、应收 +51.1% &lt; 营收 +79.77%、无商誉减值、三年标准无保留（强/9）</td><td>自由现金流 -20.14 亿、有息负债 64.45 亿（短债 38.7%）、实控人/高管套现 21.41 亿、现金收入比 0.854 下降未解释（中强/7）</td><td><span class="badge badge-green">多方胜（盈利质量）+ 空方胜（资产负债表）</span>：盈利质量高、利润真实（无一次性损益依赖）；但重资产扩张激进（2026 年 200 亿投资）+ 治理信号（套现 21.41 亿）为实质扣分——两者不矛盾</td></tr>
+        <tr><td>估值</td><td>2026E Forward PE 约 30-35x、历史分位 28.5%（回撤后回落）、分红率 40% 托底；美银目标价 455 元（中/6）</td><td>PE-TTM 56.67/PB 15.24，历史平均 PE 约 21 倍（雪球口径）；隐含 2026 净利翻倍定价，若不及预期双杀；高点回撤 33% 验证脆弱性（中强/7）</td><td><span class="badge badge-red">空方胜（估值）——最大分歧点</span>：双方共识「当前无安全边际」，分歧在「贵多久」——取决于 2026-2027 业绩兑现（88→150 亿）与毛利率能否守住 32%+；当前 269.84 元贴近中性目标 268.6 元，观望/逢低关注，不追高</td></tr>
+        <tr><td>周期/政策/国际</td><td>AI 渗透率提升（2024-2029 AI 相关 PCB CAGR 18.7-33.8%）、政策支持算力基建、高端缺口 20-25% 至 2027（强/8）</td><td>800 亿扩产 2027-2028 集中释放 + 自身 200 亿投资使供给曲线陡峭化；原材料全线涨价；出口 76.83% 集中北美 + 关税/地缘风险（中强/7.5）</td><td><span class="badge badge-green">多方胜（产业周期）+ 空方胜（供给/国际）</span>：2026-2027 景气中段（多方）、2028 后产能大考（空方，业内共识）；出口 76.83% 叠加美国关税/地缘风险为政策面最敏感变量，泰国/越南对冲效果待验证；人民币升值已通过汇兑损失（财务费用 +467%）验证汇率敏感性；国内算力基建顺风但公司收入高度依赖海外 AI 客户，传导有限</td></tr>
+      </table>
+      <div class="quote" style="margin-top:16px;">
+        <strong>最大分歧点</strong>：①毛利率 35% 的可持续性（原材料涨价 vs 高端顺价能力）；②估值 56.67x 是否透支 2026-2027 业绩；③2027-2028 产能窗口（行业 800 亿扩产 vs 头部认证壁垒）。<br>
+        <strong>综合裁决</strong>：结合产业理解（AI 资本开支 2026-2027 上行周期、高端缺口 20-25%）、行业周期（AI PCB 量价齐升景气中段、2028 后产能大考）、国际形势（出口 76.83% 集中北美、关税/地缘最敏感、汇率敏感性已实证）、政策形势（国内算力基建顺风但传导有限）——<strong>多方「增长真实、财务质量高、短期护城河牢固」在 2026-2027 时间框架内成立（置信度 8）；空方「估值透支、2027-2028 产能周期、单一客户依赖、治理信号」成立但多为 2028+ 或情景性风险（置信度 7-7.5）。这是一家「结构性成长 + 周期性放大」的高质量重资产公司，处于景气中段、估值合理偏高——正确动作是等待安全边际而非追高。</strong>多方论证失效条件 = AI 资本开支见顶 + 毛利率跌破 28% + 客户份额实质下滑同时出现；空方论证失效条件 = 2026-2027 业绩持续兑现（净利 88 亿+）且毛利率稳定在 34% 以上。
+      </div>
+    </div>
+  </section>
+
+  <!-- ⑧ 增长驱动与核心优势（强制章节） -->
+  <section>
+    <h2>增长驱动与核心优势可持续性</h2>
+    <div class="card">
+      <h3>增长驱动分析（问题组 A）</h3>
+      <p><strong>A1 是否高增长：是（高增长）。</strong>2025 年营收 +79.77%、归母 +273.52%、扣非 +277.07%；2026Q1 营收 +27.99%、归母 +39.95%；连续五个季度营收逐季上行（43.12→47.19→50.86→51.75→55.19 亿）。利润弹性来自毛利率 +12.5pp 的结构升级，非一次性损益（扣非 43.04 vs 归母 43.12 亿，差额仅 812 万）。</p>
+      <table>
+        <tr><th>归因维度</th><th>贡献</th><th>量化证据</th></tr>
+        <tr><td>量增（销量/产能）</td><td class="verdict-red">❌ 反贡献</td><td>PCB 销量 -2.72%（866.37 万平米）</td></tr>
+        <tr><td>价增（提价/结构升级）</td><td class="verdict-green">✅ 主驱动</td><td>单价约 +85%（1,129→2,087 元/平米）；HDI 收入占比 14.2%→38.5%、HDI 毛利率 43.5%（+28.8pp）</td></tr>
+        <tr><td>新业务/第二曲线</td><td class="verdict-green">✅ 结构升级</td><td>AI 与高性能计算收入占比 6.6%→43.2%（+36.6pp）</td></tr>
+        <tr><td>并购并表</td><td class="verdict-red">❌ 非主因</td><td>2025 年收购小犀牛不构成业务合并；增长几乎全部由 PCB 制造内生驱动（+79.92%）</td></tr>
+        <tr><td>行业景气/政策红利</td><td class="verdict-green">✅ 顺风</td><td>高端缺口 20-25%、头部稼动率 &gt;95%；AI 服务器 PCB 单机价值量 3-10 倍</td></tr>
+        <tr><td>出口拉动</td><td class="verdict-green">✅ 强相关</td><td>直接出口 148.21 亿（+126.88%），占比 60.88%→76.83%</td></tr>
+      </table>
+      <p><strong>A3 未来增长因素内因/外因与企业主导性：主导性中等。</strong>外因（主导）：英伟达 Rubin 平台放量节奏 + 北美云厂商 capex 指引（需求端总开关，不可主导）；内因（增强绑定）：高阶 HDI 技术迭代（6阶→10阶→14阶 36 层研发）、泰国/越南产能爬坡、H 股 198.9 亿港元募资扩产、NPI 深度绑定客户迭代节奏。未来增长「可主导内因」占比约 50%，<strong>纯外因驱动的成分大，需在估值中标注周期风险</strong>。</p>
+      <p><strong>A4 可持续性：2026-2027 高增确定性高（订单能见度至 2027-2028），2028 后显著回落。</strong>跟踪阈值：营收增速连续两季 &lt;15% 预警（当前 27.99%）；毛利率跌破 30% 预警（当前 34.46%）；2026H1 中报（约 2026-08-27）毛利率 + AI 收入占比为第一验证点。</p>
+    </div>
+    <div class="card">
+      <h3>核心优势可持续性分析（问题组 B）</h3>
+      <table>
+        <tr><th>优势维度</th><th>公司数值</th><th>同业/行业对比</th><th>差距量化</th></tr>
+        <tr><td>高阶 HDI 技术代差</td><td>6 阶 24 层全球首批量产、10 阶 30 层、14 阶 36 层研发</td><td>行业 6→10 阶认证 24-36 个月</td><td>代差 1-2 代、认证速度领先 6-18 个月</td></tr>
+        <tr><td>良率</td><td>高阶 HDI 约 85%（第三方口径）</td><td>行业平均约 70%</td><td>领先 15-30pp（置信度低）</td></tr>
+        <tr><td>份额</td><td>AI 及高性能计算 PCB 全球第一 13.8%；UBB 份额约 70%（第三方口径）</td><td>沪电（网络侧）、深南（载板+通信）各有卡位</td><td>AI PCB 全球第一；高端「K 型分化」</td></tr>
+        <tr><td>财务效率</td><td>ROE 35.56%（2025）</td><td>沪电股份 28.57%</td><td>+6.99pp</td></tr>
+        <tr><td>毛利率</td><td>35.22%（合并）；HDI 分产品 43.5%</td><td>沪电 35.48%（合并相近）</td><td>HDI 单品毛利为行业最高档</td></tr>
+      </table>
+      <p><strong>优势成因</strong>：技术壁垒（主因，先发→高良率→高毛利→更多研发的正循环）+ 认证壁垒（准入，2-3 年）+ 转换成本（非对称风险厌恶）+ 规模制造（智慧工厂）+ 产品结构（AI 占比 43.2% 放大器）。</p>
+      <p><strong>趋势判断：2026-2027 高位稳定 → 2028 后收窄风险上升。</strong>维持证据：认证 2-3 年 + 替换意愿低 + 2026Q1 毛利率同比 +1.08pp（定价权验证）+ 订单至 2027-2028。侵蚀因素（概率+幅度）：①英伟达多源供应/二供（中高/高，Rubin Ultra 背板已由沪电认证）；②行业价格战 2027-2028（中高/高，800 亿扩产集中释放）；③原材料涨价传导失败（中/中高，2026Q1 毛利率环比已下行）；④客户压价（中/中）；⑤技术路线迭代（中低/高，CPO 等）。</p>
+      <p><strong>独特壁垒（护城河 → 优势溢价因果链）</strong>：高阶 HDI 技术代差 + 良率 85% → 通过 2-3 年认证进入英伟达封闭供应体系 → 先发产能吃尽缺口红利 → 高定价权（HDI 毛利 43.5%）→ 高毛利 → 更多投入 → 代差加深。结构性壁垒 = 认证周期 1-2 年（批量）+ 良率门槛（追赶者爬坡 2-3 年）+ 头部客户体系封闭，使「扩产 ≠ 有效供给」；可持续年限：短期 2-3 年牢固，10 年存疑。</p>
+      <p><strong>优势敏感性</strong>：毛利率每 -1pp ≈ 净利 -2 亿（按 2025 营收，所得税 14.1%）≈ Forward PE 上移约 0.7x；毛利率从 35.22% 收窄至 30%（-5.22pp）→ 归母净利减少约 8.7 亿（占 2025 归母 20%）；收窄至 25% → 归母减少约 17 亿（占 39%）——对应空方失败情景，叠加折旧与利息将戴维斯双杀。</p>
+    </div>
+  </section>
+
+  <!-- ⑨ 质量筛查与投资清单 -->
+  <section>
+    <h2>质量筛查与投资清单</h2>
+    <div class="grid-2">
+      <div class="card">
+        <h3>质量筛查 <span class="badge badge-yellow" style="margin-left:8px;">YELLOW 5.7/10</span></h3>
+        <p>无红牌，未触发 No-Go 条款，等级：<strong>可跟踪</strong>（以「估值透支 + 产能周期」为核心风险呈现）</p>
+        <table>
+          <tr><td class="verdict-green">绿牌</td><td>高 ROE 35.6%，显示强护城河</td></tr>
+          <tr><td class="verdict-green">绿牌</td><td>净利率 22.4%，出色的费用控制或定价权</td></tr>
+          <tr><td class="verdict-green">绿牌</td><td>营收增长 79.8% + 净利增长 273.5%，强成长</td></tr>
+          <tr><td class="verdict-yellow">黄牌</td><td>资产负债率 52.8%，超过 50%，杠杆偏高</td></tr>
+          <tr><td class="verdict-yellow">黄牌</td><td>现金收入比 0.85，低于 0.9（回款质量存疑）</td></tr>
+          <tr><td class="verdict-yellow">黄牌</td><td>利息覆盖倍数数据缺失（扩展排雷未覆盖）</td></tr>
+        </table>
+        <p style="font-size:13px;color:var(--color-ink-subtle);">7 项评分：盈利能力 9 / 现金流质量 8 / 杠杆安全 5 / 估值合理性 2 / 成长性 9 / 生意模式护城河 8 / 盈利质量 8 ｜ 主要扣分：估值合理性（2/10）+ 杠杆安全（5/10），与周期高位 + 大规模扩产判断一致。</p>
+      </div>
+      <div class="card">
+        <h3>50 项投资清单 AUTO</h3>
+        <p>综合结论：<span class="badge badge-yellow">⚠️ 有条件放行（退出码 0）</span>——1 项 CRITICAL 关键词触发，经人工核验为误报（见附录）</p>
+        <table>
+          <tr><td>🔴 CRITICAL</td><td>1/2 未通过</td><td class="verdict-yellow">#28 关键词误报（人工核验：有息负债/OCF = 1.40 &lt; 5 红线）</td></tr>
+          <tr><td>🟠 IMPORTANT</td><td>0/7 未通过</td><td class="verdict-green">✅ 全通过（含 ROE 35.6%、负债率 52.8%、PE&gt;40 高增长对冲）</td></tr>
+          <tr><td>⚪️ NORMAL</td><td>0/3 未通过</td><td class="verdict-green">✅ 全通过（#14 重资产为人工确认项）</td></tr>
+        </table>
+        <p style="font-size:13px;color:var(--color-ink-subtle);">唯一 CRITICAL 警示 #28（有息负债/OCF 流动性红线）为关键词匹配触发（报告文本含「有息负债 64.45 亿」等），人工计算 64.45/46.03 = 1.40，远低于 5 倍红线；但警示方向真实——短债翻倍 + 200 亿投资已列为中高风险。详见附录 D。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ⑩ 风险 -->
+  <section>
+    <h2>风险提示（芒格框架）</h2>
+    <div class="card">
+      <h3>这家公司可能怎么死？（失败情景）</h3>
+      <ul class="no-list">
+        <li>🔴 <strong>失败剧本 A（最可能）：技术掉队/二供</strong>——Rubin/下一代平台良率或交付出问题 → 英伟达二供份额侵蚀（2026-07 传闻情景）→ 量价齐杀；英伟达多源供应是确定性趋势（Rubin Ultra 背板已由沪电认证）。概率：中高</li>
+        <li>🔴 <strong>失败剧本 B：需求急刹车 + 扩产释放</strong>——AI Capex 周期见顶 + 行业 800 亿扩产 2027-2028 集中释放 → 高端 PCB 供过于求 → 价格战 → 毛利率从 35% 回归 20% 区间 → 重资产折旧 + 有息负债利息双重绞杀 → 戴维斯双杀。历史参照：2017 年 5G/矿机 PCB 热潮后价格暴跌</li>
+        <li>🟠 <strong>失败剧本 C：产能爬坡失控</strong>——200 亿投资/泰国越南爬坡慢（泰国高端产能仍处验证阶段、越南 2026H2 才投产）→ 资本沉淀 + 交付违约风险</li>
+        <li>🟠 <strong>失败剧本 D：原材料极端涨价</strong>——PPE 树脂断供/暴涨（+400%）等核心材料涨价而 PCB 顺价失败 → 毛利率骤降（公司自认传导滞后）</li>
+        <li>🟡 <strong>失败剧本 E：治理风险</strong>——实控人连续高位套现（2025 年 21.41 亿）若持续，削弱市场信任</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>风险分级</h3>
+      <table>
+        <tr><th>等级</th><th>风险</th><th>关键证据</th></tr>
+        <tr><td class="verdict-red">高</td><td>估值风险</td><td>PE-TTM 56.67/PB 15.24 隐含 2026 净利翻倍定价；Forward PE 30.1x @2026E；对业绩兑现极度敏感（高点 402.6 元已回撤 33%）</td></tr>
+        <tr><td class="verdict-red">高</td><td>周期反转（2027-2028）</td><td>20 家 A 股 PCB 公司扩产超 800 亿、2026H2-2028 集中释放；自身 2026 年投资 200 亿；2017 年周期类比</td></tr>
+        <tr><td class="verdict-red">高</td><td>单一客户依赖</td><td>前五大客户 41.98%（一年翻倍）、第一大 14.97%；第三方口径英伟达相关 60%+（未确认）；2026-07 降价传闻引发 28% 回调</td></tr>
+        <tr><td class="verdict-yellow">中高</td><td>原材料涨价侵蚀</td><td>电子布 +100~165%、覆铜板 +40%+、PPE +400%；公司自认传导滞后；2026Q1 毛利率环比下行</td></tr>
+        <tr><td class="verdict-yellow">中高</td><td>自由现金流与杠杆</td><td>FCF -20.14 亿；2026 年投资 200 亿；有息负债 64.45 亿（短债 38.7%）、2026Q1 短借 30.47 亿（+103.15%）</td></tr>
+        <tr><td class="verdict-yellow">中</td><td>汇率风险</td><td>出口 76.83%；2025 财务费用 +467%（汇兑）、2026Q1 继续 +265.7%；远期合同仅部分对冲</td></tr>
+        <tr><td class="verdict-yellow">中</td><td>治理信号</td><td>实控人/高管套现 21.41 亿；客户集中度跃升未在 MD&amp;A 提示；「2030 千亿产值」无量化路径</td></tr>
+        <tr><td class="verdict-yellow">中</td><td>地缘/贸易壁垒</td><td>出口 76.83% 集中北美；美国关税若扩大至东南亚，泰国/越南对冲效果打折</td></tr>
+        <tr><td class="verdict-green">中低</td><td>商誉与减值</td><td>商誉 11.94 亿（占净资产 7.2%，无减值，测试依赖管理层假设）；存货 +54.6%（原材料 +82% 备货）</td></tr>
+        <tr><td class="verdict-green">中低</td><td>技术路线迭代</td><td>CPO 等可能减少 PCB 用量（公司自述）；平台切换期落后者翻盘窗口</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- ⑪ 反向检查清单 -->
+  <section>
+    <h2>反向检查清单（什么情况下我们会错？）</h2>
+    <div class="card">
+      <ol class="track">
+        <li><strong>AI 资本开支 2026-2028 持续超预期（训练 + 推理双轮）</strong>——本轮周期顶点比 2017 年 5G/矿机周期更高更久，高端缺口 20-25% 持续至 2028 年后；空方「产能过剩必然引发价格战」论证失效（良率 70% 均值 + 认证 2-3 年使有效产能约束比预期持久），269.84 元只是起点而非中性估值</li>
+        <li><strong>毛利率守住 34% 以上（2026H1 中报验证）</strong>——原材料涨价被完全传导 + 高端顺价持续，空方「毛利率回归 25-30%」假设被证伪；2026H1 中报（约 2026-08-27）为第一验证点</li>
+        <li><strong>英伟达相关收入占比获港股招股书原文确认且持续上升</strong>——单一客户依赖假设从「传闻 60%+」升级为「确认的深度绑定」，订单能见度量化披露，护城河应上调至 8.5+</li>
+        <li><strong>2027E 净利 150 亿+ 兑现且 Forward PE 降至 20x 以下</strong>——估值通过业绩消化，「观望」将错失 2026-2027 跨周期重估收益（AI 产业链 2024-2026 反复上演成长股高估值长期维持）</li>
+        <li><strong>H 股募资 198.9 亿港元后资本开支被证明高效（投入产出比 &gt;1）</strong>——200 亿投资不是折旧负担而是复利引擎，泰国/越南爬坡顺利（2026H2-2027 量化数据披露），重资产模式被重新定价</li>
+        <li><strong>反向（错在另一边）：若 2026H1 中报毛利率环比大幅下行（&lt;32%）且 2026E 净利下修至 80 亿以下、降价/二供传闻成真</strong>——「观望」仍不够，应下调至「回避」；若实控人/高管 2026 年继续大额套现，治理评级进一步下调</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ⑪ 跟踪指标 -->
+  <section>
+    <h2>跟踪指标（与投资论点直接挂钩，可观测、有阈值）</h2>
+    <div class="card">
+      <table>
+        <tr><th>#</th><th>指标</th><th>频率</th><th>锚点</th><th>阈值/预警</th></tr>
+        <tr><td>1</td><td><strong>毛利率（第一跟踪指标）</strong></td><td>每季度</td><td>2025 年 35.22%</td><td class="verdict-red">跌破 30% 预警（顺价失败或价格战信号）；2026H1 中报（约 2026-08-27）验证原材料 vs 顺价</td></tr>
+        <tr><td>2</td><td>AI 相关收入占比与英伟达相关订单</td><td>每季度/招股书</td><td>AI 占比 43.2%（2025）</td><td>英伟达相关占比（第三方口径 60%+）需港股招股书核实；订单能见度量化数据</td></tr>
+        <tr><td>3</td><td>2026H1 中报三件事</td><td>约 2026-08-27</td><td>—</td><td>①毛利率趋势；②泰国/越南爬坡进度（良率/盈利量化）；③2026Q1 存货环比 +23.5% 是否滞销</td></tr>
+        <tr><td>4</td><td>资本开支与投产效率</td><td>每季度</td><td>2026 计划 200 亿（固定 180 亿）</td><td>在建工程 51.70 亿（2026Q1）落地节奏；自由现金流何时转正</td></tr>
+        <tr><td>5</td><td>客户集中度与前五大客户</td><td>每年报</td><td>41.98%（2025）</td><td>集中度继续上升 → 单一客户依赖加深；第一大 14.97%</td></tr>
+        <tr><td>6</td><td>实控人/高管减持动向</td><td>每月/公告</td><td>2025 年套现 21.41 亿</td><td>是否延续（治理信号）</td></tr>
+        <tr><td>7</td><td>原材料价格</td><td>月度</td><td>电子布 +100~165%/覆铜板 +40%+/PPE +400%</td><td>成本端传导缺口</td></tr>
+        <tr><td>8</td><td>行业扩产与供需</td><td>每半年</td><td>20 家 A 股 PCB 公司 800 亿扩产</td><td>高端缺口 20-25% 收敛时点（2027-2028 产能大考）</td></tr>
+        <tr><td>9</td><td>2026-2027 净利兑现</td><td>每季度</td><td>一致预期 2026E 88 亿 / 2027E 150 亿</td><td>累计净利 vs 预期达成率 &lt;80% 即预警</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- ⑫ 附录 -->
+  <section>
+    <h2>附录</h2>
+    <div class="card">
+      <h3>document-reader 精读摘要（deep-read）</h3>
+      <p>三年年报趋势：<strong>逐年向好</strong>（营收 79.31→192.92 亿、归母 6.71→43.12 亿、ROE 9.35%→35.56%；2023 触底 → 2024-2025 连续两年加速）｜ 三年连贯性：<strong>连贯，无断裂</strong>（无会计政策/估计变更、期初衔接一致、收入确认政策三年一致、研发资本化率三年 0%）｜ 管理层诚实度：<strong>🟢 诚实（未触发 No-Go）</strong>（表述与数据自洽、指引兑现度高、如实披露不利事项；警示项：实控人/高管套现 21.41 亿未在 MD&amp;A 提示）。</p>
+      <p style="font-size:13px;color:var(--color-ink-subtle);">扣非归因：2025 年归母 vs 扣非差额仅 812 万（0.19%），非经常性损益明细齐全（政府补助 +4,219 万、非流动资产处置 -5,577 万、应收减值转回 +2,373 万等），无大额一次性损益，evaluate.ts「净利可能含大额一次性收入」提示经核实不成立。指标波动归因：毛利率 +12.5pp 良性（HDI 占比 +24.3pp、单价 +85% 结构升级）；财务费用 +467% 为汇兑损失（非经营性）；2026Q1 毛利率环比 -0.76pp 为原材料涨价 + 爬坡成本（短期承压、同比 +1.08pp 仍良性）。逻辑一致性：8 项勾稽 6 ✅ 2 ⚠️（现金收入比 0.947→0.854 未解释、2026Q1 存货环比 +23.5% vs 营收 +6.7%）。置信度自评 8/10。</p>
+    </div>
+    <div class="card">
+      <h3>多空论证摘要对照表（Bull vs Bear，摘自 deep-read 第十章）</h3>
+      <table>
+        <tr><th>#</th><th>🟢 多方论点</th><th>强度/置信度</th><th>🔴 空方论点</th><th>强度/置信度</th></tr>
+        <tr><td>1</td><td>AI 结构性需求 + 订单能见度至 2027-2028（AI 占比 +36.6pp、2026Q1 延续高增）</td><td>强 / 8</td><td>全行业 800 亿扩产 + 自身 200 亿投资，2027-2028 产能集中释放（2017 年周期类比）</td><td>强 / 7.5</td></tr>
+        <tr><td>2</td><td>高阶 HDI 技术代差 + 良率优势构成准入壁垒（6 阶 24 层全球首批、良率 85% vs 70%）</td><td>强 / 7.5</td><td>原材料全线涨价侵蚀毛利率（电子布 +100~165%、PPE +400%；2026Q1 环比下行）</td><td>强 / 7.5</td></tr>
+        <tr><td>3</td><td>财务质量：扣非/归母 99.8%、OCF/净利 1.07、应收/存货增速均低于营收</td><td>强 / 9</td><td>客户集中度一年翻倍 + 单一客户依赖（41.98%；英伟达相关 60%+ 未确认；降价传闻引发 28% 回调）</td><td>中强 / 6.5</td></tr>
+        <tr><td>4</td><td>H 股 198.9 亿港元 + A 股定增 19 亿，扩产资金无忧</td><td>中强 / 8</td><td>自由现金流 -20 亿 + 有息负债 64.45 亿 + 折旧 2027-2028 集中释放</td><td>中强 / 7</td></tr>
+        <tr><td>5</td><td>分红率提升至 40.3%，股东回报改善</td><td>中 / 8</td><td>估值：PE-TTM 56.67 + PB 15.24，隐含 2026 净利翻倍预期，安全边际薄（历史平均 PE 约 21 倍）</td><td>中强 / 7</td></tr>
+      </table>
+      <p style="font-size:13px;color:var(--color-ink-subtle);">双方脆弱点：多方论证失效条件 = AI 资本开支见顶 + 毛利率跌破 28% + 客户份额实质下滑同时出现；空方论证失效条件 = 2026-2027 业绩持续兑现（净利 88 亿+）且毛利率稳定在 34% 以上。</p>
+    </div>
+    <div class="card">
+      <h3>财报精读 10 项检查清单</h3>
+      <table>
+        <tr><th>#</th><th>检查项</th><th>结果</th><th>说明</th></tr>
+        <tr><td>1</td><td>ROE ≥ 12%</td><td class="verdict-green">✅</td><td>35.56%（2025）；三年 9.35%→13.95%→35.56% 持续提升（净利率驱动，权益乘数 2.12 稳定）</td></tr>
+        <tr><td>2</td><td>经营现金流 ≥ 净利 × 0.8</td><td class="verdict-green">✅</td><td>OCF/归母 = 1.07（2025）；2026Q1 达 1.64</td></tr>
+        <tr><td>3</td><td>资产负债率 ≤ 60%</td><td class="verdict-green">✅</td><td>52.85%（2025 末）；2026Q1 约 55.2%（计算）仍达标；短债占比 38.7% 为观察项</td></tr>
+        <tr><td>4</td><td>当期归母净利润为正</td><td class="verdict-green">✅</td><td>43.12 亿（2025）；2026Q1 12.88 亿</td></tr>
+        <tr><td>5</td><td>毛利率 ≥ 25%</td><td class="verdict-green">✅</td><td>35.22%（2025 合并口径）；2026Q1 34.46%（环比 -0.76pp，同比 +1.08pp）</td></tr>
+        <tr><td>6</td><td>营收趋势 ≥ 2 年连续稳健</td><td class="verdict-green">✅</td><td>2024 +35.31%、2025 +79.77%、2026Q1 +27.99%（精读已确认增长质量：量减价升、结构升级）</td></tr>
+        <tr><td>7</td><td>商誉 / 净资产 &lt; 30%</td><td class="verdict-green">✅</td><td>11.94/166.18 = 7.2%（MFS 资产组，无减值；测试依赖管理层假设，为审计关键事项，精读已确认）</td></tr>
+        <tr><td>8</td><td>无大额资产减值损失</td><td class="verdict-green">✅</td><td>无商誉减值；存货跌价 1.00 亿（计提比例 3.06%）、应收坏账 1.04%（精读已确认无大额减值）</td></tr>
+        <tr><td>9</td><td>审计意见标准无保留</td><td class="verdict-green">✅</td><td>立信所 2023/2024/2025 三年标准无保留（2026-03-12，签字注册会计师滕海军、张正才）；无强调事项段；内控无保留（2026-03-13）</td></tr>
+        <tr><td>10</td><td>MD&amp;A 无重大风险隐瞒</td><td class="verdict-yellow">✅（⚠️ 瑕疵）</td><td>坦诚披露（6 项风险 + 自认原材料传导滞后）；瑕疵：客户集中度跃升（41.98%）与实控人/高管套现 21.41 亿未在 MD&amp;A 主动提示</td></tr>
+      </table>
+      <p><strong>10 项 ❌ = 0，财报精读通过</strong>。⚠️ 1 项（第 10 项披露完整性瑕疵）；第 6-10 项经 deep-read 人工核实。关注重点：毛利率可持续性 + 2026H1 现金流匹配度 + 客户集中度。</p>
+    </div>
+    <div class="card">
+      <h3>50 项投资决策清单 AUTO 扫描（2026-08-17）</h3>
+      <table>
+        <tr><th>#</th><th>级别</th><th>检查项</th><th>结果</th><th>说明</th></tr>
+        <tr><td>4</td><td>🟠</td><td>三层结构覆盖</td><td class="verdict-green">✅</td><td>检测到三层关键词（行业+细分+公司）</td></tr>
+        <tr><td>8</td><td>⚪️</td><td>财报PDF下载</td><td class="verdict-green">✅</td><td>pdf-texts/胜宏科技/ 已下载 6 份原文并提取 Markdown（三年年报齐全）</td></tr>
+        <tr><td>11</td><td>🟠</td><td>毛利率/ROE 护城河信号</td><td class="verdict-green">✅</td><td>毛利率 35.2%、ROE 35.6% → 有护城河信号</td></tr>
+        <tr><td>14</td><td>⚪️</td><td>重/轻资产</td><td class="verdict-yellow">🟡</td><td>人工确认：<strong>重资产 + 高资本消耗</strong>（2025 资本开支 66.17 亿 &gt; OCF 46.03 亿，2026 计划 200 亿）</td></tr>
+        <tr><td>15</td><td>⚪️</td><td>商誉占比</td><td class="verdict-green">✅</td><td>7.2%（11.94 亿/净资产 166.18 亿，&lt;30%）</td></tr>
+        <tr><td>25</td><td>🔴</td><td>OCF/净利 ≥0.8（&lt;0.5=NO-GO）</td><td class="verdict-green">✅</td><td>OCF/NI=1.07 ✅ ≥0.8（2026Q1 达 1.64）</td></tr>
+        <tr><td>26</td><td>🟠</td><td>ROE ≥12%</td><td class="verdict-green">✅</td><td>ROE=35.6% ✅</td></tr>
+        <tr><td>27</td><td>🟠</td><td>资产负债率 ≤60%</td><td class="verdict-green">✅</td><td>52.8% ✅</td></tr>
+        <tr><td>28</td><td>🔴</td><td>有息负债 / OCF 流动性红线</td><td>❌</td><td><strong>关键词误报</strong>：报告文本含「有息负债 64.45 亿」触发关键词匹配；人工核验有息负债/OCF = 64.45/46.03 = <strong>1.40 &lt; 5 红线</strong>，未触及 No-Go；但短债翻倍 + 200 亿投资为真实中高风险（已列风险章节）</td></tr>
+        <tr><td>29</td><td>🟠</td><td>营收+净利双负增长</td><td class="verdict-green">✅</td><td>营收 +79.8%、净利 +273.5%（双正增长）</td></tr>
+        <tr><td>30</td><td>🟠</td><td>大额减值 &gt;30%净利</td><td class="verdict-green">✅</td><td>无商誉减值；存货跌价 1.00 亿（3.06%）、应收坏账 1.04%，不触发警示</td></tr>
+        <tr><td>31</td><td>🟠</td><td>PE&gt;40 无高增长</td><td class="verdict-green">✅</td><td>PE-TTM 56.7 &gt;40 但净利增长 273.5% ≥25% ✅（高增长对冲高估值；注意不改变「观望」判断——Forward PE 30.1x 已隐含 2026 净利翻倍定价）</td></tr>
+      </table>
+      <p style="margin-top:12px;">统计：🔴 CRITICAL 1/2 未通过（#28 关键词误报，人工核验通过）｜ 🟠 IMPORTANT 0/7 未通过 ｜ ⚪️ NORMAL 0/3 未通过 ｜ <span class="badge badge-yellow">综合结论：⚠️ 有条件放行（退出码 0）</span></p>
+    </div>
+    <div class="card">
+      <h3>信息来源与相关研究</h3>
+      <p>法定披露：2023/2024/2025 年报 + 2025 半年报 + 2026Q1 报告原文（pdf-texts/胜宏科技/）｜ 精读：[[2026-08-17-胜宏科技-deep-read]]（含第十章多空论证）｜ 结构化：[[2026-08-17-胜宏科技-processed]]（53 条关键事实）｜ 知识节点：[[胜宏科技-公司研究]]、[[PCB-行业分析]]、[[电子-行业概览]]、[[覆铜板-行业分析]]、[[生益科技-公司研究]]、[[沪电股份]] ｜ 研报：东莞证券（2026-04-29）、中邮证券（2026-04-17）、美银（H 股）｜ 外部证据：中国经济网、财联社、新浪财经、时代周报、雪球空方观点（置信度 ≤7 已标注）｜ 估值/筛查：evaluate.ts、quality-screen.ts、composite.ts（2026-08-17）。</p>
+    </div>
+  </section>
+
+  <!-- ⑬ 页脚 -->
+  <footer>
+    <p>本报告由本系统基于公开信息生成（2023/2024/2025 年报 + 2026Q1 报告原文精读 + 港股全球发售公告间接来源 + 券商研报 + 外部多源证据）。数据时点：2026-08-17。仅供内部研究参考，不构成投资建议。市场有风险，投资需谨慎。</p>
+    <p style="margin-top:8px;">相关笔记：胜宏科技-公司研究 ｜ PCB-行业分析 ｜ 电子-行业概览 ｜ 覆铜板-行业分析 ｜ 生益科技-公司研究 ｜ 沪电股份 ｜ 2026-08-17-胜宏科技-deep-read / processed</p>
+  </footer>
+</div>
+
+<script>
+if (window.__ECHARTS_FAIL) {
+  document.querySelectorAll("[id^='chart-']").forEach(function(el){
+    el.innerHTML = '<div style="padding:16px;border:1px dashed #333;color:#666;border-radius:8px;">图表加载失败（CDN 不可用），请查阅 Markdown 报告数据表</div>';
+  });
+}
+
+var DARK = {
+  text: "#a1a1a1", axis: "#666666", split: "#1a1a1a", accent: "#0070f3"
+};
+
+// ① 营收/归母/毛利率（2023-2025）
+(function(){
+  var el = document.getElementById("chart-growth");
+  if (!el || typeof echarts === "undefined") return;
+  var c = echarts.init(el);
+  c.setOption({
+    backgroundColor: "transparent",
+    color: ["#0070f3", "#2e9e5b", "#fbbf24"],
+    tooltip: { trigger: "axis" },
+    legend: { top: 0, textStyle: { color: DARK.text } },
+    grid: { left: 60, right: 50, top: 44, bottom: 30 },
+    xAxis: { type: "category", data: ["2023", "2024", "2025"], axisLine: { lineStyle: { color: DARK.axis } }, axisLabel: { color: DARK.text } },
+    yAxis: [
+      { type: "value", name: "亿元", nameTextStyle: { color: DARK.axis }, axisLabel: { color: DARK.text }, splitLine: { lineStyle: { color: DARK.split } } },
+      { type: "value", name: "毛利率 %", min: 0, max: 40, nameTextStyle: { color: DARK.axis }, axisLabel: { color: DARK.text }, splitLine: { show: false } }
+    ],
+    series: [
+      { name: "营业收入", type: "bar", barWidth: 30, data: [79.31, 107.31, 192.92], label: { show: true, position: "top", color: DARK.text, fontSize: 10 } },
+      { name: "归母净利润", type: "bar", barWidth: 30, data: [6.71, 11.54, 43.12], label: { show: true, position: "top", color: DARK.text, fontSize: 10 } },
+      { name: "毛利率", type: "line", yAxisIndex: 1, smooth: true, data: [20.69, 22.72, 35.22], symbolSize: 8, label: { show: true, position: "top", color: "#fbbf24" } }
+    ]
+  });
+})();
+
+// ② 收入结构跃迁（AI/HDI/出口/客户集中度）
+(function(){
+  var el = document.getElementById("chart-structure");
+  if (!el || typeof echarts === "undefined") return;
+  var c = echarts.init(el);
+  c.setOption({
+    backgroundColor: "transparent",
+    color: ["#0070f3", "#2e9e5b", "#fbbf24", "#f04141"],
+    tooltip: { trigger: "axis" },
+    legend: { top: 0, textStyle: { color: DARK.text } },
+    grid: { left: 60, right: 50, top: 44, bottom: 30 },
+    xAxis: { type: "category", data: ["2023", "2024", "2025"], axisLine: { lineStyle: { color: DARK.axis } }, axisLabel: { color: DARK.text } },
+    yAxis: { type: "value", name: "收入占比 %", min: 0, max: 80, nameTextStyle: { color: DARK.axis }, axisLabel: { color: DARK.text }, splitLine: { lineStyle: { color: DARK.split } } },
+    series: [
+      { name: "AI 收入占比", type: "bar", barWidth: 16, data: [5.8, 6.6, 43.2], label: { show: true, position: "top", color: "#0070f3", fontSize: 10 } },
+      { name: "HDI 收入占比", type: "bar", barWidth: 16, data: [11.7, 14.2, 38.5], label: { show: true, position: "top", color: "#2e9e5b", fontSize: 10 } },
+      { name: "出口占比", type: "bar", barWidth: 16, data: [61.48, 60.88, 76.83], label: { show: true, position: "top", color: "#fbbf24", fontSize: 10 } },
+      { name: "前五大客户", type: "line", smooth: true, data: [21.57, 20.03, 41.98], symbolSize: 8, label: { show: true, position: "top", color: "#f04141", fontSize: 10 } }
+    ]
+  });
+})();
+
+// ③ 季度营收/归母（2025Q1-2026Q1）
+(function(){
+  var el = document.getElementById("chart-quarter");
+  if (!el || typeof echarts === "undefined") return;
+  var c = echarts.init(el);
+  c.setOption({
+    backgroundColor: "transparent",
+    color: ["#0070f3", "#2e9e5b"],
+    tooltip: { trigger: "axis" },
+    legend: { top: 0, textStyle: { color: DARK.text } },
+    grid: { left: 60, right: 50, top: 44, bottom: 30 },
+    xAxis: { type: "category", data: ["25Q1", "25Q2", "25Q3", "25Q4", "26Q1"], axisLine: { lineStyle: { color: DARK.axis } }, axisLabel: { color: DARK.text } },
+    yAxis: { type: "value", name: "亿元", nameTextStyle: { color: DARK.axis }, axisLabel: { color: DARK.text }, splitLine: { lineStyle: { color: DARK.split } } },
+    series: [
+      { name: "营业收入", type: "bar", barWidth: 24, data: [43.12, 47.19, 50.86, 51.75, 55.19], label: { show: true, position: "top", color: DARK.text, fontSize: 10 } },
+      { name: "归母净利润", type: "line", smooth: true, data: [9.21, 12.22, 11.02, 10.67, 12.88], symbolSize: 8, label: { show: true, position: "top", color: "#2e9e5b", fontSize: 10 } }
+    ]
+  });
+})();
+
+// ④ 三情景目标价 vs 当前价
+(function(){
+  var el = document.getElementById("chart-target");
+  if (!el || typeof echarts === "undefined") return;
+  var c = echarts.init(el);
+  var cur = 269.84;
+  c.setOption({
+    backgroundColor: "transparent",
+    tooltip: { trigger: "axis" },
+    legend: { top: 0, textStyle: { color: DARK.text } },
+    grid: { left: 60, right: 20, top: 44, bottom: 30 },
+    xAxis: { type: "category", data: ["目标买入 158.7", "悲观 198.4", "中性 268.6", "当前 269.84", "乐观 381.5"], axisLine: { lineStyle: { color: DARK.axis } }, axisLabel: { color: DARK.text } },
+    yAxis: { type: "value", name: "元/股", nameTextStyle: { color: DARK.axis }, axisLabel: { color: DARK.text }, splitLine: { lineStyle: { color: DARK.split } } },
+    series: [{
+      name: "价格", type: "bar", barWidth: 44,
+      data: [
+        { value: 158.7, itemStyle: { color: "#666666" } },
+        { value: 198.4, itemStyle: { color: "#f04141" } },
+        { value: 268.6, itemStyle: { color: "#fbbf24" } },
+        { value: 269.84, itemStyle: { color: "#0070f3" } },
+        { value: 381.5, itemStyle: { color: "#2e9e5b" } }
+      ],
+      label: { show: true, position: "top", color: DARK.text },
+      markLine: { data: [{ yAxis: cur, lineStyle: { color: "#0070f3", type: "dashed" } }], label: { show: true, formatter: "当前价 269.84", color: "#0070f3", position: "end" } }
+    }]
+  });
+})();
+
+// ⑤ 多空论点置信度对照
+(function(){
+  var el = document.getElementById("chart-debate");
+  if (!el || typeof echarts === "undefined") return;
+  var c = echarts.init(el);
+  c.setOption({
+    backgroundColor: "transparent",
+    color: ["#2e9e5b", "#f04141"],
+    tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
+    legend: { top: 0, textStyle: { color: DARK.text } },
+    grid: { left: 110, right: 40, top: 44, bottom: 30 },
+    xAxis: { type: "value", min: 0, max: 10, name: "置信度（1-10）", nameTextStyle: { color: DARK.axis }, axisLabel: { color: DARK.text }, splitLine: { lineStyle: { color: DARK.split } } },
+    yAxis: { type: "category", data: ["估值", "周期/政策/国际", "财务质量", "护城河", "增长"], axisLine: { lineStyle: { color: DARK.axis } }, axisLabel: { color: DARK.text } },
+    series: [
+      { name: "🟢 多方", type: "bar", barWidth: 12, data: [6, 8, 9, 7.5, 8], label: { show: true, position: "right", color: "#2e9e5b" } },
+      { name: "🔴 空方", type: "bar", barWidth: 12, data: [7, 7.5, 7, 6.5, 7], label: { show: true, position: "right", color: "#f04141" } }
+    ]
+  });
+})();
+</script>
+
+</body>
+</html>

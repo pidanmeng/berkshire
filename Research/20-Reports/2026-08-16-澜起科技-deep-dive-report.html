@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>澜起科技（688008.SH）深度调研报告</title>
+<style>
+:root {
+  --color-canvas: #000000;
+  --color-surface: #0a0a0a;
+  --color-surface-raised: #111111;
+  --color-border: #1a1a1a;
+  --color-ink: #ffffff;
+  --color-ink-muted: #a1a1a1;
+  --color-ink-subtle: #666666;
+  --color-accent: #0070f3;
+  --color-accent-hover: #3291ff;
+  --color-danger: #ee0000;
+  --color-up: #f04141;
+  --color-down: #2e9e5b;
+  --star-on: #fbbf24;
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: "Geist", Inter, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  line-height: 1.6;
+  padding-bottom: 80px;
+}
+.container { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+header {
+  border-bottom: 1px solid var(--color-border);
+  padding: 56px 0 40px;
+  background: linear-gradient(180deg, #0a0a0a 0%, #000000 100%);
+}
+h1 { font-size: 40px; font-weight: 600; letter-spacing: -1.28px; margin-bottom: 12px; }
+h2 { font-size: 24px; font-weight: 600; letter-spacing: -0.96px; margin: 48px 0 20px; padding-bottom: 8px; border-bottom: 1px solid var(--color-border); }
+h3 { font-size: 18px; font-weight: 600; margin: 24px 0 12px; }
+p, li { color: var(--color-ink-muted); font-size: 15px; }
+a { color: var(--color-accent); text-decoration: none; }
+a:hover { color: var(--color-accent-hover); }
+.subtitle { color: var(--color-ink-subtle); font-size: 14px; }
+.tag { display: inline-block; padding: 2px 10px; border: 1px solid var(--color-border); border-radius: 9999px; font-size: 12px; color: var(--color-ink-muted); margin-right: 8px; margin-bottom: 8px; }
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card h3 { margin-top: 0; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+@media (max-width: 800px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+.stat { text-align: center; padding: 20px 12px; }
+.stat .value { font-size: 28px; font-weight: 600; letter-spacing: -0.8px; }
+.stat .label { font-size: 12px; color: var(--color-ink-subtle); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+.up { color: var(--color-up); }
+.down { color: var(--color-down); }
+.warn { color: #fbbf24; }
+.star { color: var(--star-on); letter-spacing: 2px; }
+.star-off { color: #333; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13.5px; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--color-border); }
+th { color: var(--color-ink-subtle); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+td { color: var(--color-ink-muted); }
+.verdict-red { color: var(--color-danger); font-weight: 600; }
+.verdict-green { color: var(--color-down); font-weight: 600; }
+.verdict-yellow { color: #fbbf24; font-weight: 600; }
+.chart-box { width: 100%; height: 340px; margin: 16px 0; }
+.chart-note { font-size: 12px; color: var(--color-ink-subtle); margin-top: -8px; }
+.quote { border-left: 3px solid var(--color-accent); padding: 12px 16px; background: var(--color-surface-raised); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; margin: 12px 0; font-size: 14px; color: var(--color-ink-muted); }
+.badge { display: inline-block; padding: 2px 8px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 500; }
+.badge-red { background: rgba(238,0,0,0.15); color: var(--color-danger); border: 1px solid rgba(238,0,0,0.4); }
+.badge-green { background: rgba(46,158,91,0.15); color: var(--color-down); border: 1px solid rgba(46,158,91,0.4); }
+.badge-yellow { background: rgba(251,191,36,0.15); color: #fbbf24; border: 1px solid rgba(251,191,36,0.4); }
+footer { border-top: 1px solid var(--color-border); margin-top: 64px; padding-top: 24px; font-size: 12px; color: var(--color-ink-subtle); }
+.conclusion-item { margin-bottom: 14px; padding-left: 16px; border-left: 2px solid var(--color-accent); }
+.conclusion-item h4 { font-size: 15px; margin-bottom: 4px; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js" onerror="window.__ECHARTS_FAIL=true"></script>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <div style="margin-bottom:16px;">
+      <span class="tag">688008.SH</span><span class="tag">半导体 · 内存互连芯片</span><span class="tag">deep-dive</span>
+    </div>
+    <h1>澜起科技 深度调研报告</h1>
+    <p class="subtitle">数据时点：2026-08-15（估值快照）｜ 财报基准：2023/2024/2025 年报 + 2026H1 业绩预增 ｜ 生成：2026-08-16</p>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- 核心结论 -->
+  <section>
+    <h2>核心结论</h2>
+    <div class="conclusion-item">
+      <h4>① 护城河真实且宽（置信度：高）</h4>
+      <p>JEDEC 标准牵头制定者（DDR5 RCD/MDB/CKD 三款国际标准）+ 二十年寡头格局（2024 年内存互连 CR3=93.4%，澜起 36.8% 全球第一）+ 客户认证壁垒三位一体。互连类毛利率 61.36%→62.66%→65.57% 逐年抬升验证定价权。<strong>分歧点</strong>：多方称"规则级壁垒"，空方称"好生意≠好价格、36.8% vs 瑞萨 36% 差距不足 1pct"。</p>
+    </div>
+    <div class="conclusion-item">
+      <h4>② 增长飞轮兑现、增速换挡、利润含金量下降（置信度：高）</h4>
+      <p>三年营收 22.86→36.39→54.56 亿（2024 +59.2%、2025 +49.9%），2026H1 营收 33.35 亿（+26.6%）但 Q2 环比重新加速（+28.3%）。<strong>最大软肋</strong>：2026H1 归母 +63.9%~81.2% vs 扣非仅 +14.5%~32.9%，非经常性损益中值约 6.5 亿（占归母约 32%，投资收益+公允价值变动）——2023 年利润 -65.3% 正是同一科目减少 4.62 亿所致。</p>
+    </div>
+    <div class="conclusion-item">
+      <h4>③ 估值透支、无安全边际（置信度：中）</h4>
+      <p>PE-TTM 101.13x、Forward PE 约 81x（2026E）、PS 53x。中性假设（2026E 归母 32 亿 × 60x）合理市值约 1920 亿（157 元），当前 211.91 元处中性与乐观情景之间。<strong>目标买入价 82 元 / 目标卖出价 240 元，当前评级观望</strong>。</p>
+    </div>
+    <div class="conclusion-item">
+      <h4>④ 地缘与合规尾部风险（置信度：中）</h4>
+      <p>韩国首尔检察厅 2026-07-15 对韩国办公室反垄断现场搜查取证（未指控）；境外收入占 71.6%、前五大客户 77.24%。市场已用 3 日跌 32%、蒸发 2000 亿投票。伯恩斯坦论证"接口芯片成本 &lt;1% 模组价、无操纵动机"，但调查时间与结果不可预测。</p>
+    </div>
+    <div class="card" style="margin-top:16px;">
+      <h3>四大师综合评分 <span style="font-size:13px;color:var(--color-ink-subtle);">综合 ★★★★☆（由系统按 scores 加权计算）</span></h3>
+      <table>
+        <tr><th>维度</th><th>大师</th><th>星级</th><th>核心判断</th></tr>
+        <tr><td>能力圈</td><td>巴菲特</td><td><span class="star">★★★★</span><span class="star-off">☆</span></td><td>生意本质清晰（每根服务器内存条必须搭载其芯片，寡头三家中唯一中国厂商）；可预测 DDR5 世代格局</td></tr>
+        <tr><td>护城河</td><td>巴菲特</td><td><span class="star">★★★★</span><span class="star-off">☆</span></td><td>JEDEC 标准牵头+寡头格局+认证壁垒，宽护城河（8/10）；DDR6（2029）是重估窗口</td></tr>
+        <tr><td>生意模式</td><td>段永平</td><td><span class="star">★★★</span><span class="star-off">☆☆</span></td><td>Fabless 轻资产、62%+ 毛利、零负债、OCF/NI 0.95，好生意；扣分：客户集中 77%、2026H1 利润含金量</td></tr>
+        <tr><td>管理层诚信</td><td>段永平</td><td><span class="star">★★★★</span><span class="star-off">☆</span></td><td>三年年报数据衔接零断裂、重大不利变化如实披露、连续三年标准无保留审计，🟢 诚实</td></tr>
+        <tr><td>反向检查清单</td><td>芒格</td><td><span class="star">★★★</span><span class="star-off">☆☆</span></td><td>风险识别全面（周期/客户集中/存货/地缘/合规），估值与利润质量为主要反向因素</td></tr>
+        <tr><td>历史类比</td><td>李录</td><td><span class="star">★★★</span><span class="star-off">☆☆</span></td><td>类比博通（互连"卖水人"）/Astera Labs（Retimer 竞争）/瑞萨（寡头现金牛）；强周期属性（±60% 波动）</td></tr>
+      </table>
+      <p style="font-size:13px;color:var(--color-ink-subtle);">scores: capability 8.0 / moat 8.0 / business_model 7.5 / management 9.0 / inversion 7.0 / historical 7.0</p>
+    </div>
+  </section>
+
+  <!-- 财务数据可视化 -->
+  <section>
+    <h2>关键财务数据（2023-2025 + 2026H1 预增）</h2>
+    <div class="grid-3" style="margin-bottom:16px;">
+      <div class="card stat"><div class="value">211.91<span style="font-size:14px;">元</span></div><div class="label">最新股价</div></div>
+      <div class="card stat"><div class="value">2586.4<span style="font-size:14px;">亿</span></div><div class="label">总市值</div></div>
+      <div class="card stat"><div class="value warn">101.13</div><div class="label">PE-TTM（偏贵）</div></div>
+    </div>
+    <div class="card">
+      <h3>营收与归母净利润三年曲线（亿元）</h3>
+      <div id="chart-profit" class="chart-box"></div>
+      <p class="chart-note">数据来源：2023/2024/2025 年报主要会计数据（p.13-14）｜2026H1 为业绩预增公告区间中值</p>
+    </div>
+    <div class="card">
+      <h3>盈利能力趋势：毛利率 / ROE / 净利率（%）</h3>
+      <div id="chart-margin" class="chart-box"></div>
+      <p class="chart-note">毛利率为合并口径（58.9%→58.2%→62.3%）；ROE 为加权归母口径；2026Q1 毛利率 69.8% 为研报旁证</p>
+    </div>
+  </section>
+
+  <!-- 估值区间 -->
+  <section>
+    <h2>估值区间与目标价（安全边际视角）</h2>
+    <div class="card">
+      <h3>三情景目标价</h3>
+      <div id="chart-target" class="chart-box"></div>
+      <p class="chart-note">一般工商企业采用 PE 估值路径；EPS 基准 2026E 归母 28-45 亿（悲观-乐观）</p>
+      <table style="margin-top:16px;">
+        <tr><th>情景</th><th>假设</th><th>目标价</th><th>隐含涨跌幅</th></tr>
+        <tr><td>悲观</td><td>2026E 归母 28 亿 × PE 45x（AI 资本开支收缩）</td><td>103 元</td><td class="down">-51%</td></tr>
+        <tr><td>中性</td><td>2026E 归母 32 亿 × PE 60x</td><td>157 元</td><td class="down">-26%</td></tr>
+        <tr><td>乐观</td><td>2027E 归母 45 亿 × PE 65x（MRDIMM/CXL 放量兑现）</td><td>240 元</td><td class="up">+13%</td></tr>
+      </table>
+      <div class="quote">
+        <strong>目标买入价（安全边际）：82 元</strong>（悲观 × 0.8）｜ <strong>目标卖出价（高估）：240 元</strong><br>
+        <strong>当前操作建议：观望</strong>（估值偏高 + 2026H1 利润含金量待核实 + 韩国调查不确定；回调至 150 元以下转为逢低关注）
+      </div>
+    </div>
+  </section>
+
+  <!-- 护城河 -->
+  <section>
+    <h2>护城河评估（巴菲特框架）</h2>
+    <div class="card">
+      <table>
+        <tr><th>类型</th><th>是否存在</th><th>量化证据</th><th>趋势</th></tr>
+        <tr><td>牌照/标准话语权</td><td><span class="badge badge-green">极强</span></td><td>JEDEC 董事会成员+四委员会主席/副主席；DDR5 RCD/MDB/CKD 标准牵头制定者</td><td>稳定（DDR6 2029 重估）</td></tr>
+        <tr><td>品牌/定价权</td><td><span class="badge badge-green">强</span></td><td>互连类毛利率 61.36%→65.57% 逐年抬升</td><td>增强</td></tr>
+        <tr><td>转换成本</td><td><span class="badge badge-green">强</span></td><td>CPU/内存/OEM 全方位认证壁垒、满意度连续 3 年 &gt;90 分、三星/海力士/美光最佳供应商奖</td><td>稳定</td></tr>
+        <tr><td>规模效应</td><td><span class="badge badge-yellow">中</span></td><td>Fabless 固定成本摊薄：研发费用率 21.0%→16.8%</td><td>增强</td></tr>
+        <tr><td>网络效应</td><td><span class="badge badge-red">弱</span></td><td>无典型网络效应</td><td>—</td></tr>
+      </table>
+      <p style="margin-top:12px;"><strong>宽度评分：8/10（宽）</strong> ｜ 能否持续 10 年以上：<strong>不确定</strong>（DDR5 世代至 2029 前稳固；DDR6 是重估窗口；PCIe/CXL 领域是追赶者）</p>
+      <p style="font-size:13px;color:var(--color-ink-subtle);">裁决：护城河"宽度"双方无实质分歧。结合产业周期——DDR5 世代内护城河稳固可信，空方"蛋糕大小"（2024 全球市场仅 84 亿人民币）论点正确但不影响"澜起在蛋糕内份额与毛利领先"；真正风险在 DDR6 话语权重估与 PCIe/CXL 追赶者身份。</p>
+    </div>
+  </section>
+
+  <!-- 多空辩论 -->
+  <section>
+    <h2>多空辩论摘要（综合裁决）</h2>
+    <div class="card">
+      <table>
+        <tr><th>维度</th><th>🟢 多方</th><th>🔴 空方</th><th>裁决</th></tr>
+        <tr><td>增长</td><td>复利飞轮兑现+Q2 环比 +28.3% 重加速；剔除股份支付归母 +56%~71%（强/9）</td><td>增速换挡（+49.9%→+26.6%）、DDR5 渗透率 85%+ 近饱和；2026H1 扣非仅 +14.5%~32.9%（强/8）</td><td><span class="badge badge-green">多方胜（增长质量）</span>：AI 内存容量结构性增长+新品接力是真实增量；但增速中枢下移至 25% 档是合理预期</td></tr>
+        <tr><td>护城河</td><td>JEDEC 标准牵头+CR3=93.4% 全球第一+"规则级"壁垒（强/8）</td><td>蛋糕小（84 亿人民币）+份额差距 &lt;1pct+高毛利是周期顶部结果（中/7）</td><td><span class="badge badge-green">多方胜（护城河宽度）</span>：DDR5 世代内稳固；"蛋糕大小"是产业空间问题非公司质量问题</td></tr>
+        <tr><td>财务质量</td><td>零负债、OCF 连续四年增长、ROE 18.25%、分红回购占归母 50%（强/8）</td><td>2026H1 归母增速 32% 来自非经常损益；2023 年同机制致利润 -65%（强/8）</td><td><span class="badge badge-red">空方胜（利润含金量）</span>：2023"投资收益减 4.62 亿致利润腰斩"是年报原文铁证；需 2026 半年报核实 6.5 亿构成</td></tr>
+        <tr><td>估值</td><td>前瞻 PE 81x→57x→44x 随利润再造消化；伯恩斯坦目标价 400 元（中/6-7）</td><td>101x PE 隐含 50%+ CAGR 已全部定价；扣非年化 PE 约 124 倍（强/8.5）</td><td><span class="badge badge-red">空方胜（估值）</span>：最大分歧点——当前价支付了"最优路径"估值，安全边际为负；但"贵可以更贵"，回归时点不可控</td></tr>
+        <tr><td>周期/政策/国际</td><td>AI 结构性+内存复苏共振期起点；成熟制程出口管制波及概率低（中/6-7）</td><td>韩国调查悬顶+境外 71.6%+客户集中 77.24%；AI 资本开支若收缩重演 2023（中强/7）</td><td><span class="badge badge-red">空方微胜（尾部风险）</span>：调查结果不可预测是事实；但"&lt;1% 成本无操纵动机"+"未被指控"缓解坐实概率</td></tr>
+      </table>
+      <div class="quote" style="margin-top:16px;">
+        <strong>最大分歧点</strong>：估值与利润含金量（空方：101x PE + 扣非仅 +15%~33% = 严重透支；多方：剔除股份支付 +56%~71% + Q2 加速 + 前瞻 PE 随业绩消化）。<br>
+        <strong>综合裁决</strong>：结合产业周期（DDR5 渗透率近饱和、增速换挡是客观事实）、国际形势（韩国调查未了结）、政策（出口管制风险存在）——<strong>当前价格支付了"最优路径"估值，而 2026H1 利润含金量下降降低了最优路径兑现概率，安全边际为负</strong>。多方"高置信度逻辑"（护城河/增长结构）成立，但"中高执行风险"（估值兑现）不构成当前买入理由。
+      </div>
+    </div>
+  </section>
+
+  <!-- 质量筛查 -->
+  <section>
+    <h2>质量筛查与投资清单</h2>
+    <div class="grid-2">
+      <div class="card">
+        <h3>质量筛查 <span class="badge badge-yellow" style="margin-left:8px;">YELLOW</span></h3>
+        <p>质量评分：<strong>7.3/100</strong>（无红牌，🟡 质量中性）</p>
+        <table>
+          <tr><td>盈利能力</td><td>9</td><td>现金流质量</td><td>6</td></tr>
+          <tr><td>杠杆安全</td><td>9</td><td>估值合理性</td><td class="verdict-red">2</td></tr>
+          <tr><td>成长性</td><td>9</td><td>生意护城河</td><td>8</td></tr>
+          <tr><td>盈利质量</td><td>7</td><td>—</td><td>—</td></tr>
+        </table>
+        <p style="font-size:13px;color:var(--color-ink-subtle);">主要扣分：估值合理性 2/10（PE 101x 无安全边际）、现金流质量 6/10（OCF/NI 0.95）、盈利质量 7/10（2026H1 非经常性占 32%）。等级：值得跟踪（非 RED 排除）</p>
+      </div>
+      <div class="card">
+        <h3>50 项投资清单 AUTO</h3>
+        <p>综合结论：<span class="badge badge-yellow">⚠️ 有条件放行</span>（人工纠偏后）</p>
+        <table>
+          <tr><td>🔴 CRITICAL</td><td>1/2 未通过*</td><td class="verdict-green">* 误报，实际 0 项真实触发</td></tr>
+          <tr><td>🟠 IMPORTANT</td><td>2/7 未通过*</td><td>* 唯一真实警示：#31 估值偏高（PE 101x）</td></tr>
+          <tr><td>⚪️ NORMAL</td><td>2/3 未通过*</td><td>* 财报 PDF 已下载、商誉 &lt;1% 为误报</td></tr>
+        </table>
+        <p style="font-size:13px;color:var(--color-ink-subtle);">* AUTO 扫描为关键词正则匹配，4 项误报（#8/#15/#28/#29/#30）经原文核验排除；无 CRITICAL 级 No-Go 触发（三年年报连贯性 ✅、管理层诚实 🟢、财务地雷无真实触发）</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 风险 -->
+  <section>
+    <h2>风险提示（芒格框架）</h2>
+    <div class="card">
+      <h3>这家公司可能怎么死？</h3>
+      <ul style="list-style:none;padding:0;">
+        <li style="padding:10px 0;border-bottom:1px solid var(--color-border);">🔴 <strong>失败剧本 A：AI 资本开支见顶 + 库存双杀</strong>——2025 年备货的 8.96 亿存货（库存量 +184%）遇需求回落计提大额减值（2023 年曾计提 1.93 亿）→ 营收利润双降（2023 年剧本：营收 -37.8%、利润 -65.3%）。概率：中</li>
+        <li style="padding:10px 0;border-bottom:1px solid var(--color-border);">🟠 <strong>失败剧本 B：利润含金量持续恶化</strong>——非经常性损益（投资收益+公允价值变动）占归母 32% 成常态，2023 年"金融资产浮盈反转"机制重演</li>
+        <li style="padding:10px 0;border-bottom:1px solid var(--color-border);">🟠 <strong>失败剧本 C：反垄断/合规事件失控</strong>——韩国调查升级为指控→罚款/禁止令或影响三星/海力士订单（境外收入 71.6%）</li>
+        <li style="padding:10px 0;">🟠 <strong>失败剧本 D：DDR6 标准话语权旁落</strong>（2029E）——失去牵头制定者地位→子代迭代落后→份额从 36.8% 滑落→毛利率塌陷</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>核心跟踪指标</h3>
+      <ol>
+        <li><strong>2026 半年报（2026 年 8 月底）</strong>：非经常性损益 6.5 亿构成（股票浮盈 vs 低波动收益）+ 存货余额是否消化至 &lt;7 亿</li>
+        <li>季度营收增速：连续两季 &lt;15% = 周期回落信号；扣非增速能否追上归母增速</li>
+        <li>MRCD/MDB 与 PCIe Retimer 出货/收入（2025 年报起停列单列披露，需跟踪季报口径变化）</li>
+        <li>DDR5 子代结构：第三/四/五子代 RCD 出货占比与均价</li>
+        <li>韩国反垄断调查进展 + 境外收入占比变化 + DRAM 现货价格与三星/海力士/美光资本开支</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 附录 -->
+  <section>
+    <h2>附录</h2>
+    <div class="card">
+      <h3>document-reader 精读摘要</h3>
+      <p>三年年报趋势：<strong>逐年向好</strong>（2023 周期底部 → 2024 +59.2% → 2025 +49.9%；ROE 4.44%→18.25%）｜ 三年连贯性：<strong>连贯，无断裂</strong>（数据衔接零重述、连续三年标准无保留审计）｜ 管理层诚实度：<strong>🟢 诚实（无 No-Go）</strong>。</p>
+      <p style="font-size:13px;color:var(--color-ink-subtle);">结构化数据无法提供的细节：2026H1 非经常性损益构成（需半年报）；MRCD/MDB 65%+、CXL MXC 92-95%、DDR5 RCD 43.5% 等份额数据未在年报出现（依赖弗若斯特沙利文非独立来源）；H 股募资 79.48 亿港元分项用途未披露；少数股东权益为负的亏损子公司主体不明。置信度自评 8/10。</p>
+    </div>
+    <div class="card">
+      <h3>财报精读 10 项检查清单</h3>
+      <table>
+        <tr><th>#</th><th>检查项</th><th>结果</th><th>说明</th></tr>
+        <tr><td>1</td><td>ROE ≥ 12%</td><td class="verdict-green">✅</td><td>18.25%（2025FY）</td></tr>
+        <tr><td>2</td><td>经营现金流 ≥ 净利 × 0.8</td><td class="verdict-green">✅</td><td>OCF/NI=0.95</td></tr>
+        <tr><td>3</td><td>资产负债率 ≤ 60%</td><td class="verdict-green">✅</td><td>6.38%，零有息负债</td></tr>
+        <tr><td>4</td><td>当期归母净利润为正</td><td class="verdict-green">✅</td><td>22.36 亿</td></tr>
+        <tr><td>5</td><td>毛利率 ≥ 25%</td><td class="verdict-green">✅</td><td>62.23%</td></tr>
+        <tr><td>6</td><td>营收趋势 ≥ 2 年连续稳健</td><td class="verdict-green">✅</td><td>22.86→36.39→54.56 亿</td></tr>
+        <tr><td>7</td><td>商誉 / 净资产 &lt; 30%</td><td class="verdict-green">✅</td><td>商誉 &lt;1%</td></tr>
+        <tr><td>8</td><td>无大额资产减值损失</td><td class="verdict-green">✅</td><td>2025 年减值净转回 +0.28 亿</td></tr>
+        <tr><td>9</td><td>审计意见标准无保留</td><td class="verdict-green">✅</td><td>安永华明连续三年</td></tr>
+        <tr><td>10</td><td>MD&A 无重大风险提示隐瞒</td><td class="verdict-green">✅</td><td>风险因素完整，🟢 诚实</td></tr>
+      </table>
+      <p><strong>10 项 ❌ = 0，全部通过</strong>。关注点（非检查表硬指标）：2026H1 利润含金量、存货 +154% 待半年报验证。</p>
+    </div>
+  </section>
+
+  <footer>
+    <p>本报告由本系统基于公开信息生成（2023/2024/2025 年报原文 + 2025 半年报 + 2026H1 业绩预增公告 + 韩国调查公告 + 多空辩论 + 研报集）。数据时点：2026-08-16。仅供内部研究参考，不构成投资建议。</p>
+    <p style="margin-top:8px;">相关笔记：澜起科技-公司研究 ｜ 2026-08-16-澜起科技-deep-read ｜ 2026-08-16-澜起科技-bull ｜ 2026-08-16-澜起科技-bear</p>
+  </footer>
+</div>
+
+<script>
+if (window.__ECHARTS_FAIL) {
+  document.querySelectorAll("[id^='chart-']").forEach(function(el){
+    el.innerHTML = '<div style="padding:16px;border:1px dashed #333;color:#666;border-radius:8px;">图表加载失败（CDN 不可用），请查阅 Markdown 报告数据表</div>';
+  });
+}
+
+var DARK = {
+  text: "#a1a1a1", axis: "#666666", split: "#1a1a1a", accent: "#0070f3"
+};
+
+// 1. 营收与归母净利润
+(function(){
+  var el = document.getElementById("chart-profit");
+  if (!el) return;
+  var c = echarts.init(el);
+  c.setOption({
+    backgroundColor: "transparent",
+    color: ["#0070f3", "#2e9e5b"],
+    tooltip: { trigger: "axis" },
+    legend: { top: 0, textStyle: { color: DARK.text } },
+    grid: { left: 60, right: 20, top: 44, bottom: 30 },
+    xAxis: { type: "category", data: ["2023", "2024", "2025", "2026H1E"], axisLine: { lineStyle: { color: DARK.axis } }, axisLabel: { color: DARK.text } },
+    yAxis: { type: "value", name: "亿元", nameTextStyle: { color: DARK.axis }, axisLabel: { color: DARK.text }, splitLine: { lineStyle: { color: DARK.split } } },
+    series: [
+      { name: "营业收入", type: "bar", barWidth: 28, data: [22.86, 36.39, 54.56, 33.35], label: { show: true, position: "top", color: DARK.text } },
+      { name: "归母净利润", type: "bar", barWidth: 28, data: [4.51, 14.12, 22.36, 20.00], label: { show: true, position: "top", color: DARK.text } }
+    ]
+  });
+})();
+
+// 2. 盈利能力趋势
+(function(){
+  var el = document.getElementById("chart-margin");
+  if (!el) return;
+  var c = echarts.init(el);
+  c.setOption({
+    backgroundColor: "transparent",
+    color: ["#0070f3", "#2e9e5b", "#fbbf24"],
+    tooltip: { trigger: "axis" },
+    legend: { top: 0, textStyle: { color: DARK.text } },
+    grid: { left: 60, right: 20, top: 44, bottom: 30 },
+    xAxis: { type: "category", data: ["2023", "2024", "2025"], axisLine: { lineStyle: { color: DARK.axis } }, axisLabel: { color: DARK.text } },
+    yAxis: { type: "value", name: "%", nameTextStyle: { color: DARK.axis }, axisLabel: { color: DARK.text }, splitLine: { lineStyle: { color: DARK.split } } },
+    series: [
+      { name: "毛利率", type: "line", smooth: true, data: [58.9, 58.2, 62.3], label: { show: true, position: "top", color: "#0070f3" } },
+      { name: "ROE", type: "line", smooth: true, data: [4.44, 13.41, 18.25], label: { show: true, position: "top", color: "#2e9e5b" } },
+      { name: "净利率", type: "line", smooth: true, data: [19.7, 38.8, 41.0], label: { show: true, position: "top", color: "#fbbf24" } }
+    ]
+  });
+})();
+
+// 3. 三情景目标价
+(function(){
+  var el = document.getElementById("chart-target");
+  if (!el) return;
+  var c = echarts.init(el);
+  var cur = 211.91;
+  c.setOption({
+    backgroundColor: "transparent",
+    color: ["#f04141", "#fbbf24", "#2e9e5b"],
+    tooltip: { trigger: "axis" },
+    legend: { top: 0, textStyle: { color: DARK.text } },
+    grid: { left: 60, right: 20, top: 44, bottom: 30 },
+    xAxis: { type: "category", data: ["悲观 103", "中性 157", "乐观 240", "当前 211.91"], axisLine: { lineStyle: { color: DARK.axis } }, axisLabel: { color: DARK.text } },
+    yAxis: { type: "value", name: "元/股", nameTextStyle: { color: DARK.axis }, axisLabel: { color: DARK.text }, splitLine: { lineStyle: { color: DARK.split } } },
+    series: [{
+      name: "目标价", type: "bar", barWidth: 48,
+      data: [
+        { value: 103, itemStyle: { color: "#f04141" } },
+        { value: 157, itemStyle: { color: "#fbbf24" } },
+        { value: 240, itemStyle: { color: "#2e9e5b" } },
+        { value: 211.91, itemStyle: { color: "#0070f3" } }
+      ],
+      label: { show: true, position: "top", color: DARK.text },
+      markLine: { data: [{ yAxis: cur, lineStyle: { color: "#0070f3", type: "dashed" } }] }
+    }]
+  });
+})();
+</script>
+
+</body>
+</html>

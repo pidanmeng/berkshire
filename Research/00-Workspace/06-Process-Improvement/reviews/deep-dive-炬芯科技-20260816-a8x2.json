@@ -1,0 +1,105 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "deep-dive-炬芯科技-20260816-a8x2",
+  "origin": "process-improvement",
+  "command": "deep-dive 炬芯科技",
+  "status": "success",
+  "issues": [
+    {
+      "problemCode": "task-subagent-type-unavailable",
+      "targetKind": "agent",
+      "targetPath": "AGENTS.md",
+      "symptom": "AGENTS.md 与 deep-dive 命令约定以专用 subagent_type（document-reader / bull-advocate / bear-advocate / info-alchemist / knowledge-architect / report-writer）触发子 Agent，但 Task 工具返回『subagent_type is not a valid value』，本次 deep-dive 全流程（Phase 1.5/1.7/2/4/5 共 6 次子任务）被迫降级为 general_purpose_task + 子 Agent 自行读 .trae/agents/*.md 定义文件兜底，且 .trae/agents 目录 Glob/LS 异常（Glob 无结果、LS 超时），仅 Read 单文件可用",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-16 首次调用 Task(subagent_type=document-reader) 返回错误『failed to call Task tool, subagent_type is not a valid value』，随后 5 次改用 general_purpose_task 成功；.trae/agents 目录 Glob 返回 No file found 而 Read .trae/agents/document-reader.md 成功，LS 超时——环境能力与 AGENTS.md 文档约定不一致", "taskId": "deep-dive-炬芯科技-20260816-a8x2" }
+      ],
+      "rootCauseHypothesis": "环境（IDE/平台）未注册 AGENTS.md 中声明的 6 个专用 subagent_type，仅提供通用 general_purpose_task；AGENTS.md/命令文档仍按专用类型编写触发路径",
+      "goal": "统一子 Agent 触发契约：注册专用 subagent_type，或修改 AGENTS.md / 命令 / 子 Agent 描述为通用 general_purpose_task + 自读定义文件模式，消除运行时降级",
+      "severity": "high",
+      "confidence": 0.95,
+      "benefit": "全流程子 Agent 路由稳定、无需每次运行时降级兜底，降低编排器在子 Agent 触发上的返工",
+      "risk": "若注册专用类型需平台侧改动；文档化模式改动需同步 AGENTS.md 与各命令",
+      "acceptance": "deep-dive 命令按文档约定直接以专用 subagent_type 触发成功，或 AGENTS.md 明确改为通用触发模式后无降级"
+    },
+    {
+      "problemCode": "evaluate-yoy-data-anomaly",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "symptom": "evaluate.ts 估值快照输出的同比增速异常：炬芯科技显示『营收同比 4149.62%、净利同比 9195.01%』，与 2025 年报真实值 +41.50%/+91.95% 相差近百倍（疑为 API 用 2026 单期对比去年同期极端低基数的口径错误）；若非 document-reader 以年报原文核算校正，将污染 processed → 知识库 → 报告整条数据链",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-16 运行 evaluate.ts --code 688049 输出营收同比 4149.62%、净利同比 9195.01%、PEG 0.00；对照 2025 年报主要会计数据（deep-read 核算）真实为 +41.50%/+91.95%，已在 processed/报告显式废弃 API 异常值。与既有候选 evaluate-yoy-data-anomaly（山金国际 2585.98%/3674.65%）、api-yoy-calculation-error、evaluate-ttm-yoy-anomaly 同根因多任务复现", "taskId": "deep-dive-炬芯科技-20260816-a8x2" }
+      ],
+      "rootCauseHypothesis": "hithink API 同比口径在多期序列下取值错误（对比基准期错位/低基数），evaluate.ts 未对异常倍数（如 >500%）做合理性校验或回退到年报口径",
+      "goal": "evaluate.ts 修复同比计算（按年报/最近年度口径）或在输出异常倍数时显式标注『口径警告：以年报为准』，防止下游直接引用",
+      "severity": "high",
+      "confidence": 0.95,
+      "benefit": "估值快照与核心指标对下游（quality-screen/processed/报告）可信，避免错误增速进入投资判断",
+      "risk": "修改数据口径可能影响既有数值，需回归多公司对比",
+      "acceptance": "evaluate.ts --code 688049 输出营收同比 ≈ +41.50%、净利同比 ≈ +91.95%（或显式标注口径警告且不输出 4 位数异常倍数）"
+    },
+    {
+      "problemCode": "stock-category-filter-ineffective",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/stock-data/stock.ts",
+      "symptom": "stock.ts --category yjyg（业绩预告）与 --category yjbb（业绩快报）过滤均未生效：返回 390 条全量公告（实际展示的均为限制性股票激励/员工持股计划等治理类公告，无一条业绩预告/快报），类别参数未起过滤作用",
+      "evidence": [
+        { "grade": "B", "detail": "2026-08-16 两次独立查询（--category yjyg --days 1100、--category yjbb --days 1100）均返回相同 390 条全量公告列表且与类别无关；叠加既有观察 stock-category-filter-ineffective（yjyg 返回 181 条全量）与 stock-category-filter-noop，为跨任务复现", "taskId": "deep-dive-炬芯科技-20260816-a8x2" }
+      ],
+      "rootCauseHypothesis": "巨潮公告类别映射（yjyg/yjbb）在 stock.ts 中未正确传递给查询参数，或接口类别字段与本地映射表不一致，导致 category 参数被忽略",
+      "goal": "修复类别过滤，使 --category yjyg/yjbb 仅返回业绩预告/业绩快报公告",
+      "severity": "medium",
+      "confidence": 0.8,
+      "benefit": "业绩预告/快报定位无需人工全量翻查，提升采集效率与准确性",
+      "risk": "类别映射调整可能影响其他公告类别查询，需回归测试",
+      "acceptance": "stock.ts --code 688049 --category yjyg --days 1100 返回结果全部为业绩预告类公告"
+    },
+    {
+      "problemCode": "checklist-auto-pdf-file-absent-false-positive",
+      "targetKind": "script",
+      "targetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "symptom": "investment-checklist-auto 扫描炬芯科技报告与笔记时 #8『财报 PDF 下载』误报（实际 pdf-texts 下 2023/2024/2025 年报 + 2025 半年报 5 份文件齐全），#30 大额减值误报（实际 2025 年减值仅 212 万/净利 1.04%），需人工逐项澄清",
+      "evidence": [
+        { "grade": "C", "detail": "2026-08-16 AUTO 扫描输出 #8 未通过（报告附录实际引用了 pdf-texts 5 份文件）、#30 未通过（deep-read 核验 212 万/净利 1.04%）；#30 与既有 checklist-auto-negation-context / checklist-auto-year-ambiguity 同型，退出码 0 放行但含误报", "taskId": "deep-dive-炬芯科技-20260816-a8x2" }
+      ],
+      "rootCauseHypothesis": "扫描器对『财报 PDF』与『大额减值』判定依赖报告文本关键词与阈值文本，未核验 pdf-texts 目录实际文件与附注减值明细",
+      "goal": "#8 改为校验 pdf-texts/<公司名>/ 目录文件存在性；#30 结合减值金额与净利比例判定，降低关键词误报",
+      "severity": "low",
+      "confidence": 0.6,
+      "benefit": "减少报告附录人工逐项澄清成本",
+      "risk": "目录校验在报告/笔记分处不同路径时可能误判，需定义清晰锚点",
+      "acceptance": "对炬芯科技扫描不再出现 #8/#30 误报"
+    },
+    {
+      "problemCode": "deep-dive-validated-link-broken",
+      "targetKind": "template",
+      "targetPath": "Research/99-Templates/company-template.md",
+      "symptom": "deep-dive 命令流程不含 Phase 3（cross-validator，无 validated 文件产出），但公司笔记模板/知识架构师强制 frontmatter 填写 validation_source: [[YYYY-MM-DD-公司名-validated]]，导致知识库笔记引用不存在的文件（与澜起/盛科等既有笔记同一约定，形成系统级断链）",
+      "evidence": [
+        { "grade": "C", "detail": "2026-08-16 炬芯科技-公司研究.md frontmatter validation_source 指向 [[2026-08-16-炬芯科技-validated]]（不存在），knowledge-architect 汇报中标注为待建双链；deep-dive 命令步骤 1-7 确无 Phase 3", "taskId": "deep-dive-炬芯科技-20260816-a8x2" }
+      ],
+      "rootCauseHypothesis": "deep-dive 命令精简了 Phase 3，但 company-template.md 与 knowledge-architect 定义仍保留 validated 引用约定，未同步适配 deep-dive 模式",
+      "goal": "deep-dive 模式笔记的 validation_source 指向 deep-read 或允许为空并注明流程；模板同步说明各模式的 validation_source 取值规则",
+      "severity": "medium",
+      "confidence": 0.7,
+      "benefit": "知识库双链健康度提升，避免失效链接进入图谱与 valuation-tracker",
+      "risk": "模板改动需同步 knowledge-architect 定义与既有笔记约定，回归成本低",
+      "acceptance": "deep-dive 模式公司笔记 validation_source 指向实际存在的文件（deep-read 或空值+注释）"
+    },
+    {
+      "problemCode": "web-fetch-jina-anti-bot",
+      "targetKind": "script",
+      "targetPath": ".trae/skills/research-web-search",
+      "symptom": "WebFetch r.jina.ai 前缀抓取东财研报详情页返回『正在进行安全验证』反爬页；改用 fetch-source.ts（readability 提取）成功。外部研报 URL 抓取存在双路径，其中 WebFetch+r.jina.ai 路径不可用",
+      "evidence": [
+        { "grade": "C", "detail": "2026-08-16 WebFetch https://r.jina.ai/https://data.eastmoney.com/... 返回安全验证页；fetch-source.ts 同 URL 成功提取正文。单次观察", "taskId": "deep-dive-炬芯科技-20260816-a8x2" }
+      ],
+      "rootCauseHypothesis": "r.jina.ai 对东财域名触发反爬（频率/IP 限制），或免费代理节点被识别",
+      "goal": "研报抓取统一走 fetch-source.ts，文档移除 r.jina.ai 建议路径或标注可用性限制",
+      "severity": "low",
+      "confidence": 0.5,
+      "benefit": "研报正文获取路径确定性提升，减少抓取失败重试",
+      "risk": "低，仅影响文档指引",
+      "acceptance": "research-web-search 文档中 r.jina.ai 路径标注或替换为 fetch-source.ts 优先"
+    }
+  ]
+}

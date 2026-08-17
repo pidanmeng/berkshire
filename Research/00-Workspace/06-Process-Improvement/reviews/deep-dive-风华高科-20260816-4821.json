@@ -1,0 +1,74 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "deep-dive-风华高科-20260816-4821",
+  "origin": "process-improvement",
+  "command": "deep-dive 风华高科",
+  "status": "success",
+  "issues": [
+    {
+      "problemCode": "qs-report-regex-range-misparse",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "quality-screen report 模式从公司笔记正则提取数据失真（与 20260816 国际复材、生益科技深调同型，第三次复发）：风华高科笔记误取 ROE=3.00%（应为 2025FY 2.29%）、OCF/NI=0.80（应为 1.49）、净利同比=+16.00%（应为 -16.02%）、商誉/净资产=30.00%（误取阈值文本『<30%』），导致 report 模式结果与 auto 模式（1.3/10 RED）口径不一致",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-16 运行 quality-screen --mode report --file 风华高科-公司研究.md 输出 ROE=3.00%、OCF/NI=0.80、商誉/净资产=30.00%，逐项与 auto 模式（ROE 2.29%、OCF/NI 1.49、商誉 0）核对不符；与生益科技（ROE 误取 8.57% 2023 值）同根因" }
+      ],
+      "rootCauseHypothesis": "report 模式按正则从 Markdown 表格提取首个匹配百分数，优先命中三年对照表首行（2023）或阈值表述（<30%）或合计行，未按最新财年与单一数值约束取值；已在国际复材、生益科技两次报告同型，属同一根因跨任务复发",
+      "goal": "report 模式仅提取最新财年单一数值并排除带阈值/带区间文本误命中；修复落地后回归多公司笔记（含三年对照表格式）",
+      "severity": "medium",
+      "confidence": 0.9,
+      "benefit": "质量筛查结论可信度提升，避免 RED/YELLOW 结论因数值提取失真误导 Phase 4 入库门禁与报告附录",
+      "risk": "修改正则需回归测试，可能影响其他公司笔记提取",
+      "acceptance": "report 模式对风华高科笔记输出 ROE=2.29%（2025FY）、OCF/NI=1.49、商誉 0，结论与 auto 模式一致（RED）"
+    },
+    {
+      "problemCode": "checklist-auto-year-ambiguity",
+      "targetKind": "script",
+      "targetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "symptom": "investment-checklist-auto 扫描误判（与 20260816 国际复材、生益科技深调同型，复发）：风华高科 #15 商誉高警示（实际商誉为 0，误取阈值/警示措辞）、#11/#26 ROE=3.0%（三年表首行 2023 值，正确 2025FY 2.29%）、#25 OCF/NI=1.00（正确 1.49）、#29 营收=18.9%（取 2026Q1 而非 2025 年报 16.54%）",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-16 运行 investment-checklist-auto.ts 扫描风华高科报告与笔记：5 项 IMPORTANT/NORMAL 误报（#15/#11/#26/#25/#29）经原文核验全部与最新财年值不符；#30 减值、#31 PE>40 真实警示与 quality-screen RED 一致" }
+      ],
+      "rootCauseHypothesis": "扫描正则从三年财务对照表提取首行数值作为当前值，未约束『最新财年/2025』关键词；与 qs-report 同根因，且对含警示措辞（『商誉/净资产 <30%』）的文本误触发",
+      "goal": "AUTO 扫描按最新财年取值，排除警示措辞误命中；修复与 qs-report 复用同一『最新财年取值』公共逻辑",
+      "severity": "medium",
+      "confidence": 0.85,
+      "benefit": "50 项投资决策清单 AUTO 扫描结论可信度提升，减少人工逐项核实成本",
+      "risk": "关键词词表扩充可能引入新误判，需测试覆盖",
+      "acceptance": "对风华高科笔记扫描输出 ROE=2.29%（2025FY）、OCF/NI=1.49 且 #15 商誉项通过"
+    },
+    {
+      "problemCode": "fetch-file-ocr-fails-annual-report",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/file-ingestion/fetch-file.ts",
+      "symptom": "fetch-file.ts 对含少量 OCR 页的 PDF 直接判失败（exit 4）并保留源文件：风华高科 2024 年报（213 页）、2025 年报（221 页）均仅封面页 1 需 OCR 即整体中止，深调流程三年年报覆盖需人工编写临时 salvage 脚本（processPdf 占位跳过 OCR 页）抢救正文",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-16 风华高科 2024/2025 年报各仅 1 页（封面）需 OCR 即失败；临时脚本 salvage-ocr.ts（processPdf + 保留 pages_needing_ocr=[1] frontmatter）成功产出正文 Markdown；生益科技 2023 年报（2 页 OCR）同型已报，属跨任务复发" }
+      ],
+      "rootCauseHypothesis": "fetch-file.ts 将 pagesNeedingOcr.length>0 视为硬失败，未提供『OCR 页占位降级』选项；年报为文本层+封面扫描页混合型，混合型处理策略缺失",
+      "goal": "新增可选参数（如 --allow-ocr-pages）在 OCR 页占比低于阈值（如 ≤5%）时以占位符标记并产出 Markdown，frontmatter 记录 pages_needing_ocr 供下游降权使用",
+      "severity": "low",
+      "confidence": 0.8,
+      "benefit": "减少深调流程对含扫描页年报的人工干预（本次 2 份年报需临时脚本），保证三年年报覆盖自动化",
+      "risk": "占位内容可能被下游误用，需在 frontmatter 与文档内显式标记",
+      "acceptance": "对含 ≤5% OCR 页的 PDF，加 --allow-ocr-pages 后正常产出 Markdown 并在 frontmatter 标注 OCR 页清单"
+    },
+    {
+      "problemCode": "quality-screen-auto-unit-doc-missing",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "quality-screen --mode auto 输入单位约定未文档化且易错：按百分比值传参（--roe 2.29 --debt 23.63）被脚本内部 ×100 放大（ROE 229%、资产负债率 2363%），需改传小数（0.0229/0.2363）才正确；负值净利增长需 --earnings-growth=-16.02 语法（-16.02 被当作选项参数歧义报错）",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-16 风华高科首次按百分比传参输出 ROE=229.00%、资产负债率=2363.00% 明显失真；改传小数后输出正确。负值参数首次触发 ERR_PARSE_ARGS_INVALID_OPTION_VALUE，需 --x=-v 语法" }
+      ],
+      "rootCauseHypothesis": "auto 模式 CLI 帮助与 AGENTS.md 用法表未明确『百分比类指标须传小数（0-1）』与『负值须用 --x=-v 语法』，编排器按直觉传百分比导致数值放大 100 倍",
+      "goal": "脚本帮助文本与 AGENTS.md 用法表补充单位约定；或 auto 模式按传入值域自适应（≥1 视为百分数，<1 视为小数），消除歧义",
+      "severity": "medium",
+      "confidence": 0.7,
+      "benefit": "降低编排器与 Agent 误用概率，避免筛查结论失真（首次失真结论 RED 1.3/10 与修正后一致纯属巧合）",
+      "risk": "自适应逻辑可能改变既有调用行为，需测试覆盖",
+      "acceptance": "auto 模式按百分比传参也能输出正确数值，或帮助文本明确标注小数约定",
+      "state": "observing"
+    }
+  ]
+}
