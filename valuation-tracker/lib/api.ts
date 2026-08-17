@@ -15,21 +15,31 @@ export function getApiBase(): string {
 
 /**
  * 服务端同域绝对地址：Node 的 fetch（undici）不支持相对 URL，
- * SSR 调 /api 时必须补全协议 + host（env API_BASE_URL 优先）。
+ * SSR 调 /api 时必须补全协议 + host。优先级：
+ *   1. env API_BASE_URL（后端单独部署时显式指定）
+ *   2. Vercel 平台注入域名（VERCEL_PROJECT_PRODUCTION_URL / VERCEL_URL，生产/预览均可用）
+ *   3. 请求头推导（本地 dev / 自托管；注意 next/headers 动态导入在生产构建不可靠，仅作兜底）
  * 客户端（浏览器）直接返回空串 → 相对路径（浏览器原生支持）。
  */
 async function getServerBase(): Promise<string> {
   if (typeof window !== "undefined") return "";
   const envBase = process.env.API_BASE_URL;
   if (envBase) return envBase.replace(/\/$/, "");
+
+  // Vercel：平台注入的部署域名（运行时可用），避免依赖 next/headers 动态导入
+  const vercelHost = process.env.VERCEL_PROJECT_PRODUCTION_URL ?? process.env.VERCEL_URL;
+  if (vercelHost) return `https://${vercelHost}`;
+
   try {
     const { headers } = await import("next/headers");
     const h = await headers();
     const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
     const proto = h.get("x-forwarded-proto") ?? "http";
     return `${proto}://${host}`;
-  } catch {
-    return ""; // 兜底：仍用相对路径（部分环境 Next 会补全）
+  } catch (err) {
+    // 暴露真实原因（页面层 catch 只显示通用文案，这里补日志便于诊断）
+    console.error("[api] getServerBase 失败（SSR fetch 将使用相对路径，Node undici 会报 Failed to parse URL）：", err);
+    return "";
   }
 }
 
