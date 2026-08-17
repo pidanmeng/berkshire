@@ -4,17 +4,24 @@
  * 三种实现，由 openDocStore() 按环境自动选择（探测链）：
  *   - FsDocStore      ：直读仓库根 Research/（dev / 自托管默认，改笔记即时生效）
  *   - SqliteDocStore  ：只读构建期产物 research-data/research.db（Vercel 函数包，内容 gzip 压缩）
- *   - TursoDocStore   ：云上无打包 DB 时降级读取 Turso（复用 TURSO_URL，需先经 sync-data --remote 完成 seed）
+ *                       Node 环境（Vercel 22.13+/24）用内置 node:sqlite（零依赖）；
+ *                       Bun / 旧 Node 回退 @libsql client file:（懒加载）。
+ *   - TursoDocStore   ：云上无打包 DB 时降级读取 Turso（复用 TURSO_URL，需先经 sync-data --remote 完成 seed）。
  *
  * 与动态状态层（server/lib/db.ts 的 price_snapshots / fundamental_checks）职责分离：
  * 本模块只服务「研究文档」读取，不触碰 tracker.db / Turso 的动态状态表。
  * 所有相对路径统一为 POSIX 分隔符（"/"），保证 Windows 本地与 Vercel Linux 行为一致。
- * 接口统一异步（@libsql/client 为异步客户端，与现有 Store 接口风格一致）。
+ * 接口统一异步。
+ *
+ * 重要：本模块**不静态导入 @libsql/client**（其 Node 入口会静态拉起 ws 传输层与原生 libsql 绑定，
+ * 在 Vercel standalone 打包中会被裁剪导致 ERR_MODULE_NOT_FOUND）。@libsql 仅以动态 import 懒加载，
+ * 只用于 Turso 兜底与 Bun 测试回退；主路径（打包 research.db）在 Node 上走内置 node:sqlite。
  */
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 import { gunzipSync } from "node:zlib";
-import { createClient, type Client, type Value } from "@libsql/client";
+// 仅类型导入（编译期擦除，不产生运行时依赖）
+import type { Client, Value } from "@libsql/client";
 
 export type DocKind = "note" | "deep-read" | "annual-report" | "screener";
 
@@ -128,9 +135,9 @@ export function createFsDocStore(root: string): DocStore {
   };
 }
 
-// ===== SqliteDocStore / TursoDocStore：@libsql/client 本地库（打包）或远端（Turso 兜底） =====
+// ===== 共享工具 =====
 
-/** BLOB 列统一转为 Buffer（@libsql/client 对 BLOB 返回 Uint8Array，兼容 ArrayBuffer / Buffer） */
+/** BLOB 列统一转为 Buffer（node:sqlite / @libsql 对 BLOB 返回 Uint8Array，兼容 ArrayBuffer / Buffer） */
 function toBuffer(v: unknown): Buffer | null {
   if (v === null || v === undefined) return null;
   if (v instanceof Uint8Array) return Buffer.from(v);
@@ -139,46 +146,158 @@ function toBuffer(v: unknown): Buffer | null {
   return null;
 }
 
+const gunzip = (v: unknown): string => {
+  const buf = toBuffer(v);
+  if (!buf) return "";
+  return gunzipSync(buf).toString("utf-8");
+};
+
+/** 文档相对路径（kind + fileName 校验，防目录穿越），跨后端统一 */
+function docRelPath(kind: "deep-read" | "annual-report", name: string, fileName: string): string | null {
+  if (basename(fileName) !== fileName) return null; // 禁止路径穿越
+  if (kind === "deep-read") return posix(join(PROCESSING_BASE, fileName));
+  return posix(join(PROCESSING_BASE, "pdf-texts", name, fileName));
+}
+
 interface ClientDocMeta {
   dbFile?: string;
   generatedAt?: string | null;
   fileCount?: number;
 }
 
-/**
- * 基于任意 @libsql/client 连接的文档存储实现（file: 本地库与 https/wss: Turso 同一套 SQL）。
- * documents 表结构与构建脚本 build-research-db.ts 保持一致；内容列为 gzip，读取时解压。
- */
-function createClientDocStore(client: Client, kind: "sqlite" | "turso", meta: ClientDocMeta): DocStore {
-  const gunzip = (v: unknown): string => {
-    const buf = toBuffer(v);
-    if (!buf) return "";
-    return gunzipSync(buf).toString("utf-8");
-  };
+/** 读取 research.db 同目录 manifest.json 的元数据（同步，describe 保持同步） */
+function readManifestMeta(dbFile: string): ClientDocMeta {
+  let generatedAt: string | null = null;
+  let fileCount: number | undefined;
+  try {
+    const manifestPath = join(resolve(dbFile, ".."), "manifest.json");
+    if (existsSync(manifestPath)) {
+      const manifest = JSON.parse(readFileSync(manifestPath, "utf-8")) as {
+        generatedAt?: string;
+        files?: Record<string, number>;
+      };
+      generatedAt = manifest.generatedAt ?? null;
+      if (manifest.files) fileCount = Object.values(manifest.files).reduce((a, b) => a + (b || 0), 0);
+    }
+  } catch {
+    generatedAt = null;
+  }
+  return { dbFile, generatedAt, fileCount };
+}
 
-  const queryPaths = async (sql: string, args: Value[]): Promise<string[]> =>
-    (await client.execute({ sql, args })).rows.map((r) => String(r.path));
+// ===== node:sqlite 后端（Vercel Node 22.13+/24 主路径，零依赖） =====
 
-  const docRelPath = (k: "deep-read" | "annual-report", name: string, fileName: string): string | null => {
-    if (basename(fileName) !== fileName) return null; // 禁止路径穿越
-    if (k === "deep-read") return posix(join(PROCESSING_BASE, fileName));
-    return posix(join(PROCESSING_BASE, "pdf-texts", name, fileName));
-  };
+/** node:sqlite 最小类型面（避免依赖 @types/node 是否包含 node:sqlite 声明） */
+interface NodeSqliteStatement {
+  all(...params: unknown[]): Record<string, unknown>[];
+  get(...params: unknown[]): Record<string, unknown> | undefined;
+}
+interface NodeSqliteDatabase {
+  prepare(sql: string): NodeSqliteStatement;
+  close(): void;
+}
+interface NodeSqliteModule {
+  DatabaseSync: new (path: string, opts?: { readOnly?: boolean }) => NodeSqliteDatabase;
+}
+
+/** 同步探测 node:sqlite 是否可用（Node 22.3+ 提供 process.getBuiltinModule；Bun 无） */
+function getNodeSqlite(): NodeSqliteModule | null {
+  try {
+    const getBuiltinModule = (process as unknown as { getBuiltinModule?: (id: string) => unknown }).getBuiltinModule;
+    const mod = getBuiltinModule?.("node:sqlite");
+    return (mod as NodeSqliteModule | undefined) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function createNodeSqliteDocStore(dbFile: string, meta: ClientDocMeta, module: NodeSqliteModule): DocStore {
+  const db = new module.DatabaseSync(dbFile, { readOnly: true });
+
+  const queryPaths = (sql: string, args: unknown[]): string[] =>
+    db.prepare(sql).all(...args).map((r) => String(r.path));
 
   return {
-    describe: () => ({ kind, dbFile: meta.dbFile, generatedAt: meta.generatedAt, fileCount: meta.fileCount }),
+    describe: () => ({ kind: "sqlite", dbFile: meta.dbFile, generatedAt: meta.generatedAt, fileCount: meta.fileCount }),
 
-    listNotePaths(): Promise<string[]> {
+    async listNotePaths(): Promise<string[]> {
       return queryPaths(`SELECT path FROM documents WHERE kind = ? ORDER BY path`, ["note"]);
     },
 
     async readFile(relPath: string): Promise<string | null> {
-      const r = await client.execute({ sql: `SELECT content FROM documents WHERE path = ?`, args: [relPath] });
+      const row = db.prepare(`SELECT content FROM documents WHERE path = ?`).get(relPath);
+      if (!row) return null;
+      return gunzip(row.content);
+    },
+
+    async listDeepReadPaths(): Promise<string[]> {
+      return queryPaths(`SELECT path FROM documents WHERE kind = ? ORDER BY path`, ["deep-read"])
+        .map((p) => basename(p));
+    },
+
+    async listAnnualReportPaths(name: string): Promise<string[]> {
+      const prefix = `${PROCESSING_BASE}/pdf-texts/${name}/`;
+      return queryPaths(
+        `SELECT path FROM documents WHERE kind = ? AND path LIKE ? ORDER BY path`,
+        ["annual-report", `${prefix}%`],
+      ).map((p) => p.slice(prefix.length));
+    },
+
+    async docSize(kind, name, fileName): Promise<number> {
+      const rel = docRelPath(kind, name, fileName);
+      if (!rel) return 0;
+      const row = db.prepare(`SELECT raw_size FROM documents WHERE path = ?`).get(rel);
+      if (!row) return 0;
+      return Number(row.raw_size ?? 0);
+    },
+
+    async readDoc(kind, name, fileName): Promise<DocRead | null> {
+      const rel = docRelPath(kind, name, fileName);
+      if (!rel) return null;
+      const row = db.prepare(`SELECT content, raw_size FROM documents WHERE path = ?`).get(rel);
+      if (!row) return null;
+      return { content: gunzip(row.content), sizeBytes: Number(row.raw_size ?? 0) };
+    },
+
+    async readScreenerJson(): Promise<string | null> {
+      const row = db
+        .prepare(`SELECT content FROM documents WHERE kind = ? AND path LIKE ? ORDER BY path DESC LIMIT 1`)
+        .get("screener", "%latest-screener.json");
+      if (!row) return null;
+      return gunzip(row.content);
+    },
+
+    close(): void {
+      db.close();
+    },
+  };
+}
+
+// ===== @libsql client 后端（Turso 兜底 / Bun 测试回退；懒加载，主路径不引入 ws） =====
+
+/** 基于懒获取的 @libsql/client 连接的文档存储实现（file: 本地库与 https/wss: Turso 同一套 SQL） */
+function createLibsqlDocStore(
+  getClient: () => Promise<Client>,
+  kind: "sqlite" | "turso",
+  meta: ClientDocMeta,
+): DocStore {
+  const queryPaths = async (sql: string, args: Value[]): Promise<string[]> =>
+    (await (await getClient()).execute({ sql, args })).rows.map((r) => String(r.path));
+
+  return {
+    describe: () => ({ kind, dbFile: meta.dbFile, generatedAt: meta.generatedAt, fileCount: meta.fileCount }),
+
+    async listNotePaths(): Promise<string[]> {
+      return queryPaths(`SELECT path FROM documents WHERE kind = ? ORDER BY path`, ["note"]);
+    },
+
+    async readFile(relPath: string): Promise<string | null> {
+      const r = await (await getClient()).execute({ sql: `SELECT content FROM documents WHERE path = ?`, args: [relPath] });
       if (r.rows.length === 0) return null;
       return gunzip(r.rows[0].content);
     },
 
-    listDeepReadPaths(): Promise<string[]> {
+    async listDeepReadPaths(): Promise<string[]> {
       return queryPaths(`SELECT path FROM documents WHERE kind = ? ORDER BY path`, ["deep-read"]).then((paths) =>
         paths.map((p) => basename(p)),
       );
@@ -196,7 +315,7 @@ function createClientDocStore(client: Client, kind: "sqlite" | "turso", meta: Cl
     async docSize(kind, name, fileName): Promise<number> {
       const rel = docRelPath(kind, name, fileName);
       if (!rel) return 0;
-      const r = await client.execute({
+      const r = await (await getClient()).execute({
         sql: `SELECT raw_size FROM documents WHERE path = ?`,
         args: [rel],
       });
@@ -207,7 +326,7 @@ function createClientDocStore(client: Client, kind: "sqlite" | "turso", meta: Cl
     async readDoc(kind, name, fileName): Promise<DocRead | null> {
       const rel = docRelPath(kind, name, fileName);
       if (!rel) return null;
-      const r = await client.execute({
+      const r = await (await getClient()).execute({
         sql: `SELECT content, raw_size FROM documents WHERE path = ?`,
         args: [rel],
       });
@@ -217,7 +336,7 @@ function createClientDocStore(client: Client, kind: "sqlite" | "turso", meta: Cl
     },
 
     async readScreenerJson(): Promise<string | null> {
-      const r = await client.execute({
+      const r = await (await getClient()).execute({
         sql: `SELECT content FROM documents WHERE kind = ? AND path LIKE ? ORDER BY path DESC LIMIT 1`,
         args: ["screener", "%latest-screener.json"],
       });
@@ -226,41 +345,40 @@ function createClientDocStore(client: Client, kind: "sqlite" | "turso", meta: Cl
     },
 
     close(): void {
-      client.close();
+      void getClient().then((c) => c.close());
     },
   };
 }
 
-/** Vercel 函数包内只读 research.db（构建期产物） */
-export function createSqliteDocStore(dbFile: string): DocStore {
-  // file: 模式为 @libsql/client 本地 SQLite 引擎（Bun 与 Node/Vercel 均已实测可用）
-  const client: Client = createClient({ url: `file:${posix(dbFile)}` });
-
-  // manifest.json 与 research.db 同目录，提供 generatedAt / 各类型计数（同步读取，describe 保持同步）
-  let generatedAt: string | null = null;
-  let fileCount: number | undefined;
-  try {
-    const manifestPath = join(resolve(dbFile, ".."), "manifest.json");
-    if (existsSync(manifestPath)) {
-      const manifest = JSON.parse(readFileSync(manifestPath, "utf-8")) as {
-        generatedAt?: string;
-        files?: Record<string, number>;
-      };
-      generatedAt = manifest.generatedAt ?? null;
-      if (manifest.files) fileCount = Object.values(manifest.files).reduce((a, b) => a + (b || 0), 0);
+/** 懒加载 @libsql/client（动态 import，避免主路径静态引入其 ws/原生绑定链） */
+function loadLibsqlClient(url: string, authToken?: string): () => Promise<Client> {
+  let client: Client | null = null;
+  return async () => {
+    if (!client) {
+      const { createClient } = await import("@libsql/client");
+      client = createClient({ url, authToken });
     }
-  } catch {
-    generatedAt = null;
-  }
+    return client;
+  };
+}
 
-  return createClientDocStore(client, "sqlite", { dbFile, generatedAt, fileCount });
+// ===== 工厂（对外） =====
+
+/** Vercel 函数包内只读 research.db（构建期产物）：Node 用内置 node:sqlite，Bun/旧 Node 回退 @libsql file: */
+export function createSqliteDocStore(dbFile: string): DocStore {
+  const meta = readManifestMeta(dbFile);
+  const nodeSqlite = getNodeSqlite();
+  if (nodeSqlite) {
+    return createNodeSqliteDocStore(dbFile, meta, nodeSqlite);
+  }
+  // Bun / 无 node:sqlite 环境 → @libsql file:（懒加载；dev 自托管不经过此路径，仅测试/部署兜底）
+  return createLibsqlDocStore(loadLibsqlClient(`file:${posix(dbFile)}`), "sqlite", meta);
 }
 
 /** Turso（libSQL 远端）只读研究文档 — 云上无打包 research.db 时的自动降级；复用 TURSO_URL / TURSO_AUTH_TOKEN */
 export function createTursoDocStore(url: string, authToken?: string): DocStore {
-  const client: Client = createClient({ url, authToken });
   // 远端无本地 manifest，generatedAt / fileCount 不展示（不影响功能）
-  return createClientDocStore(client, "turso", {});
+  return createLibsqlDocStore(loadLibsqlClient(url, authToken), "turso", {});
 }
 
 // ===== 根目录探测 + 单例 =====
