@@ -66,13 +66,16 @@ export const companiesRoutes = new Elysia({ prefix: "/api" })
     const note = await findCompany(code);
     if (!note) return { error: "not_found", message: `未找到 ${code} 的调研笔记` };
 
-    const quotes = await getQuotes([code]);
+    // 五路数据互不依赖，并行拉取（网络行情与本地 I/O 同时进行，缩短响应时间）
+    const [quotes, body, check, updates, docs] = await Promise.all([
+      getQuotes([code]),
+      readNoteBody(code),
+      (await getDb()).getCheck(code),
+      loadCompanyUpdates(code),
+      loadCompanyDocs(code),
+    ]);
     const q = quotes.get(code);
     const marketCapYi = q?.marketCap != null ? q.marketCap / 1e8 : null;
-    const body = await readNoteBody(code);
-    const check = await (await getDb()).getCheck(code);
-    const updates = await loadCompanyUpdates(code);
-    const docs = await loadCompanyDocs(code);
 
     return {
       note,

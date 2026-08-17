@@ -399,7 +399,12 @@ async function scanAnnualReports(name: string): Promise<CompanyDocMeta[]> {
 export async function loadCompanyDocs(thscode: string): Promise<{ deepReads: CompanyDocMeta[]; annualReports: CompanyDocMeta[] }> {
   const note = await findCompany(thscode);
   if (!note) return { deepReads: [], annualReports: [] };
-  return { deepReads: await scanDeepReads(note.name), annualReports: await scanAnnualReports(note.name) };
+  // 两类文档目录互不依赖，并行扫描
+  const [deepReads, annualReports] = await Promise.all([
+    scanDeepReads(note.name),
+    scanAnnualReports(note.name),
+  ]);
+  return { deepReads, annualReports };
 }
 
 /** 读取公司文档正文（kind + fileName 校验路径，防止目录穿越） */
