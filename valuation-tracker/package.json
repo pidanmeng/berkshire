@@ -39,6 +39,7 @@
     "react-resizable-panels": "^4.12.2",
     "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4.3.3",
+    "ws": "^8.21.3",
     "zustand": "^5.0.15"
   },
   "devDependencies": {
