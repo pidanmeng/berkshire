@@ -343,3 +343,57 @@ export interface QuotesResponse {
 export function getQuotes(codes: string[], signal?: AbortSignal): Promise<QuotesResponse> {
   return get(`/api/quotes?codes=${encodeURIComponent(codes.join(","))}`, signal);
 }
+
+// ===== 暗盘追踪（/api/darktrade）=====
+
+/** 暗盘单行（后端清洗后的安全结构：金额/价格单位元，涨跌幅/活跃度为百分比数） */
+export interface DarkTradeRow {
+  rank: number;
+  code: string;
+  name: string;
+  boards: string[];
+  darkFund: number;    // 暗盘资金（元）
+  brightFund: number;  // 明盘资金（元）
+  mainNet: number;     // 主力净流入（元）
+  activity: number;    // 活跃度（%）
+  price: number;       // 股价（元）
+  changePct: number;   // 涨跌幅（%）
+}
+
+export interface DarkTradeListResponse {
+  actualDate: string;  // yyyyMMdd
+  pages: number;
+  total: number;
+  fetchedAt: number;
+  items: DarkTradeRow[];
+}
+
+export interface DarkTradeHistoryPoint {
+  date: string;        // yyyyMMdd
+  row: DarkTradeRow;
+}
+
+export interface DarkTradeHistoryResponse {
+  code: string;
+  pageHint: number;    // 本次查询使用的页码 hint（SQLite 持久化）
+  endDate: string;
+  startDate: string;
+  items: DarkTradeHistoryPoint[];
+}
+
+/** 全市场暗盘列表（默认当日，可指定 yyyyMMdd） */
+export function getDarkTradeList(date?: string): Promise<DarkTradeListResponse> {
+  return get(`/api/darktrade${date ? `?date=${date}` : ""}`);
+}
+
+/** 单股暗盘历史（endDate/startDate 均为 yyyyMMdd，后端用 SQLite 页码 hint 加速并同步页码） */
+export function getDarkTradeHistory(
+  code: string,
+  opts?: { endDate?: string; startDate?: string },
+): Promise<DarkTradeHistoryResponse> {
+  const sp = new URLSearchParams();
+  if (opts?.endDate) sp.set("endDate", opts.endDate);
+  if (opts?.startDate) sp.set("startDate", opts.startDate);
+  const qs = sp.toString();
+  return get(`/api/darktrade/history/${encodeURIComponent(code)}${qs ? `?${qs}` : ""}`);
+}

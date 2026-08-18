@@ -201,6 +201,14 @@ export default function CompanyDashboard({
         <div className="flex items-center gap-2">
           <a
             className="back-link"
+            href={`/darktrade/${note.thscode.split(".")[0]}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            暗盘 ↗
+          </a>
+          <a
+            className="back-link"
             href={`/companies/${note.thscode}`}
             target="_blank"
             rel="noreferrer"

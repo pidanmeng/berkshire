@@ -11,6 +11,7 @@ import { quotesRoutes } from "./routes/quotes.ts";
 import { klineRoutes } from "./routes/kline.ts";
 import { fundamentalsRoutes } from "./routes/fundamentals.ts";
 import { screenerRoutes } from "./routes/screener.ts";
+import { darktradeRoutes } from "./routes/darktrade.ts";
 import { serverTiming } from '@elysia/server-timing'
 
 export const app = new Elysia()
@@ -27,6 +28,7 @@ export const app = new Elysia()
   .use(klineRoutes)
   .use(fundamentalsRoutes)
   .use(screenerRoutes)
+  .use(darktradeRoutes)
   .onError(({ code, error }) => {
     console.error(`[Elysia] ${code}: ${(error as Error).message}`);
     return new Response(JSON.stringify({ error: code, message: (error as Error).message }), {

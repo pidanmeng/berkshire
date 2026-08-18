@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, LayoutGrid } from "lucide-react";
+import { Home, LayoutGrid, Activity } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 const NAV_ICONS = [
   { href: "/", label: "首页", Icon: Home },
   { href: "/screener", label: "全市场初筛", Icon: LayoutGrid },
+  { href: "/darktrade", label: "暗盘追踪", Icon: Activity },
 ];
 
 export default function AppIconRail({ className }: { className?: string }) {
