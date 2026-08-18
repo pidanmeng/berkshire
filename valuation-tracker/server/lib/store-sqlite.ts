@@ -4,7 +4,7 @@
  * 注意：bun:sqlite 仅在 Bun 运行时存在；改为函数内动态 import，
  * 使 Node.js 运行环境（如 Vercel Serverless）加载本模块不报错，由 db.ts 降级到 Turso/内存。
  */
-import type { Store, PriceSnapshot, FundamentalCheck } from "./store.ts";
+import type { Store, PriceSnapshot, FundamentalCheck, Message, MessageCreateInput } from "./store.ts";
 
 export async function createSqliteStore(dbPath = "data/tracker.db"): Promise<Store> {
   // @ts-ignore bun:sqlite 仅 Bun 运行时存在；Node（Vercel）类型环境无此模块声明，由 db.ts 捕获后降级
@@ -25,6 +25,16 @@ export async function createSqliteStore(dbPath = "data/tracker.db"): Promise<Sto
       latest_report_date TEXT,
       needs_update INTEGER,
       detail TEXT
+    );
+    CREATE TABLE IF NOT EXISTS messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      type TEXT NOT NULL,
+      content TEXT NOT NULL,
+      tip_amount REAL,
+      tip_marked_at TEXT,
+      reply TEXT,
+      replied_at TEXT,
+      created_at TEXT NOT NULL
     );
   `);
 
@@ -81,5 +91,73 @@ export async function createSqliteStore(dbPath = "data/tracker.db"): Promise<Sto
         detail: row.detail,
       };
     },
+    async listRepliedMessages(): Promise<Message[]> {
+      const rows = db
+        .query(
+          `SELECT id, type, content, tip_amount, tip_marked_at, reply, replied_at, created_at
+           FROM messages WHERE replied_at IS NOT NULL
+           ORDER BY created_at DESC, id DESC`,
+        )
+        .all() as unknown as MessageRow[];
+      return rows.map(mapMessageRow);
+    },
+    async listAllMessages(): Promise<Message[]> {
+      const rows = db
+        .query(
+          `SELECT id, type, content, tip_amount, tip_marked_at, reply, replied_at, created_at
+           FROM messages ORDER BY created_at DESC, id DESC`,
+        )
+        .all() as unknown as MessageRow[];
+      return rows.map(mapMessageRow);
+    },
+    async createMessage(input: MessageCreateInput): Promise<Message> {
+      const row = db
+        .query(
+          `INSERT INTO messages (type, content, tip_amount, tip_marked_at, reply, replied_at, created_at)
+           VALUES (?, ?, NULL, NULL, NULL, NULL, ?)
+           RETURNING id, type, content, tip_amount, tip_marked_at, reply, replied_at, created_at`,
+        )
+        .get(input.type, input.content, new Date().toISOString()) as unknown as MessageRow;
+      return mapMessageRow(row);
+    },
+    async replyMessage(id: number, reply: string, tipAmount: number | null): Promise<Message | null> {
+      const now = new Date().toISOString();
+      const res = db.run(
+        `UPDATE messages SET reply = ?, replied_at = ?, tip_amount = ?, tip_marked_at = ? WHERE id = ?`,
+        [reply, now, tipAmount, tipAmount === null ? null : now, id],
+      );
+      if (res.changes === 0) return null;
+      const row = db
+        .query(
+          `SELECT id, type, content, tip_amount, tip_marked_at, reply, replied_at, created_at
+           FROM messages WHERE id = ?`,
+        )
+        .get(id) as unknown as MessageRow;
+      return mapMessageRow(row);
+    },
+  };
+}
+
+type MessageRow = {
+  id: number;
+  type: string;
+  content: string;
+  tip_amount: number | null;
+  tip_marked_at: string | null;
+  reply: string | null;
+  replied_at: string | null;
+  created_at: string;
+};
+
+function mapMessageRow(r: MessageRow): Message {
+  return {
+    id: r.id,
+    type: r.type,
+    content: r.content,
+    tip_amount: r.tip_amount === null ? null : Number(r.tip_amount),
+    tip_marked_at: r.tip_marked_at,
+    reply: r.reply,
+    replied_at: r.replied_at,
+    created_at: r.created_at,
   };
 }

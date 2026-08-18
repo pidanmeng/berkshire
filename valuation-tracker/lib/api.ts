@@ -43,15 +43,39 @@ async function getServerBase(): Promise<string> {
   }
 }
 
-async function get<T>(path: string, signal?: AbortSignal): Promise<T> {
+async function request<T>(path: string, init: RequestInit): Promise<T> {
   const base = await getServerBase();
-  const res = await fetch(`${base}${path}`, {
-    signal,
-    headers: { "Content-Type": "application/json" },
-    cache: "no-store",
-  });
-  if (!res.ok) throw new Error(`API ${res.status}: ${path}`);
+  const res = await fetch(`${base}${path}`, { cache: "no-store", ...init });
+  if (!res.ok) {
+    // 优先透出后端错误信息（如登录失败原因），便于页面提示
+    let message = `API ${res.status}: ${path}`;
+    try {
+      const data = (await res.json()) as { message?: string };
+      if (data?.message) message = data.message;
+    } catch {
+      // 非 JSON 错误体，用默认文案
+    }
+    throw new Error(message);
+  }
   return res.json() as Promise<T>;
+}
+
+async function get<T>(path: string, signal?: AbortSignal, headers?: Record<string, string>): Promise<T> {
+  return request<T>(path, {
+    signal,
+    headers: { "Content-Type": "application/json", ...headers },
+  });
+}
+
+async function post<T>(path: string, body?: unknown, token?: string | null): Promise<T> {
+  return request<T>(path, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
 }
 
 // ===== 类型（与 Elysia 返回结构对应）=====
@@ -396,4 +420,47 @@ export function getDarkTradeHistory(
   if (opts?.startDate) sp.set("startDate", opts.startDate);
   const qs = sp.toString();
   return get(`/api/darktrade/history/${encodeURIComponent(code)}${qs ? `?${qs}` : ""}`);
+}
+
+// ===== 留言板（/api/messages）=====
+
+export type MessageType = "qa" | "feature" | "wish" | "correction" | "other";
+
+/** 留言（与后端 toDto 输出对应） */
+export interface Message {
+  id: number;
+  type: MessageType;
+  content: string;
+  tipAmount: number | null;   // 打赏金额（元），null=未标注打赏
+  tipMarkedAt: string | null;
+  reply: string | null;       // 管理员回复，null=未回复
+  repliedAt: string | null;
+  createdAt: string;
+}
+
+export interface MessagesResponse {
+  messages: Message[];
+  /** 后端是否已配置 ADMIN_TOKEN（未配置时管理员登录禁用） */
+  adminEnabled: boolean;
+}
+
+/** 留言列表：all=true 返回全部（含未回复，需管理员 token），默认只返回已回复留言 */
+export function getMessages(all = false, token?: string | null): Promise<MessagesResponse> {
+  const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
+  return get(`/api/messages${all ? "?all=1" : ""}`, undefined, headers);
+}
+
+/** 游客匿名留言 */
+export function createMessage(input: { type: string; content: string }): Promise<Message> {
+  return post("/api/messages", input);
+}
+
+/** 管理员登录：密码校验通过返回 token（前端存 sessionStorage） */
+export function adminLogin(password: string): Promise<{ token: string }> {
+  return post("/api/messages/admin/login", { password });
+}
+
+/** 管理员回复 + 标注打赏金额（tipAmount 传 null 表示不标注/清除） */
+export function replyMessage(id: number, reply: string, tipAmount: number | null, token: string): Promise<Message> {
+  return post(`/api/messages/${id}/reply`, { reply, tipAmount }, token);
 }

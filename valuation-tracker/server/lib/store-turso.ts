@@ -4,7 +4,7 @@
  * Turso 与 SQLite 完全同构，表结构与 store-sqlite.ts 一致。
  */
 import { createClient } from "@libsql/client";
-import type { Store, PriceSnapshot, FundamentalCheck } from "./store.ts";
+import type { Store, PriceSnapshot, FundamentalCheck, Message, MessageCreateInput } from "./store.ts";
 
 export function createTursoStore(url: string, authToken?: string): Store {
   const client = createClient({ url, authToken });
@@ -28,6 +28,18 @@ export function createTursoStore(url: string, authToken?: string): Store {
           latest_report_date TEXT,
           needs_update INTEGER,
           detail TEXT
+        );
+      `);
+      await client.execute(`
+        CREATE TABLE IF NOT EXISTS messages (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          type TEXT NOT NULL,
+          content TEXT NOT NULL,
+          tip_amount REAL,
+          tip_marked_at TEXT,
+          reply TEXT,
+          replied_at TEXT,
+          created_at TEXT NOT NULL
         );
       `);
     })());
@@ -94,5 +106,63 @@ export function createTursoStore(url: string, authToken?: string): Store {
         detail: String(row.detail ?? ""),
       };
     },
+    async listRepliedMessages(): Promise<Message[]> {
+      await ensure();
+      const res = await client.execute({
+        sql: `SELECT id, type, content, tip_amount, tip_marked_at, reply, replied_at, created_at
+              FROM messages WHERE replied_at IS NOT NULL
+              ORDER BY created_at DESC, id DESC`,
+        args: [],
+      });
+      return res.rows.map(mapTursoMessageRow);
+    },
+    async listAllMessages(): Promise<Message[]> {
+      await ensure();
+      const res = await client.execute({
+        sql: `SELECT id, type, content, tip_amount, tip_marked_at, reply, replied_at, created_at
+              FROM messages ORDER BY created_at DESC, id DESC`,
+        args: [],
+      });
+      return res.rows.map(mapTursoMessageRow);
+    },
+    async createMessage(input: MessageCreateInput): Promise<Message> {
+      await ensure();
+      const now = new Date().toISOString();
+      const res = await client.execute({
+        sql: `INSERT INTO messages (type, content, tip_amount, tip_marked_at, reply, replied_at, created_at)
+              VALUES (?, ?, NULL, NULL, NULL, NULL, ?)
+              RETURNING id, type, content, tip_amount, tip_marked_at, reply, replied_at, created_at`,
+        args: [input.type, input.content, now],
+      });
+      return mapTursoMessageRow(res.rows[0]);
+    },
+    async replyMessage(id: number, reply: string, tipAmount: number | null): Promise<Message | null> {
+      await ensure();
+      const now = new Date().toISOString();
+      const res = await client.execute({
+        sql: `UPDATE messages SET reply = ?, replied_at = ?, tip_amount = ?, tip_marked_at = ? WHERE id = ?`,
+        args: [reply, now, tipAmount, tipAmount === null ? null : now, id],
+      });
+      if (Number(res.rowsAffected) === 0) return null;
+      const row = await client.execute({
+        sql: `SELECT id, type, content, tip_amount, tip_marked_at, reply, replied_at, created_at
+              FROM messages WHERE id = ?`,
+        args: [id],
+      });
+      return mapTursoMessageRow(row.rows[0]);
+    },
+  };
+}
+
+function mapTursoMessageRow(row: Record<string, unknown>): Message {
+  return {
+    id: Number(row.id),
+    type: String(row.type),
+    content: String(row.content),
+    tip_amount: row.tip_amount === null || row.tip_amount === undefined ? null : Number(row.tip_amount),
+    tip_marked_at: row.tip_marked_at === null ? null : String(row.tip_marked_at),
+    reply: row.reply === null ? null : String(row.reply),
+    replied_at: row.replied_at === null ? null : String(row.replied_at),
+    created_at: String(row.created_at),
   };
 }
