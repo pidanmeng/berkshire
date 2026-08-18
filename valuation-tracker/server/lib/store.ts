@@ -49,6 +49,8 @@ export interface Store {
   setCheck(check: FundamentalCheck): Promise<void>;
   /** 读基本面检测结果 */
   getCheck(thscode: string): Promise<FundamentalCheck | null>;
+  /** 批量读取全部基本面检测结果（列表接口一次取数，避免 N+1 逐公司查询） */
+  listChecks(): Promise<FundamentalCheck[]>;
   /** 全部已回复留言（公开展示），按创建时间倒序 */
   listRepliedMessages(): Promise<Message[]>;
   /** 全部留言（含未回复，管理员可见），按创建时间倒序 */
@@ -57,6 +59,8 @@ export interface Store {
   createMessage(input: MessageCreateInput): Promise<Message>;
   /** 回复留言（管理员）：reply 非空；tipAmount 可空；找不到返回 null */
   replyMessage(id: number, reply: string, tipAmount: number | null): Promise<Message | null>;
+  /** 删除留言（管理员）：找到并删除返回 true，不存在返回 false */
+  deleteMessage(id: number): Promise<boolean>;
 }
 
 /** 留言创建时间倒序比较（ISO 字符串 + id 兜底，保证同毫秒稳定排序） */
@@ -85,6 +89,9 @@ export function createMemoryStore(): Store {
     },
     async getCheck(thscode) {
       return checks.get(thscode) ?? null;
+    },
+    async listChecks() {
+      return [...checks.values()];
     },
     async listRepliedMessages() {
       return messages.filter((m) => m.replied_at !== null).sort(sortByCreatedDesc);
@@ -115,6 +122,12 @@ export function createMemoryStore(): Store {
       message.tip_amount = tipAmount;
       message.tip_marked_at = tipAmount === null ? null : now;
       return { ...message };
+    },
+    async deleteMessage(id) {
+      const idx = messages.findIndex((m) => m.id === id);
+      if (idx < 0) return false;
+      messages.splice(idx, 1);
+      return true;
     },
   };
 }

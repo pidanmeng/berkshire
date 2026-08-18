@@ -1,8 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { ScreenerRow, ScreenerResponse, ScreenPool, QuoteItem } from '@/lib/api';
-import { getScreener, getQuotes } from '@/lib/api';
+import type { ScreenerRow, ScreenerResponse, ScreenPool } from '@/lib/api';
+import { getScreener } from '@/lib/api';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import AppIconRail from './AppIconRail';
 
@@ -61,13 +61,10 @@ function SheetMetric({ label, value, color }: { label: string; value: string; co
 }
 
 /** 个股初筛信息分屏（Sheet 右侧面板）— 点击表格行打开 */
-function ScreenerRowSheet({ row, quoteFor }: { row: ScreenerRow; quoteFor: (r: ScreenerRow) => QuoteItem | undefined }) {
-  const qt = quoteFor(row);
-  const price = qt?.price ?? row.price;
-  const chg = qt?.changePct ?? row.changePct;
-  const pe = qt?.peTtm ?? row.peTtm;
-  const pb = qt?.pbMrq ?? row.pbMrq;
-  const mcap = qt?.marketCap != null ? qt.marketCap / 1e8 : row.marketCapYi;
+function ScreenerRowSheet({ row }: { row: ScreenerRow }) {
+  const pe = row.peTtm;
+  const pb = row.pbMrq;
+  const mcap = row.marketCapYi;
   const scoreColor =
     row.overallScore >= 7.5 ? 'var(--accent-success)' : row.overallScore >= 5.5 ? 'var(--accent-warning)' : 'var(--text-primary)';
 
@@ -106,21 +103,9 @@ function ScreenerRowSheet({ row, quoteFor }: { row: ScreenerRow; quoteFor: (r: S
 
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
         <section>
-          <h3 className="mb-2 text-xs font-semibold text-[var(--text-secondary)]">实时行情</h3>
-          <div className="grid grid-cols-3 gap-2">
-            <SheetMetric label="现价" value={fmtNum(price, 2)} color={chg !== null ? signColor(chg) : undefined} />
-            <SheetMetric
-              label="涨跌幅"
-              value={chg === null ? '—' : `${chg > 0 ? '+' : ''}${fmtNum(chg, 2)}%`}
-              color={signColor(chg)}
-            />
-            <SheetMetric label="市值(亿)" value={fmtYi(mcap)} />
-          </div>
-        </section>
-
-        <section>
           <h3 className="mb-2 text-xs font-semibold text-[var(--text-secondary)]">核心估值</h3>
           <div className="grid grid-cols-2 gap-2">
+            <SheetMetric label="市值(亿)" value={fmtYi(mcap)} />
             <SheetMetric label="PE(TTM)" value={fmtNum(pe, 1)} />
             <SheetMetric label="PB(MRQ)" value={fmtNum(pb, 2)} />
           </div>
@@ -203,9 +188,6 @@ export default function ScreenerDashboard({ initial }: { initial: ScreenerRespon
   const [page, setPage] = useState(1);
   const [data, setData] = useState<ScreenerResponse | null>(initial);
   const [error, setError] = useState<string | null>(null);
-  const [quoteMap, setQuoteMap] = useState<Map<string, QuoteItem>>(new Map());
-  const [quoteAt, setQuoteAt] = useState<number | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
   const [selected, setSelected] = useState<ScreenerRow | null>(null);
   const [sheetRow, setSheetRow] = useState<ScreenerRow | null>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -239,21 +221,6 @@ export default function ScreenerDashboard({ initial }: { initial: ScreenerRespon
     load();
   }, [load]);
 
-  const refreshQuotes = useCallback(async () => {
-    if (!data || data.rows.length === 0) return;
-    setRefreshing(true);
-    setError(null);
-    try {
-      const qr = await getQuotes(data.rows.map((r) => r.thscode));
-      setQuoteMap(new Map(qr.items.map((i) => [i.thscode, i])));
-      setQuoteAt(qr.fetchedAt);
-    } catch {
-      setError('实时行情刷新失败');
-    } finally {
-      setRefreshing(false);
-    }
-  }, [data]);
-
   const stats = useMemo(() => data?.stats ?? null, [data]);
   const industries = useMemo(() => data?.industries ?? [], [data]);
   const rowCount = data?.page.total ?? 0;
@@ -267,8 +234,6 @@ export default function ScreenerDashboard({ initial }: { initial: ScreenerRespon
     }
     setPage(1);
   };
-
-  const quoteFor = (r: ScreenerRow) => quoteMap.get(r.thscode);
 
   const meta = data?.meta;
 
@@ -294,13 +259,6 @@ export default function ScreenerDashboard({ initial }: { initial: ScreenerRespon
           <a href="/" className="text-[var(--text-muted)] hover:text-[var(--accent-primary)]" style={{ textDecoration: 'none' }}>
             ← 返回主看板
           </a>
-          <button
-            onClick={refreshQuotes}
-            disabled={refreshing || rowCount === 0}
-            className="border border-[var(--border-default)] bg-[var(--bg-card)] px-3 py-1.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent-primary)] disabled:opacity-40"
-          >
-            {refreshing ? '刷新中…' : '刷新实时行情'}
-          </button>
         </div>
       </header>
 
@@ -394,9 +352,7 @@ export default function ScreenerDashboard({ initial }: { initial: ScreenerRespon
             ))}
           </select>
           <span className="ml-auto text-[var(--text-muted)]">
-            {quoteAt
-              ? `行情已刷新 ${new Date(quoteAt).toLocaleTimeString('zh-CN')}`
-              : `行情时点 ${meta?.quoteAsOf ?? '—'}`}
+            {`数据时点 ${meta?.quoteAsOf ?? '—'}`}
             {' · '}共 {rowCount} 条
           </span>
         </div>
@@ -428,11 +384,7 @@ export default function ScreenerDashboard({ initial }: { initial: ScreenerRespon
             <tbody>
               {data && data.rows.length > 0 ? (
                 data.rows.map((r) => {
-                  const qt = quoteFor(r);
-                  const price = qt?.price ?? r.price;
-                  const chg = qt?.changePct ?? r.changePct;
-                  const pe = qt?.peTtm ?? r.peTtm;
-                  const mcap = qt?.marketCap != null ? qt.marketCap / 1e8 : r.marketCapYi;
+                  const mcap = r.marketCapYi;
                   return (
                     <tr
                       key={r.thscode}
@@ -446,16 +398,6 @@ export default function ScreenerDashboard({ initial }: { initial: ScreenerRespon
                         <span className="co-name">{r.name}</span>
                         <div>
                           <span className="co-code">{r.thscode}</span>
-                          {price !== null && (
-                            <span className="co-code" style={{ color: signColor(chg), marginLeft: 6 }}>
-                              {fmtNum(price, 2)}
-                            </span>
-                          )}
-                          {chg !== null && chg !== 0 && (
-                            <span className="co-code" style={{ color: signColor(chg), marginLeft: 6 }}>
-                              {chg > 0 ? '+' : ''}{fmtNum(chg, 2)}%
-                            </span>
-                          )}
                         </div>
                       </td>
                       <td><span className="text-[var(--text-secondary)]">{r.industry ?? '—'}</span></td>
@@ -463,7 +405,7 @@ export default function ScreenerDashboard({ initial }: { initial: ScreenerRespon
                       <td className="num"><span style={{ color: r.overallScore >= 7.5 ? 'var(--accent-success)' : r.overallScore >= 5.5 ? 'var(--accent-warning)' : 'var(--text-primary)' }}>{r.overallScore.toFixed(1)}</span></td>
                       <td className="num"><span className={`badge ${VERDICT_BADGE[r.verdict]}`}>{r.verdict}</span></td>
                       <td className="num">{fmtYi(mcap)}</td>
-                      <td className="num">{fmtNum(pe, 1)}</td>
+                      <td className="num">{fmtNum(r.peTtm, 1)}</td>
                       <td className="num">{fmtPct(r.roe)}</td>
                       <td className="num" style={{ color: signColor(r.revenueYoy) }}>{fmtPct(r.revenueYoy)}</td>
                       <td className="num" style={{ color: signColor(r.netProfitYoy) }}>{fmtPct(r.netProfitYoy)}</td>
@@ -550,7 +492,7 @@ export default function ScreenerDashboard({ initial }: { initial: ScreenerRespon
           side="right"
           className="w-full gap-0 border-l border-[var(--border-default)] bg-[var(--bg-card)] sm:max-w-xl"
         >
-          {sheetRow && <ScreenerRowSheet row={sheetRow} quoteFor={quoteFor} />}
+          {sheetRow && <ScreenerRowSheet row={sheetRow} />}
         </SheetContent>
       </Sheet>
     </div>

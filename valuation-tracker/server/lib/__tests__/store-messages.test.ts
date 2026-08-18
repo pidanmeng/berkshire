@@ -88,6 +88,17 @@ for (const name of ["memory", "sqlite"] as const) {
       expect(await store.replyMessage(999999, "x", null)).toBeNull();
     });
 
+    test("deleteMessage：删除后列表不再包含，不存在返回 false", async () => {
+      const store = await freshStore();
+      const m = await store.createMessage({ type: "qa", content: "待删除" });
+      expect(await store.deleteMessage(m.id)).toBe(true);
+      const all = await store.listAllMessages();
+      expect(all.find((x) => x.id === m.id)).toBeUndefined();
+      const replied = await store.listRepliedMessages();
+      expect(replied.find((x) => x.id === m.id)).toBeUndefined();
+      expect(await store.deleteMessage(m.id)).toBe(false);
+    });
+
     test("列表按创建时间倒序", async () => {
       const store = await freshStore();
       const a = await store.createMessage({ type: "other", content: "第一条" });

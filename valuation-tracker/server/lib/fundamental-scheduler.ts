@@ -47,6 +47,8 @@ export function startFundamentalScheduler(intervalMs = DEFAULT_INTERVAL_MS): () 
           // 单家公司失败不阻断整体
           console.error(`[fundamental-scheduler] ${n.thscode} 检测失败：`, (e as Error).message);
         }
+        // 错峰：每家公司间隔约 150ms，降低对巨潮/cninfo 的并发冲击（上游连接被重置的常见诱因）
+        await new Promise((r) => setTimeout(r, 150));
       }
       console.log(
         `[fundamental-scheduler] 完成：${checked} 家检测 / ${skipped} 家跳过，耗时 ${((Date.now() - startedAt) / 1000).toFixed(1)}s`,

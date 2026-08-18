@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Check, Search, X } from "lucide-react";
+import { Check, Search, Star, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -44,24 +44,37 @@ export function buildTagStats(items: CompanyItem[]): TagStat[] {
 const fmtPct = (v: number | null) => (v == null ? "—" : `${v > 0 ? "+" : ""}${v.toFixed(2)}%`);
 const chgClass = (v: number | null) => (v == null ? "text-slate-400" : v > 0 ? "text-[var(--fin-up)]" : v < 0 ? "text-[var(--fin-down)]" : "text-slate-400");
 
-export default function TagSidebar({ tags }: { tags: TagStat[] }) {
+export default function TagSidebar({
+  tags,
+  favorites,
+  favoriteSet,
+}: {
+  tags: TagStat[];
+  favorites: string[];
+  favoriteSet: Set<string>;
+}) {
   const [query, setQuery] = useState("");
   const selected = useDashboardStore((s) => s.selectedTags);
   const toggleTag = useDashboardStore((s) => s.toggleTag);
   const clearTags = useDashboardStore((s) => s.clearTags);
+  const watchlistOnly = useDashboardStore((s) => s.watchlistOnly);
+  const toggleWatchlistOnly = useDashboardStore((s) => s.toggleWatchlistOnly);
   const selectedSet = useMemo(() => new Set(selected), [selected]);
 
-  const base = query.trim()
-    ? tags.filter((t) => t.name.toLowerCase().includes(query.toLowerCase()))
-    : tags;
+  // 标签列表（取消「选中置顶」逻辑，保持原始顺序；搜索仅过滤名称）
+  const visible = useMemo(
+    () =>
+      query.trim()
+        ? tags.filter((t) => t.name.toLowerCase().includes(query.trim().toLowerCase()))
+        : tags,
+    [tags, query],
+  );
 
-  // 多选时选中的标签置顶
-  const visible = useMemo(() => {
-    if (selected.length === 0) return base;
-    const pinned = base.filter((t) => selectedSet.has(t.name));
-    const rest = base.filter((t) => !selectedSet.has(t.name));
-    return [...pinned, ...rest];
-  }, [base, selected, selectedSet]);
+  // 自选股计数：当前列表中出现过的收藏公司数（永远置顶行）
+  const favCount = useMemo(
+    () => favorites.filter((c) => favoriteSet.has(c)).length,
+    [favorites, favoriteSet],
+  );
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -95,6 +108,26 @@ export default function TagSidebar({ tags }: { tags: TagStat[] }) {
       <div className="min-h-0 flex-1">
         <ScrollArea className="h-full">
           <div className="space-y-0.5 px-2 pb-3">
+            {/* 自选股：永远置顶（不受搜索影响） */}
+            <button
+              onClick={toggleWatchlistOnly}
+              className={cn(
+                "flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-[13px] transition-colors",
+                watchlistOnly
+                  ? "bg-[rgba(242,193,78,0.12)] text-[var(--accent-primary)]"
+                  : "text-foreground hover:bg-muted/40",
+              )}
+              title="仅显示自选股"
+            >
+              <Star
+                className={cn("size-3.5 shrink-0", watchlistOnly ? "fill-current" : "")}
+                aria-hidden
+              />
+              <span className="flex-1 truncate font-medium">自选股</span>
+              <span className="font-mono text-[11px] text-muted-foreground">{favCount}</span>
+            </button>
+            <div className="mx-1 my-1 border-t border-border" />
+
             {visible.length === 0 && (
               <div className="px-2 py-6 text-center text-xs text-muted-foreground">无匹配标签</div>
             )}

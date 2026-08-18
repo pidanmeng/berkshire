@@ -9,19 +9,21 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import type { CompanyItem } from "@/lib/api";
 import { useDashboardStore } from "@/lib/dashboard-store";
-import { useFavorites } from "@/hooks/use-favorites";
 
 const fmtPct = (v: number | null) => (v == null ? "—" : `${v > 0 ? "+" : ""}${v.toFixed(2)}%`);
 
 export default function CompanySidebar({
   items,
   mode,
+  favoriteSet,
+  toggleFavorite,
 }: {
   items: CompanyItem[];
   mode: "tag" | "all";
+  favoriteSet: Set<string>;
+  toggleFavorite: (code: string) => void;
 }) {
   const [query, setQuery] = useState("");
-  const { favorites, favoriteSet, toggleFavorite } = useFavorites();
   const selected = useDashboardStore((s) => s.selectedCompanies);
   const multiSelect = useDashboardStore((s) => s.companyMultiSelect);
   const toggleCompany = useDashboardStore((s) => s.toggleCompany);
@@ -51,19 +53,14 @@ export default function CompanySidebar({
     });
   }, [items, query]);
 
-  // 多选时选中的公司置顶；单选时自选股收藏置顶（均保持其余公司原始顺序）
+  // 取消「多选置顶」：多选时不改变列表顺序；单选模式保留收藏置顶（其余保持原始顺序）
   const visible = useMemo(() => {
-    if (multiSelect) {
-      if (selected.length === 0) return base;
-      const pinned = base.filter((it) => selectedSet.has(it.thscode));
-      const rest = base.filter((it) => !selectedSet.has(it.thscode));
-      return [...pinned, ...rest];
-    }
-    if (favorites.length === 0) return base;
+    if (multiSelect) return base;
+    if (favoriteSet.size === 0) return base;
     const pinned = base.filter((it) => favoriteSet.has(it.thscode));
     const rest = base.filter((it) => !favoriteSet.has(it.thscode));
     return [...pinned, ...rest];
-  }, [base, selected, selectedSet, multiSelect, favorites, favoriteSet]);
+  }, [base, multiSelect, favoriteSet]);
 
   const allSelected = visible.length > 0 && visible.every((it) => selectedSet.has(it.thscode));
 

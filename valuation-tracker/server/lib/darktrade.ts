@@ -92,6 +92,13 @@ export function shiftDate(dateStr: string, days: number): string {
   return fmtDate(d);
 }
 
+/** 是否 A 股交易日（仅按周末判断；节假日由上游空响应自然跳过） */
+export function isTradingDay(dateStr: string): boolean {
+  const d = parseDate(dateStr);
+  const day = d.getDay();
+  return day !== 0 && day !== 6;
+}
+
 /** 今天（本地时区）yyyyMMdd */
 export function todayStr(): string {
   return fmtDate(new Date());
@@ -218,6 +225,8 @@ export async function fetchStockHistory(
   let consecutiveMiss = 0;
 
   for (let d = endDate; d >= startDate; d = shiftDate(d, -1)) {
+    // 非交易日（周末）无需请求上游，直接跳过；节假日由上游空响应自然跳过
+    if (!isTradingDay(d)) continue;
     let found = await findRowOnPage(code, d, hint);
     if (!found && hint > 1) {
       found = await findRowOnPage(code, d, hint - 1);

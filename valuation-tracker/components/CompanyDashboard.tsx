@@ -175,6 +175,12 @@ export default function CompanyDashboard({
       ? Math.min(100, Math.max(0, ((marketCapYi - capMin) / capSpan) * 100))
       : null;
 
+  // 目标市值 → 每股价格（总股本可算时展示，否则 —）
+  const fmtSharePrice = (capYi: number | null | undefined) =>
+    capYi == null || totalSharesYi == null || totalSharesYi <= 0
+      ? '—'
+      : `${(capYi / totalSharesYi).toFixed(2)} 元`;
+
   return (
     <div className="detail-grid">
       {/* 头部 */}
@@ -321,6 +327,9 @@ export default function CompanyDashboard({
                   >
                     {fmtYi(cap.pessimistic)}
                   </b>
+                  <span className="ml-1 font-mono text-[var(--text-muted)]">
+                    （{fmtSharePrice(cap.pessimistic)}）
+                  </span>
                 </span>
                 <span>
                   合理{' '}
@@ -332,6 +341,9 @@ export default function CompanyDashboard({
                   >
                     {fmtYi(cap.neutral)}
                   </b>
+                  <span className="ml-1 font-mono text-[var(--text-muted)]">
+                    （{fmtSharePrice(cap.neutral)}）
+                  </span>
                 </span>
                 <span>
                   乐观{' '}
@@ -343,6 +355,9 @@ export default function CompanyDashboard({
                   >
                     {fmtYi(cap.optimistic)}
                   </b>
+                  <span className="ml-1 font-mono text-[var(--text-muted)]">
+                    （{fmtSharePrice(cap.optimistic)}）
+                  </span>
                 </span>
               </div>
               <div className="cap-bar">

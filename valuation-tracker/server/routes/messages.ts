@@ -5,6 +5,7 @@
  * POST /api/messages            → 游客匿名留言（type + content）
  * POST /api/messages/admin/login → 管理员密码校验，返回 token（前端存 sessionStorage）
  * POST /api/messages/:id/reply  → 管理员回复 + 标注打赏金额（Bearer token）
+ * DELETE /api/messages/:id      → 管理员删除留言（Bearer token）
  */
 import { Elysia, t } from "elysia";
 import type { Message } from "../lib/store.ts";
@@ -89,6 +90,24 @@ export const messagesRoutes = new Elysia({ prefix: "/api" })
       return { token: issueAdminToken() };
     },
     { body: t.Object({ password: t.String() }) },
+  )
+  .delete(
+    "/messages/:id",
+    async ({ params, headers, set }) => {
+      const token = bearerToken((headers as Record<string, string | undefined>).authorization);
+      if (!verifyAdminToken(token)) {
+        set.status = 401;
+        return { error: "UNAUTHORIZED", message: "管理员验证失败，请重新登录" };
+      }
+      const store = await getDb();
+      const deleted = await store.deleteMessage(params.id);
+      if (!deleted) {
+        set.status = 404;
+        return { error: "NOT_FOUND", message: "留言不存在" };
+      }
+      return { ok: true };
+    },
+    { params: t.Object({ id: t.Numeric() }) },
   )
   .post(
     "/messages/:id/reply",

@@ -141,6 +141,22 @@ describe("留言板 API", () => {
     expect(badTip.status).toBe(400);
   });
 
+  test("管理员删除留言：无 token 401、带 token 200、删除后公开列表不可见、不存在 404", async () => {
+    const created = (await (await call("POST", "/api/messages", { body: { type: "other", content: "待删除" } })).json()) as { id: number };
+    const noAuth = await call("DELETE", `/api/messages/${created.id}`);
+    expect(noAuth.status).toBe(401);
+
+    const token = await login();
+    const del = await call("DELETE", `/api/messages/${created.id}`, { token });
+    expect(del.status).toBe(200);
+
+    const pub = (await (await call("GET", "/api/messages")).json()) as { messages: { id: number }[] };
+    expect(pub.messages.find((m) => m.id === created.id)).toBeUndefined();
+
+    const missing = await call("DELETE", `/api/messages/${created.id}`, { token });
+    expect(missing.status).toBe(404);
+  });
+
   test("未配置 ADMIN_TOKEN 时登录返回明确提示（503）", async () => {
     delete process.env.ADMIN_TOKEN;
     try {

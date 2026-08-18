@@ -95,16 +95,16 @@ export function createTursoStore(url: string, authToken?: string): Store {
         args: [thscode],
       });
       const row = res.rows[0];
-      if (!row) return null;
-      const nu = row.needs_update;
-      return {
-        thscode: String(row.thscode),
-        last_checked_at: String(row.last_checked_at),
-        latest_report_title: String(row.latest_report_title ?? ""),
-        latest_report_date: String(row.latest_report_date ?? ""),
-        needs_update: nu === null ? null : nu === 1,
-        detail: String(row.detail ?? ""),
-      };
+      return row ? mapFundamentalRow(row) : null;
+    },
+    async listChecks(): Promise<FundamentalCheck[]> {
+      await ensure();
+      const res = await client.execute({
+        sql: `SELECT thscode, last_checked_at, latest_report_title, latest_report_date, needs_update, detail
+              FROM fundamental_checks`,
+        args: [],
+      });
+      return res.rows.map(mapFundamentalRow);
     },
     async listRepliedMessages(): Promise<Message[]> {
       await ensure();
@@ -151,6 +151,26 @@ export function createTursoStore(url: string, authToken?: string): Store {
       });
       return mapTursoMessageRow(row.rows[0]);
     },
+    async deleteMessage(id: number): Promise<boolean> {
+      await ensure();
+      const res = await client.execute({
+        sql: `DELETE FROM messages WHERE id = ?`,
+        args: [id],
+      });
+      return Number(res.rowsAffected) > 0;
+    },
+  };
+}
+
+function mapFundamentalRow(row: Record<string, unknown>): FundamentalCheck {
+  const nu = row.needs_update;
+  return {
+    thscode: String(row.thscode),
+    last_checked_at: String(row.last_checked_at),
+    latest_report_title: String(row.latest_report_title ?? ""),
+    latest_report_date: String(row.latest_report_date ?? ""),
+    needs_update: nu === null || nu === undefined ? null : nu === 1,
+    detail: String(row.detail ?? ""),
   };
 }
 

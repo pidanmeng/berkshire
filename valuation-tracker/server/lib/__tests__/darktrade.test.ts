@@ -16,6 +16,7 @@ import {
   parseDate,
   shiftDate,
   todayStr,
+  isTradingDay,
   mapRawToRow,
   type DarkTradeRawItem,
 } from "../darktrade.ts";

@@ -1,13 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Coffee, Lock, LogOut, MessageSquare, Send } from "lucide-react";
+import { Coffee, Lock, LogOut, MessageSquare, Send, Trash2 } from "lucide-react";
 import AppIconRail from "./AppIconRail";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import type { Message, MessageType, MessagesResponse } from "@/lib/api";
-import { getMessages, createMessage, adminLogin, replyMessage } from "@/lib/api";
+import { getMessages, createMessage, adminLogin, replyMessage, deleteMessage } from "@/lib/api";
 
 const TOKEN_KEY = "vt-admin-token";
 
@@ -37,7 +37,7 @@ function fmtTime(iso: string): string {
 /** 留言输入框附近的打赏引导（与「请我喝杯咖啡」同款图片与文案） */
 function DonateGuide() {
   return (
-    <div className="rounded-lg border border-[var(--border-default)] bg-[var(--bg-elevated)] p-4">
+    <div className="border border-[var(--border-default)] bg-[var(--bg-elevated)] p-4">
       <p className="flex items-center gap-1.5 text-xs leading-relaxed text-[var(--text-secondary)]">
         <Coffee className="size-3.5 shrink-0 text-[var(--accent-primary)]" />
         每次调研一只股票需要花费约
@@ -50,7 +50,7 @@ function DonateGuide() {
           <img
             src="/donate/wechat-pay.png"
             alt="微信收款码"
-            className="h-28 w-28 border border-[var(--border-subtle)] object-contain"
+            className="w-50 border border-[var(--border-subtle)] object-contain"
           />
           <figcaption className="text-[11px] text-[var(--text-muted)]">微信收款码</figcaption>
         </figure>
@@ -59,7 +59,7 @@ function DonateGuide() {
           <img
             src="/donate/wechat-friend.png"
             alt="微信添加好友二维码"
-            className="h-28 w-28 border border-[var(--border-subtle)] object-contain"
+            className="w-50 border border-[var(--border-subtle)] object-contain"
           />
           <figcaption className="text-[11px] text-[var(--text-muted)]">微信添加好友</figcaption>
         </figure>
@@ -75,22 +75,25 @@ function DonateGuide() {
   );
 }
 
-/** 单条留言卡片（管理员模式下额外提供回复 + 打赏标注表单） */
+/** 单条留言卡片（管理员模式下额外提供回复 + 打赏标注 + 删除） */
 function MessageItem({
   msg,
   admin,
   token,
   onReplied,
+  onDeleted,
 }: {
   msg: Message;
   admin: boolean;
   token: string | null;
   onReplied: (updated: Message) => void;
+  onDeleted: (id: number) => void;
 }) {
   const [replyDraft, setReplyDraft] = useState(msg.reply ?? "");
   const [tipDraft, setTipDraft] = useState(msg.tipAmount !== null ? String(msg.tipAmount) : "");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const handleSave = async () => {
     const reply = replyDraft.trim();
@@ -119,22 +122,35 @@ function MessageItem({
     }
   };
 
+  const handleDelete = async () => {
+    if (!window.confirm(`确定删除这条留言吗？（id=${msg.id}）`)) return;
+    setDeleting(true);
+    setSaveError(null);
+    try {
+      await deleteMessage(msg.id, token ?? "");
+      onDeleted(msg.id);
+    } catch (e) {
+      setSaveError((e as Error).message);
+      setDeleting(false);
+    }
+  };
+
   return (
-    <article className="rounded-lg border border-[var(--border-default)] bg-[var(--bg-card)] p-4">
+    <article className="border border-[var(--border-default)] bg-[var(--bg-card)] p-4">
       <div className="flex flex-wrap items-center gap-2">
-        <span className={cn("rounded px-2 py-0.5 text-[11px] font-semibold", TYPE_BADGE[msg.type])}>
+        <span className={cn("px-2 py-0.5 text-[11px] font-semibold", TYPE_BADGE[msg.type])}>
           {TYPE_OPTIONS.find((t) => t.key === msg.type)?.label ?? msg.type}
         </span>
         <span className="font-mono text-[11px] text-[var(--text-muted)]">{fmtTime(msg.createdAt)}</span>
         {msg.tipAmount !== null && (
-          <span className="rounded bg-[rgba(242,193,78,0.12)] px-2 py-0.5 text-[11px] font-semibold text-[var(--accent-primary)]">
+          <span className="bg-[rgba(242,193,78,0.12)] px-2 py-0.5 text-[11px] font-semibold text-[var(--accent-primary)]">
             已打赏 ¥{msg.tipAmount}
           </span>
         )}
         {admin && (
           <span
             className={cn(
-              "rounded px-2 py-0.5 text-[11px] font-semibold",
+              "px-2 py-0.5 text-[11px] font-semibold",
               msg.reply === null
                 ? "bg-[rgba(251,191,36,0.12)] text-[var(--accent-warning)]"
                 : "bg-[rgba(52,211,153,0.12)] text-[var(--accent-success)]",
@@ -143,12 +159,26 @@ function MessageItem({
             {msg.reply === null ? "待回复" : "已回复"}
           </span>
         )}
+        {admin && (
+          <Button
+            type="button"
+            variant="outline"
+            size="xs"
+            className="ml-auto"
+            onClick={handleDelete}
+            disabled={deleting}
+            title="删除留言"
+          >
+            <Trash2 className="size-3.5" />
+            {deleting ? "删除中…" : "删除"}
+          </Button>
+        )}
       </div>
 
       <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-[var(--text-primary)]">{msg.content}</p>
 
       {msg.reply !== null && (
-        <div className="mt-3 rounded border-l-2 border-[var(--accent-primary)] bg-[var(--bg-elevated)] px-3 py-2">
+        <div className="mt-3 border-l-2 border-[var(--accent-primary)] bg-[var(--bg-elevated)] px-3 py-2">
           <div className="text-[11px] font-semibold text-[var(--accent-primary)]">我的回复</div>
           <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-[var(--text-secondary)]">{msg.reply}</p>
         </div>
@@ -297,6 +327,10 @@ export default function MessagesBoard({ initial }: { initial: MessagesResponse |
     setMessages((prev) => prev.map((m) => (m.id === updated.id ? updated : m)));
   }, []);
 
+  const handleDeleted = useCallback((id: number) => {
+    setMessages((prev) => prev.filter((m) => m.id !== id));
+  }, []);
+
   return (
     <div className="flex h-dvh min-w-0 w-full overflow-hidden">
       <AppIconRail className="h-full" />
@@ -378,7 +412,7 @@ export default function MessagesBoard({ initial }: { initial: MessagesResponse |
               <h2 className="text-sm font-semibold text-[var(--text-secondary)]">发布留言</h2>
               <form
                 onSubmit={handleSubmit}
-                className="space-y-3 rounded-lg border border-[var(--border-default)] bg-[var(--bg-card)] p-4"
+                className="space-y-3 border border-[var(--border-default)] bg-[var(--bg-card)] p-4"
               >
                 <div className="flex flex-wrap gap-2">
                   {TYPE_OPTIONS.map((opt) => (
@@ -387,7 +421,7 @@ export default function MessagesBoard({ initial }: { initial: MessagesResponse |
                       type="button"
                       onClick={() => setType(opt.key)}
                       className={cn(
-                        "rounded border px-3 py-1.5 text-xs transition-colors",
+                        "border px-3 py-1.5 text-xs transition-colors",
                         type === opt.key
                           ? "border-[var(--accent-primary)] bg-[rgba(242,193,78,0.15)] font-semibold text-[var(--accent-primary)]"
                           : "border-[var(--border-default)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:border-[var(--accent-primary)] hover:text-[var(--text-primary)]",
@@ -425,13 +459,13 @@ export default function MessagesBoard({ initial }: { initial: MessagesResponse |
                 {isAdmin ? "全部留言（含未回复）" : "已回复留言"}
               </h2>
               {messages.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-[var(--border-default)] bg-[var(--bg-card)] px-4 py-10 text-center text-sm text-[var(--text-muted)]">
+                <div className="border border-dashed border-[var(--border-default)] bg-[var(--bg-card)] px-4 py-10 text-center text-sm text-[var(--text-muted)]">
                   {isAdmin ? "暂无留言" : "还没有已回复的留言，欢迎留言提问，回复后会展示在这里"}
                 </div>
               ) : (
                 <div className="space-y-3">
                   {messages.map((m) => (
-                    <MessageItem key={m.id} msg={m} admin={isAdmin} token={token} onReplied={handleReplied} />
+                    <MessageItem key={m.id} msg={m} admin={isAdmin} token={token} onReplied={handleReplied} onDeleted={handleDeleted} />
                   ))}
                 </div>
               )}

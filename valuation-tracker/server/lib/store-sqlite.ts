@@ -79,17 +79,18 @@ export async function createSqliteStore(dbPath = "data/tracker.db"): Promise<Sto
            FROM fundamental_checks WHERE thscode = ?`,
         )
         .get(thscode) as
-        | { thscode: string; last_checked_at: string; latest_report_title: string; latest_report_date: string; needs_update: number | null; detail: string }
+        | FundamentalRow
         | null;
-      if (!row) return null;
-      return {
-        thscode: row.thscode,
-        last_checked_at: row.last_checked_at,
-        latest_report_title: row.latest_report_title,
-        latest_report_date: row.latest_report_date,
-        needs_update: row.needs_update === null ? null : row.needs_update === 1,
-        detail: row.detail,
-      };
+      return row ? mapFundamentalRow(row) : null;
+    },
+    async listChecks(): Promise<FundamentalCheck[]> {
+      const rows = db
+        .query(
+          `SELECT thscode, last_checked_at, latest_report_title, latest_report_date, needs_update, detail
+           FROM fundamental_checks`,
+        )
+        .all() as unknown as FundamentalRow[];
+      return rows.map(mapFundamentalRow);
     },
     async listRepliedMessages(): Promise<Message[]> {
       const rows = db
@@ -135,6 +136,30 @@ export async function createSqliteStore(dbPath = "data/tracker.db"): Promise<Sto
         .get(id) as unknown as MessageRow;
       return mapMessageRow(row);
     },
+    async deleteMessage(id: number): Promise<boolean> {
+      const res = db.run(`DELETE FROM messages WHERE id = ?`, [id]);
+      return res.changes > 0;
+    },
+  };
+}
+
+type FundamentalRow = {
+  thscode: string;
+  last_checked_at: string;
+  latest_report_title: string;
+  latest_report_date: string;
+  needs_update: number | null;
+  detail: string;
+};
+
+function mapFundamentalRow(row: FundamentalRow): FundamentalCheck {
+  return {
+    thscode: row.thscode,
+    last_checked_at: row.last_checked_at,
+    latest_report_title: row.latest_report_title,
+    latest_report_date: row.latest_report_date,
+    needs_update: row.needs_update === null ? null : row.needs_update === 1,
+    detail: row.detail,
   };
 }
 

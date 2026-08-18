@@ -2,11 +2,14 @@
 
 import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
-import { Activity, Loader2, RefreshCw, Search } from "lucide-react";
+import { Activity, Loader2, RefreshCw, Search, Star } from "lucide-react";
 import type { DarkTradeListResponse, DarkTradeRow } from "@/lib/api";
 import { getDarkTradeList } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import AppIconRail from "./AppIconRail";
+import { useFavorites } from "@/hooks/use-favorites";
+import { codeToThscode, cn } from "@/lib/utils";
 
 const PAGE_SIZE = 50;
 
@@ -44,6 +47,8 @@ export default function DarkTradeDashboard({ initial }: { initial: DarkTradeList
   const [sortKey, setSortKey] = useState<SortKey>("changePct");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [page, setPage] = useState(1);
+  const [watchlistOnly, setWatchlistOnly] = useState(false);
+  const { favoriteSet, toggleFavorite } = useFavorites();
 
   const load = useCallback(async (dateStr?: string) => {
     setLoading(true);
@@ -60,14 +65,12 @@ export default function DarkTradeDashboard({ initial }: { initial: DarkTradeList
     }
   }, []);
 
-  // 搜索 + 排序（全量前端过滤，参考 darktrade 原实现思路）
+  // 搜索 + 自选过滤 + 排序（全量前端过滤）
   const filtered = useMemo(() => {
     const kw = q.trim().toLowerCase();
-    const rows = kw
-      ? list?.items.filter(
-          (r) => r.name.toLowerCase().includes(kw) || r.code.includes(kw),
-        ) ?? []
-      : list?.items ?? [];
+    let rows = list?.items ?? [];
+    if (watchlistOnly) rows = rows.filter((r) => favoriteSet.has(codeToThscode(r.code)));
+    if (kw) rows = rows.filter((r) => r.name.toLowerCase().includes(kw) || r.code.includes(kw));
     const dir = sortDir === "asc" ? 1 : -1;
     return [...rows].sort((a, b) => {
       const av = a[sortKey];
@@ -75,7 +78,13 @@ export default function DarkTradeDashboard({ initial }: { initial: DarkTradeList
       if (typeof av === "string" && typeof bv === "string") return av.localeCompare(bv, "zh-CN") * dir;
       return ((av as number) - (bv as number)) * dir;
     });
-  }, [list, q, sortKey, sortDir]);
+  }, [list, q, watchlistOnly, favoriteSet, sortKey, sortDir]);
+
+  // 当日列表中的自选数（用于「只看自选」开关计数）
+  const favCount = useMemo(
+    () => (list?.items ?? []).filter((r) => favoriteSet.has(codeToThscode(r.code))).length,
+    [list, favoriteSet],
+  );
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const curPage = Math.min(page, totalPages);
@@ -105,7 +114,10 @@ export default function DarkTradeDashboard({ initial }: { initial: DarkTradeList
   const todayInput = date ? `${date.slice(0, 4)}-${date.slice(4, 6)}-${date.slice(6, 8)}` : "";
 
   return (
-    <div className="flex h-dvh min-w-0 w-full flex-col overflow-hidden">
+    <div className="flex h-dvh min-w-0 w-full overflow-hidden">
+      {/* ===== 最左侧页面导航 ICON 列 ===== */}
+      <AppIconRail className="h-full" />
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border-subtle)] px-4 py-2">
         <div>
           <h1 className="text-xl font-bold text-[var(--text-primary)]">暗盘追踪</h1>
@@ -167,8 +179,8 @@ export default function DarkTradeDashboard({ initial }: { initial: DarkTradeList
           </section>
         )}
 
-        {/* 搜索 + 表格 */}
-        <div className="mb-3 flex items-center gap-2">
+        {/* 搜索 + 自选 + 表格 */}
+        <div className="mb-3 flex flex-wrap items-center gap-2">
           <div className="relative w-64">
             <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-[var(--text-muted)]" />
             <Input
@@ -181,6 +193,23 @@ export default function DarkTradeDashboard({ initial }: { initial: DarkTradeList
               className="h-8 pl-8 text-xs"
             />
           </div>
+          <button
+            onClick={() => {
+              setWatchlistOnly((v) => !v);
+              setPage(1);
+            }}
+            title="仅显示自选股"
+            className={cn(
+              "flex h-8 items-center gap-1.5 border px-3 text-xs transition-colors",
+              watchlistOnly
+                ? "border-[var(--accent-primary)] bg-[rgba(242,193,78,0.15)] font-semibold text-[var(--accent-primary)]"
+                : "border-[var(--border-default)] bg-[var(--bg-card)] text-[var(--text-secondary)] hover:border-[var(--accent-primary)] hover:text-[var(--text-primary)]",
+            )}
+          >
+            <Star className={cn("size-3.5", watchlistOnly && "fill-current")} />
+            只看自选
+            <span className="font-mono text-[11px] opacity-80">{favCount}</span>
+          </button>
           <span className="text-xs text-[var(--text-muted)]">共 {filtered.length} 条匹配</span>
         </div>
 
@@ -194,6 +223,7 @@ export default function DarkTradeDashboard({ initial }: { initial: DarkTradeList
             <table className="w-full border-collapse text-[13px]">
               <thead>
                 <tr className="border-b border-[var(--border-subtle)] bg-[var(--bg-elevated)]">
+                  <th className="w-10 px-2 py-2 text-center text-xs font-semibold text-[var(--text-secondary)]">自选</th>
                   {SORT_COLS.map((c) => (
                     <th
                       key={c.key}
@@ -210,9 +240,33 @@ export default function DarkTradeDashboard({ initial }: { initial: DarkTradeList
                 </tr>
               </thead>
               <tbody>
-                {pageRows.map((r) => (
-                  <tr key={r.code} className="border-b border-[var(--border-subtle)] transition-colors last:border-b-0 hover:bg-[var(--bg-card-hover)]">
-                    <td className="px-3 py-1.5 font-mono text-xs text-[var(--text-muted)]">{r.code}</td>
+                {pageRows.length === 0 ? (
+                  <tr>
+                    <td colSpan={SORT_COLS.length + 2} className="py-12 text-center text-sm text-[var(--text-muted)]">
+                      {watchlistOnly ? "自选中暂无当日暗盘数据，可在表格中用 ☆ 收藏" : "当前筛选无匹配"}
+                    </td>
+                  </tr>
+                ) : (
+                  pageRows.map((r) => {
+                    const isFav = favoriteSet.has(codeToThscode(r.code));
+                    return (
+                      <tr key={r.code} className="border-b border-[var(--border-subtle)] transition-colors last:border-b-0 hover:bg-[var(--bg-card-hover)]">
+                        <td className="px-2 py-1.5 text-center">
+                          <button
+                            onClick={() => toggleFavorite(codeToThscode(r.code))}
+                            title={isFav ? "取消自选" : "加入自选"}
+                            aria-label={isFav ? `取消自选 ${r.name}` : `加入自选 ${r.name}`}
+                            className={cn(
+                              "flex size-6 items-center justify-center transition-colors",
+                              isFav
+                                ? "text-[var(--accent-primary)]"
+                                : "text-[var(--text-muted)] hover:text-[var(--text-primary)]",
+                            )}
+                          >
+                            <Star className={cn("size-4", isFav && "fill-current")} />
+                          </button>
+                        </td>
+                        <td className="px-3 py-1.5 font-mono text-xs text-[var(--text-muted)]">{r.code}</td>
                     <td className="px-3 py-1.5">
                       <Link
                         href={`/darktrade/${r.code}`}
@@ -253,7 +307,9 @@ export default function DarkTradeDashboard({ initial }: { initial: DarkTradeList
                       </div>
                     </td>
                   </tr>
-                ))}
+                  );
+                  })
+                )}
               </tbody>
             </table>
 
@@ -273,6 +329,7 @@ export default function DarkTradeDashboard({ initial }: { initial: DarkTradeList
             </div>
           </div>
         )}
+      </div>
       </div>
     </div>
   );

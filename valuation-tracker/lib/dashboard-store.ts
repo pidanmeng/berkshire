@@ -9,6 +9,8 @@ interface DashboardState {
   selectedCompanies: string[];
   /** 公司列表是否多选模式（false = 单选） */
   companyMultiSelect: boolean;
+  /** 仅看自选股（行业列表顶部「自选股」开关，永远置顶） */
+  watchlistOnly: boolean;
 
   toggleTag: (tag: string) => void;
   clearTags: () => void;
@@ -21,16 +23,19 @@ interface DashboardState {
   setCompanies: (codes: string[]) => void;
   clearCompanies: () => void;
   setCompanyMultiSelect: (on: boolean) => void;
+  /** 切换「自选股」过滤开关 */
+  toggleWatchlistOnly: () => void;
 }
 
 /**
- * 页面选择状态（标签筛选 / 公司选中与单选多选模式）。
+ * 页面选择状态（标签筛选 / 公司选中与单选多选模式 / 自选股过滤）。
  * 行情数据仍由 Dashboard 轮询持有，这里只管理用户交互状态。
  */
 export const useDashboardStore = create<DashboardState>((set) => ({
   selectedTags: [],
   selectedCompanies: [],
   companyMultiSelect: false,
+  watchlistOnly: false,
 
   toggleTag: (tag) =>
     set((s) => ({
@@ -64,4 +69,6 @@ export const useDashboardStore = create<DashboardState>((set) => ({
           ? s.selectedCompanies
           : [s.selectedCompanies[0]],
     })),
+  toggleWatchlistOnly: () =>
+    set((s) => ({ watchlistOnly: !s.watchlistOnly })),
 }));

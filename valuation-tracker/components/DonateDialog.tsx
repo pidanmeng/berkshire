@@ -1,6 +1,5 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
 import { Coffee } from "lucide-react";
 import {
   Dialog,
@@ -10,9 +9,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-const OPEN_ANIM_MS = 240;
-const CLOSE_ANIM_MS = 280;
-
 type DonateDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -21,98 +17,17 @@ type DonateDialogProps = {
 /**
  * 「请我喝杯咖啡」打赏弹窗（受控组件）
  * 二维码图片路径约定：public/donate/wechat-pay.png（收款码）、wechat-friend.png（加好友）
- * 动效：打开时从按钮位置放大，关闭时缩放回按钮位置（Web Animations API，无新依赖）
+ * 无动画：打开/关闭即时显示（已按需求移除 Web Animations 缩放动画）。
  */
 export default function DonateDialog({ open, onOpenChange }: DonateDialogProps) {
-  const buttonRef = useRef<HTMLButtonElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
-  const closingRef = useRef(false);
-
-  const closeWithAnimation = useCallback(() => {
-    if (closingRef.current || !open) return;
-    closingRef.current = true;
-
-    const content = contentRef.current;
-    const button = buttonRef.current;
-    if (!content || !button) {
-      closingRef.current = false;
-      onOpenChange(false);
-      return;
-    }
-
-    const contentRect = content.getBoundingClientRect();
-    const buttonRect = button.getBoundingClientRect();
-    const dx =
-      buttonRect.left + buttonRect.width / 2 - (contentRect.left + contentRect.width / 2);
-    const dy =
-      buttonRect.top + buttonRect.height / 2 - (contentRect.top + contentRect.height / 2);
-    const scale = buttonRect.width / contentRect.width;
-
-    const anim = content.animate(
-      [
-        { transform: "translate(-50%, -50%) scale(1)", opacity: 1 },
-        {
-          transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(${scale})`,
-          opacity: 0,
-        },
-      ],
-      { duration: CLOSE_ANIM_MS, easing: "cubic-bezier(0.4, 0, 1, 1)" },
-    );
-    anim.onfinish = () => {
-      closingRef.current = false;
-      onOpenChange(false);
-    };
-    anim.oncancel = () => {
-      closingRef.current = false;
-    };
-  }, [open, onOpenChange]);
-
-  const handleOpenChange = useCallback(
-    (next: boolean) => {
-      if (next) {
-        onOpenChange(true);
-      } else {
-        closeWithAnimation();
-      }
-    },
-    [closeWithAnimation, onOpenChange],
-  );
-
   const handleDontRemind = () => {
     localStorage.setItem("donate-dont-remind", "1");
-    closeWithAnimation();
+    onOpenChange(false);
   };
-
-  useEffect(() => {
-    if (!open) return;
-    const content = contentRef.current;
-    const button = buttonRef.current;
-    if (!content || !button) return;
-
-    const contentRect = content.getBoundingClientRect();
-    const buttonRect = button.getBoundingClientRect();
-    const dx =
-      buttonRect.left + buttonRect.width / 2 - (contentRect.left + contentRect.width / 2);
-    const dy =
-      buttonRect.top + buttonRect.height / 2 - (contentRect.top + contentRect.height / 2);
-
-    const anim = content.animate(
-      [
-        {
-          transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(0.15)`,
-          opacity: 0.3,
-        },
-        { transform: "translate(-50%, -50%) scale(1)", opacity: 1 },
-      ],
-      { duration: OPEN_ANIM_MS, easing: "cubic-bezier(0.22, 1, 0.36, 1)", fill: "backwards" },
-    );
-    return () => anim.cancel();
-  }, [open]);
 
   return (
     <>
       <button
-        ref={buttonRef}
         className="donate-btn"
         type="button"
         onClick={() => onOpenChange(true)}
@@ -122,9 +37,8 @@ export default function DonateDialog({ open, onOpenChange }: DonateDialogProps) 
         请我喝杯咖啡
       </button>
 
-      <Dialog open={open} onOpenChange={handleOpenChange}>
+      <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
-          ref={contentRef}
           className="max-w-md data-[state=open]:animate-none data-[state=closed]:animate-none"
         >
           <DialogHeader>
@@ -144,7 +58,7 @@ export default function DonateDialog({ open, onOpenChange }: DonateDialogProps) 
                 <img
                   src="/donate/wechat-pay.png"
                   alt="微信收款码"
-                  className="h-40 w-40 border border-[var(--border-subtle)] object-contain"
+                  className="w-50 border border-[var(--border-subtle)] object-contain"
                 />
                 <figcaption className="text-xs text-[var(--text-muted)]">
                   微信收款码
@@ -155,7 +69,7 @@ export default function DonateDialog({ open, onOpenChange }: DonateDialogProps) 
                 <img
                   src="/donate/wechat-friend.png"
                   alt="微信添加好友二维码"
-                  className="h-40 w-40 border border-[var(--border-subtle)] object-contain"
+                  className="w-50 border border-[var(--border-subtle)] object-contain"
                 />
                 <figcaption className="text-xs text-[var(--text-muted)]">
                   微信添加好友

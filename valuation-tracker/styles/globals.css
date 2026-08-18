@@ -491,15 +491,7 @@ a.back-link:hover { color: var(--accent-primary); }
 table.data-table tr.row-selected { background: rgba(242, 193, 78, 0.1); }
 table.data-table tr.row-selected:hover { background: rgba(242, 193, 78, 0.16); }
 
-/* ===== 「请我喝杯咖啡」campaign 按钮（design.md 唯一例外：允许金色渐变 + 光晕呼吸）===== */
-@keyframes donate-glow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(242, 193, 78, 0.15), 0 0 12px 2px rgba(242, 193, 78, 0.15); }
-  50%      { box-shadow: 0 0 0 0 rgba(242, 193, 78, 0.45), 0 0 22px 5px rgba(242, 193, 78, 0.35); }
-}
-@keyframes coffee-sway {
-  0%, 100% { transform: rotate(-5deg); }
-  50%      { transform: rotate(5deg); }
-}
+/* ===== 「请我喝杯咖啡」campaign 按钮（静态金色渐变，无动画）===== */
 .donate-btn {
   display: inline-flex;
   align-items: center;
@@ -513,8 +505,22 @@ table.data-table tr.row-selected:hover { background: rgba(242, 193, 78, 0.16); }
   cursor: pointer;
   white-space: nowrap;
   transition: transform 0.15s ease, filter 0.15s ease;
-  animation: donate-glow 2.2s ease-in-out infinite;
 }
 .donate-btn:hover { filter: brightness(1.08); transform: scale(1.03); }
 .donate-btn:active { transform: scale(0.98); }
-.donate-btn .donate-icon { animation: coffee-sway 1.6s ease-in-out infinite; }
+
+/* ===== 文档页样式对齐主站（直角风格 + 左侧 Icon 列布局）===== */
+/* 仅作用于文档页（app/docs/layout.tsx 外层挂 fd-scope） */
+.fd-scope * { border-radius: 0; }
+
+/* 左侧 Icon 列（40px）让位：非 fixed 内容整体右移，fixed 侧栏/导航/悬浮控制同步右移 */
+.fd-scope { padding-left: 2.5rem; }
+.fd-scope #nd-sidebar { left: 2.5rem; }
+.fd-scope #nd-subnav { left: 2.5rem; }
+/* 收起侧栏时的左上角悬浮控制（xl 靠左定位）避开 Icon 列 */
+.fd-scope [class~="xl:start-4"] { left: calc(2.5rem + 1rem); }
+
+/* 搜索未接入索引：RootProvider 已 search.enabled=false 关闭，此处兜底隐藏任何残留入口 */
+.fd-scope [data-search-full],
+.fd-scope .nd-search,
+.fd-scope .nd-search-button { display: none; }

@@ -26,6 +26,7 @@ import CompanyDashboard from './CompanyDashboard';
 import CompareTable from './CompareTable';
 import DonateDialog from './DonateDialog';
 import { useDashboardStore } from '@/lib/dashboard-store';
+import { useFavorites } from '@/hooks/use-favorites';
 
 /** 右侧分割（公司列表 | 主内容）宽度布局持久化 key */
 const SPLIT_LAYOUT_KEY = 'valuation-split-layout';
@@ -66,9 +67,13 @@ export default function Dashboard({
   const selectedTags = useDashboardStore((s) => s.selectedTags);
   const selectedCompanies = useDashboardStore((s) => s.selectedCompanies);
   const companyMultiSelect = useDashboardStore((s) => s.companyMultiSelect);
+  const watchlistOnly = useDashboardStore((s) => s.watchlistOnly);
   const toggleCompany = useDashboardStore((s) => s.toggleCompany);
   const selectCompany = useDashboardStore((s) => s.selectCompany);
   const clearCompanies = useDashboardStore((s) => s.clearCompanies);
+
+  // 自选股收藏提升到 Dashboard 统一持有（TagSidebar 计数 + 列表过滤 + CompanySidebar 星标共享同一状态）
+  const { favorites, favoriteSet, toggleFavorite } = useFavorites();
 
   const onLayoutChanged = useCallback(
     (layout: Layout, meta: { isUserInteraction: boolean }) => {
@@ -101,13 +106,22 @@ export default function Dashboard({
 
   const tagStats = useMemo(() => buildTagStats(items), [items]);
 
+  // 自选股过滤（开关开启时只显示收藏公司），再叠加 tag 过滤
+  const watchlistFiltered = useMemo(
+    () =>
+      watchlistOnly
+        ? items.filter((it) => favoriteSet.has(it.thscode))
+        : items,
+    [items, watchlistOnly, favoriteSet],
+  );
+
   // 按 tag 过滤后的公司（无 tag 选中 = 全部）
   const tagFiltered = useMemo(
     () =>
       selectedTags.length === 0
-        ? items
-        : items.filter((it) => selectedTags.every((t) => it.tags.includes(t))),
-    [items, selectedTags],
+        ? watchlistFiltered
+        : watchlistFiltered.filter((it) => selectedTags.every((t) => it.tags.includes(t))),
+    [watchlistFiltered, selectedTags],
   );
 
   const companyByCode = useMemo(
@@ -177,7 +191,7 @@ export default function Dashboard({
         <div className="flex h-full min-h-0 w-full">
           <AppIconRail className="h-full" />
           <SidebarContent className="group-data-[collapsible=icon]:hidden min-w-0 flex-1">
-            <TagSidebar tags={tagStats} />
+            <TagSidebar tags={tagStats} favorites={favorites} favoriteSet={favoriteSet} />
           </SidebarContent>
         </div>
         <SidebarRail />
@@ -219,6 +233,8 @@ export default function Dashboard({
               <CompanySidebar
                 items={tagFiltered}
                 mode={selectedTags.length > 0 ? 'tag' : 'all'}
+                favoriteSet={favoriteSet}
+                toggleFavorite={toggleFavorite}
               />
             </ResizablePanel>
             <ResizableHandle withHandle />
@@ -341,8 +357,7 @@ export default function Dashboard({
                   fontSize: 12,
                 }}
               >
-                数据仅供研究参考，不构成投资建议。综合分按
-                .trae/scripts/valuation/composite.ts 权重加权计算。
+                数据仅供研究参考，不构成投资建议。
               </footer>
               </div>
             </ResizablePanel>

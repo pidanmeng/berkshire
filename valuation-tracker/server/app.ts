@@ -19,7 +19,7 @@ import { serverTiming } from '@elysia/server-timing'
 export const app = new Elysia()
   .use(cors({
     origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(",") : ["http://localhost:3000", "http://127.0.0.1:3000"],
-    methods: ["GET", "POST"],
+    methods: ["GET", "POST", "DELETE"],
   }))
   .use(serverTiming())
   // 性能监控：Prometheus 格式直方图（请求耗时/状态码/路径），端点 /api/metrics

@@ -78,6 +78,16 @@ async function post<T>(path: string, body?: unknown, token?: string | null): Pro
   });
 }
 
+async function del<T>(path: string, token?: string | null): Promise<T> {
+  return request<T>(path, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+}
+
 // ===== 类型（与 Elysia 返回结构对应）=====
 
 export type CapZone = "deep_undervalued" | "undervalued" | "fair" | "overvalued" | "no_anchor";
@@ -463,4 +473,9 @@ export function adminLogin(password: string): Promise<{ token: string }> {
 /** 管理员回复 + 标注打赏金额（tipAmount 传 null 表示不标注/清除） */
 export function replyMessage(id: number, reply: string, tipAmount: number | null, token: string): Promise<Message> {
   return post(`/api/messages/${id}/reply`, { reply, tipAmount }, token);
+}
+
+/** 管理员删除留言 */
+export function deleteMessage(id: number, token: string): Promise<{ ok: boolean }> {
+  return del(`/api/messages/${id}`, token);
 }

@@ -9,6 +9,7 @@ import { getQuotes } from "../lib/quote.ts";
 import { classifyCapZone } from "../lib/safety.ts";
 import { cacheGet, cacheSet } from "../lib/cache.ts";
 import { getDb } from "../lib/db.ts";
+import type { FundamentalCheck } from "../lib/store.ts";
 
 const LIST_TTL = 60_000;
 const DETAIL_TTL = 10_000;
@@ -43,11 +44,19 @@ function parseFundamentalItems(json: string | null): { title: string; date: stri
 async function buildList(): Promise<{ list: CompanyRow[]; fetchedAt: number }> {
   const notes = await loadCompanies();
   const quotes = await getQuotes(notes.map((n) => n.thscode));
+  // 批量读取基本面检测缓存（一次 listChecks 替代逐公司 getCheck，避免 N+1 放大远程库延迟）
+  let checkMap = new Map<string, FundamentalCheck>();
+  try {
+    const checks = await (await getDb()).listChecks();
+    checkMap = new Map(checks.map((c) => [c.thscode, c]));
+  } catch {
+    // 检测缓存读取失败不阻塞列表（本次视为全部无检测结果）
+  }
   const list: CompanyRow[] = [];
   for (const n of notes) {
     const q = quotes.get(n.thscode);
     const marketCapYi = q?.marketCap != null ? q.marketCap / 1e8 : null;
-    const check = await (await getDb()).getCheck(n.thscode);
+    const check = checkMap.get(n.thscode) ?? null;
     list.push({
       ...n,
       quote: {

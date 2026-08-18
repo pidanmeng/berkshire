@@ -45,22 +45,13 @@ export default function PriceChart({
     const targetPerShare = (capYi?: number) =>
       capYi !== undefined && shareYi ? +(capYi / shareYi).toFixed(1) : undefined;
 
-    // 开盘前没有当日股价时（最后一根 bar 非今日，如盘前/休市），不展示悲/合/乐分割线
-    const todayStr = new Intl.DateTimeFormat("en-CA", {
-      timeZone: "Asia/Shanghai",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).format(new Date());
-    const hasTodayBar = bars.length > 0 && bars[bars.length - 1].date === todayStr;
-
-    const markLines: MarkLineData = hasTodayBar
-      ? [
-          capLine(targetPerShare(target?.pessimistic), "#34d399", "悲观"),
-          capLine(targetPerShare(target?.neutral), "#fbbf24", "合理"),
-          capLine(targetPerShare(target?.optimistic), "#f87171", "乐观"),
-        ].filter((x): x is MarkLineData[number] => x !== null)
-      : [];
+    // 悲观/合理/乐观目标线：只要有目标市值锚点 + 总股本，就始终绘制
+    // （此前要求「最后一根 bar 为今日」才画线，导致开盘前/休市时水平线不显示）
+    const markLines: MarkLineData = [
+      capLine(targetPerShare(target?.pessimistic), "#34d399", "悲观"),
+      capLine(targetPerShare(target?.neutral), "#fbbf24", "合理"),
+      capLine(targetPerShare(target?.optimistic), "#f87171", "乐观"),
+    ].filter((x): x is MarkLineData[number] => x !== null);
 
     chart.setOption({
       backgroundColor: "transparent",
