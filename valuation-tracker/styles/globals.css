@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/preset.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -113,6 +115,33 @@
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: #1a1a1a;
   --sidebar-ring: #f2c14e;
+}
+
+/* ===== Fumadocs 文档页 —— 黑金暗色对齐（覆盖 fumadocs-ui/css/neutral.css 默认值）===== */
+.dark {
+  --color-fd-background: #000000;
+  --color-fd-foreground: #ffffff;
+  --color-fd-muted: #0a0a0a;
+  --color-fd-muted-foreground: #a1a1a1;
+  --color-fd-popover: #111111;
+  --color-fd-popover-foreground: #ffffff;
+  --color-fd-card: #0a0a0a;
+  --color-fd-card-foreground: #ffffff;
+  --color-fd-border: hsla(0, 0%, 80%, 0.16);
+  --color-fd-primary: #f2c14e;
+  --color-fd-primary-foreground: #000000;
+  --color-fd-secondary: #111111;
+  --color-fd-secondary-foreground: #ffffff;
+  --color-fd-accent: rgba(242, 193, 78, 0.12);
+  --color-fd-accent-foreground: #f2c14e;
+  --color-fd-ring: #f2c14e;
+}
+
+/* 文档侧边栏底色（neutral.css 中 .dark #nd-sidebar 特异性更高，这里同特异性后置覆盖） */
+.dark #nd-sidebar {
+  --color-fd-muted: #0a0a0a;
+  --color-fd-secondary: #111111;
+  --color-fd-muted-foreground: #a1a1a1;
 }
 
 @layer base {

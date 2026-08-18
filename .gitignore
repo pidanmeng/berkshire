@@ -41,6 +41,10 @@ workspace.json
 # Next.js
 .next
 
+# Fumadocs MDX 构建产物（next dev/build 自动生成）
+.source
+valuation-tracker/.source
+
 # Vercel Serverless 数据副本（构建期由 sync-research-data.ts 生成）
 valuation-tracker/research-data
 Code/投研/valuation-tracker/research-data

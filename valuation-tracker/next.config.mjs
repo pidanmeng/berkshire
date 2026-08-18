@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 import { fileURLToPath } from "node:url";
+import { createMDX } from "fumadocs-mdx/next";
 
 const nextConfig = {
   reactStrictMode: true,
@@ -19,4 +20,7 @@ const nextConfig = {
   serverExternalPackages: ["bun:sqlite"],
 };
 
-export default nextConfig;
+// Fumadocs MDX：编译 content/docs/ 下的 .mdx 文档并生成 .source/ 产物（next dev/build 时执行）
+const withMDX = createMDX();
+
+export default withMDX(nextConfig);
