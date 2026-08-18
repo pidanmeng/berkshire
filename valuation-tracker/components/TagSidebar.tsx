@@ -107,7 +107,7 @@ export default function TagSidebar({ tags }: { tags: TagStat[] }) {
                   className={cn(
                     "flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-[13px] transition-colors",
                     active
-                      ? "bg-[rgba(212,175,55,0.12)] text-[var(--accent-primary)]"
+                      ? "bg-[rgba(242,193,78,0.12)] text-[var(--accent-primary)]"
                       : "text-foreground hover:bg-muted/40",
                   )}
                 >

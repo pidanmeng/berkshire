@@ -143,7 +143,7 @@ export default function CompanySidebar({
                   }
                   className={cn(
                     "flex cursor-pointer items-center gap-2 px-2 py-1.5 transition-colors",
-                    checked ? "bg-[rgba(212,175,55,0.12)]" : "hover:bg-muted/40",
+                    checked ? "bg-[rgba(242,193,78,0.12)]" : "hover:bg-muted/40",
                   )}
                 >
                   {multiSelect && (

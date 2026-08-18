@@ -37,9 +37,9 @@ export default function AppIconRail({ className }: { className?: string }) {
                 <Link
                   href={href}
                   className={cn(
-                    "flex size-8 items-center justify-center rounded-md transition-colors hover:bg-muted/40",
+                    "flex size-8 items-center justify-center transition-colors hover:bg-muted/40",
                     active
-                      ? "bg-[rgba(212,175,55,0.12)] text-[var(--accent-primary)]"
+                      ? "bg-[rgba(242,193,78,0.12)] text-[var(--accent-primary)]"
                       : "text-muted-foreground hover:text-foreground",
                   )}
                   aria-label={label}

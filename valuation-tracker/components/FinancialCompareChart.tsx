@@ -47,7 +47,7 @@ export default function FinancialCompareChart({
         name: baselineLabel,
         type: "bar",
         barMaxWidth: 22,
-        itemStyle: { color: "#d4af37", borderRadius: [3, 3, 0, 0] },
+        itemStyle: { color: "#f2c14e", borderRadius: [3, 3, 0, 0] },
         label: { show: true, position: "top", color: "#a1a1a1", fontSize: 10, formatter: (p) => (p.value == null ? "" : `${p.value}`) },
         data: baseVals,
       },

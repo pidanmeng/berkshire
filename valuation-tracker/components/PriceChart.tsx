@@ -111,7 +111,7 @@ export default function PriceChart({
           xAxisIndex: 1,
           yAxisIndex: 1,
           data: volumes,
-          itemStyle: { color: "rgba(212,175,55,0.5)" },
+          itemStyle: { color: "rgba(242,193,78,0.5)" },
         },
       ],
     });

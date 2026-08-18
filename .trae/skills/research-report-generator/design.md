@@ -80,12 +80,12 @@ Depth comes from surface contrast and the `#1a1a1a` hairline, not drop shadows. 
 
 **Role:** Product-specific featured action.
 
-- background: `--color-accent` (`#d4af37`)
+- background: `--color-accent` (`#f2c14e`)
 - color: `#000000`
 - height: 40px
 - padding: 0 14px
 - border-radius: `--radius-sm` (6px)
-- hover: `--color-accent-hover` (`#e6c25c`)
+- hover: `--color-accent-hover` (`#f8d173`)
 
 ### Secondary Button and Input
 

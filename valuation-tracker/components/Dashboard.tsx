@@ -43,6 +43,25 @@ export default function Dashboard({
   const [error, setError] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // 首次访问自动弹出「请我喝杯咖啡」，勾选「不再提醒」后不再弹出
+  const [donateOpen, setDonateOpen] = useState(false);
+
+  useEffect(() => {
+    let dontRemind = false;
+    try {
+      dontRemind = window.localStorage.getItem('donate-dont-remind') === '1';
+    } catch {
+      // 存储不可用时忽略
+    }
+    if (dontRemind) return;
+    const donateTimer = window.setTimeout(() => setDonateOpen(true), 700);
+    return () => window.clearTimeout(donateTimer);
+  }, []);
+
+  const handleDonateChange = useCallback((open: boolean) => {
+    setDonateOpen(open);
+  }, []);
+
   // 选择状态（标签 / 公司 / 单选多选模式）由 zustand store 统一管理
   const selectedTags = useDashboardStore((s) => s.selectedTags);
   const selectedCompanies = useDashboardStore((s) => s.selectedCompanies);
@@ -177,7 +196,9 @@ export default function Dashboard({
               </div>
             </div>
           </div>
-          <DonateDialog />
+          <div className="flex items-center gap-2">
+            <DonateDialog open={donateOpen} onOpenChange={handleDonateChange} />
+          </div>
         </header>
         {/* ===== 右侧内容区：公司列表 | 主内容（resizable 分割）===== */}
         {/* min-h-0：允许 SidebarInset 收缩到剩余高度，min-w-0 防止 Group 撑出横向溢出 */}

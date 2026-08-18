@@ -182,7 +182,7 @@ function ScreenerRowSheet({ row, quoteFor }: { row: ScreenerRow; quoteFor: (r: S
         <div className="border-t border-[var(--border-subtle)] p-4">
           <a
             href={`/companies/${row.thscode}`}
-            className="inline-block border border-[var(--accent-primary)] bg-[rgba(212,175,55,0.12)] px-4 py-2 text-sm text-[var(--accent-primary)] hover:bg-[rgba(212,175,55,0.2)]"
+            className="inline-block border border-[var(--accent-primary)] bg-[rgba(242,193,78,0.12)] px-4 py-2 text-sm text-[var(--accent-primary)] hover:bg-[rgba(242,193,78,0.2)]"
             style={{ textDecoration: 'none' }}
           >
             查看公司研究 →
@@ -361,7 +361,7 @@ export default function ScreenerDashboard({ initial }: { initial: ScreenerRespon
                 }}
                 className={`border px-3 py-1.5 text-xs ${
                   active
-                    ? 'border-[var(--accent-primary)] bg-[rgba(212,175,55,0.18)] text-[var(--accent-primary)] font-semibold'
+                    ? 'border-[var(--accent-primary)] bg-[rgba(242,193,78,0.18)] text-[var(--accent-primary)] font-semibold'
                     : 'border-[var(--border-default)] bg-[var(--bg-card)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
               >
