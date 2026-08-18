@@ -55,6 +55,11 @@ export async function getQuotes(thscodes: string[]): Promise<Map<string, Quote>>
     getValuations(unique.join(",")),
   ]);
 
+  // 失败原因记录（含 cause 底层错误码），供 Vercel 等远端环境定位网络问题
+  if (em.status === "rejected") console.warn(`[quote] 东财市值/行情失败: ${describeError(em.reason)}`);
+  if (snap.status === "rejected") console.warn(`[quote] 同花顺行情快照失败: ${describeError(snap.reason)}`);
+  if (val.status === "rejected") console.warn(`[quote] 同花顺估值失败: ${describeError(val.reason)}`);
+
   if (em.status === "fulfilled") {
     for (const it of em.value) {
       const q = map.get(it.thscode);
@@ -101,10 +106,36 @@ export async function getKlineBars(
     // 上游 code=0 但返回空数组（静默空）也会导致图表空白，同样降级
     console.warn(`[quote] 同花顺 K 线返回空，降级东财 ${thscode}`);
   } catch (err) {
-    console.warn(`[quote] 同花顺 K 线失败，降级东财 ${thscode}:`, (err as Error).message);
+    console.warn(`[quote] 同花顺 K 线失败，降级东财 ${thscode}: ${describeError(err)}`);
   }
-  const bars = await getKlineFromEastmoney(thscode, days);
-  return { bars: bars.map(toBar), source: 'eastmoney' };
+  try {
+    const bars = await getKlineFromEastmoney(thscode, days);
+    return { bars: bars.map(toBar), source: 'eastmoney' };
+  } catch (err) {
+    console.error(`[quote] 东财 K 线也失败 ${thscode}: ${describeError(err)}`);
+    throw err;
+  }
+}
+
+/** 展开 fetch/undici 错误的 cause 链，输出底层错误码（ENOTFOUND/ETIMEDOUT/ECONNREFUSED/TLS 等） */
+function describeError(err: unknown): string {
+  if (err == null) return String(err);
+  const e = err as { message?: string; cause?: unknown };
+  let cause: { code?: unknown; message?: unknown } | undefined;
+  let cur: unknown = e.cause;
+  while (cur != null && typeof cur === "object") {
+    const c = cur as { code?: unknown; message?: unknown; cause?: unknown };
+    if (c.code !== undefined || c.message !== undefined) {
+      cause = c;
+      cur = c.cause;
+    } else {
+      break;
+    }
+  }
+  const causePart = cause && (cause.code !== undefined || cause.message !== undefined)
+    ? `cause: code=${String(cause.code ?? "")} ${String(cause.message ?? "")}`.trim()
+    : "";
+  return `${e.message ?? "fetch failed"}${causePart ? ` (${causePart})` : ""}`;
 }
 
 /** 数据源统一映射：date_ms（北京时间 0 点）+ OHLC + volume → KlineBar */

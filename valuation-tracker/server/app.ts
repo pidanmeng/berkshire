@@ -13,6 +13,7 @@ import { fundamentalsRoutes } from "./routes/fundamentals.ts";
 import { screenerRoutes } from "./routes/screener.ts";
 import { darktradeRoutes } from "./routes/darktrade.ts";
 import { messagesRoutes } from "./routes/messages.ts";
+import { diagRoutes } from "./routes/diag.ts";
 import { serverTiming } from '@elysia/server-timing'
 
 export const app = new Elysia()
@@ -31,6 +32,7 @@ export const app = new Elysia()
   .use(screenerRoutes)
   .use(darktradeRoutes)
   .use(messagesRoutes)
+  .use(diagRoutes)
   .onError(({ code, error }) => {
     console.error(`[Elysia] ${code}: ${(error as Error).message}`);
     return new Response(JSON.stringify({ error: code, message: (error as Error).message }), {
