@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ScreenerRow, ScreenerResponse, ScreenPool, QuoteItem } from '@/lib/api';
 import { getScreener, getQuotes } from '@/lib/api';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import AppIconRail from './AppIconRail';
 
 const POOL_TABS: { key: ScreenPool | 'all'; label: string; dot: string }[] = [
   { key: 'all', label: '全部', dot: '' },
@@ -181,7 +182,7 @@ function ScreenerRowSheet({ row, quoteFor }: { row: ScreenerRow; quoteFor: (r: S
         <div className="border-t border-[var(--border-subtle)] p-4">
           <a
             href={`/companies/${row.thscode}`}
-            className="inline-block border border-[var(--accent-primary)] bg-[rgba(0,112,243,0.12)] px-4 py-2 text-sm text-[var(--accent-primary)] hover:bg-[rgba(0,112,243,0.2)]"
+            className="inline-block border border-[var(--accent-primary)] bg-[rgba(212,175,55,0.12)] px-4 py-2 text-sm text-[var(--accent-primary)] hover:bg-[rgba(212,175,55,0.2)]"
             style={{ textDecoration: 'none' }}
           >
             查看公司研究 →
@@ -272,7 +273,11 @@ export default function ScreenerDashboard({ initial }: { initial: ScreenerRespon
   const meta = data?.meta;
 
   return (
-    <div className="flex h-dvh min-w-0 w-full flex-col overflow-hidden">
+    <div className="flex h-dvh min-w-0 w-full overflow-hidden">
+      {/* ===== 最左侧页面导航 ICON 列（首页 / 全市场初筛）===== */}
+      <AppIconRail className="h-full" />
+
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       {/* ===== Header ===== */}
       <header className="px-4 py-2 flex items-center justify-between border-b">
         <div className="flex min-w-0 items-center gap-2">
@@ -356,7 +361,7 @@ export default function ScreenerDashboard({ initial }: { initial: ScreenerRespon
                 }}
                 className={`border px-3 py-1.5 text-xs ${
                   active
-                    ? 'border-[var(--accent-primary)] bg-[rgba(0,112,243,0.18)] text-[var(--accent-primary)] font-semibold'
+                    ? 'border-[var(--accent-primary)] bg-[rgba(212,175,55,0.18)] text-[var(--accent-primary)] font-semibold'
                     : 'border-[var(--border-default)] bg-[var(--bg-card)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
               >
@@ -410,6 +415,7 @@ export default function ScreenerDashboard({ initial }: { initial: ScreenerRespon
                     {sort === c.key ? (order === 'desc' ? ' ↓' : ' ↑') : ''}
                   </th>
                 ))}
+                <th>判定</th>
                 <th>毛利率</th>
                 <th>净利率</th>
                 <th>OCF/NI</th>
@@ -495,7 +501,7 @@ export default function ScreenerDashboard({ initial }: { initial: ScreenerRespon
                 })
               ) : (
                 <tr>
-                  <td colSpan={18} className="text-center text-[var(--text-muted)] py-6">
+                  <td colSpan={17} className="text-center text-[var(--text-muted)] py-6">
                     {initial === null ? '数据加载中…' : '当前筛选无结果'}
                   </td>
                 </tr>
@@ -530,6 +536,7 @@ export default function ScreenerDashboard({ initial }: { initial: ScreenerRespon
         <footer style={{ marginTop: 32, paddingTop: 16, borderTop: '1px solid var(--border-subtle)', color: 'var(--text-muted)', fontSize: 12 }}>
           数据来源：同花顺（财务指标）+ 东财（市值/行业）· 综合分复用 quality-screen 口径 · 仅供研究参考，不构成投资建议。
         </footer>
+      </div>
       </div>
 
       {/* ===== 个股初筛信息分屏（点击行打开）===== */}

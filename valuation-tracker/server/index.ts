@@ -5,6 +5,7 @@
  * 说明：Elysia 实例已抽出到 app.ts，供 Next.js route handler（app/api/[...path]/route.ts）复用。
  */
 import { app } from "./app.ts";
+import { startFundamentalScheduler } from "./lib/fundamental-scheduler.ts";
 
 const PORT = Number(process.env.PORT) || 3001;
 
@@ -13,8 +14,11 @@ const PORT = Number(process.env.PORT) || 3001;
 const isMain = (import.meta as unknown as { main?: boolean }).main === true;
 
 if (isMain) {
+  // 基本面定时批量更新：仅 Bun 自托管启动（Next/Serverless 无长驻进程，不运行）
+  startFundamentalScheduler();
   app.listen(PORT, () => {
     console.log(`🦊 估值追踪 API 已启动: http://localhost:${PORT}`);
     console.log(`   健康检查: http://localhost:${PORT}/api/health`);
+    console.log(`   性能指标: http://localhost:${PORT}/api/metrics`);
   });
 }

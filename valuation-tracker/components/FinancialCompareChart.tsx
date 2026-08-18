@@ -47,8 +47,8 @@ export default function FinancialCompareChart({
         name: baselineLabel,
         type: "bar",
         barMaxWidth: 22,
-        itemStyle: { color: "#5b8cff", borderRadius: [3, 3, 0, 0] },
-        label: { show: true, position: "top", color: "#a3aecb", fontSize: 10, formatter: (p) => (p.value == null ? "" : `${p.value}`) },
+        itemStyle: { color: "#d4af37", borderRadius: [3, 3, 0, 0] },
+        label: { show: true, position: "top", color: "#a1a1a1", fontSize: 10, formatter: (p) => (p.value == null ? "" : `${p.value}`) },
         data: baseVals,
       },
       {
@@ -56,7 +56,7 @@ export default function FinancialCompareChart({
         type: "bar",
         barMaxWidth: 22,
         itemStyle: { color: "#34d399", borderRadius: [3, 3, 0, 0] },
-        label: { show: true, position: "top", color: "#a3aecb", fontSize: 10, formatter: (p) => (p.value == null ? "" : `${p.value}`) },
+        label: { show: true, position: "top", color: "#a1a1a1", fontSize: 10, formatter: (p) => (p.value == null ? "" : `${p.value}`) },
         data: updVals,
       },
     ];
@@ -71,21 +71,21 @@ export default function FinancialCompareChart({
       },
       legend: {
         top: 0,
-        textStyle: { color: "#a3aecb" },
+        textStyle: { color: "#a1a1a1" },
         data: [baselineLabel, updateLabel],
       },
       grid: { top: 40, left: 8, right: 8, bottom: 8, containLabel: true },
       xAxis: {
         type: "category",
         data: cats,
-        axisLine: { lineStyle: { color: "#2a3356" } },
-        axisLabel: { color: "#a3aecb", fontSize: 11 },
+        axisLine: { lineStyle: { color: "#333333" } },
+        axisLabel: { color: "#a1a1a1", fontSize: 11 },
         axisTick: { show: false },
       },
       yAxis: {
         type: "value",
-        splitLine: { lineStyle: { color: "#1e2747" } },
-        axisLabel: { color: "#6b7699", fontSize: 10 },
+        splitLine: { lineStyle: { color: "#262626" } },
+        axisLabel: { color: "#666666", fontSize: 10 },
       },
       series,
     });

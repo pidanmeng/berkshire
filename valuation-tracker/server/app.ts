@@ -5,17 +5,22 @@
  */
 import { Elysia } from "elysia";
 import { cors } from "@elysiajs/cors";
+import metricsMiddleware from "elysia-prometheus-metrics";
 import { companiesRoutes } from "./routes/companies.ts";
 import { quotesRoutes } from "./routes/quotes.ts";
 import { klineRoutes } from "./routes/kline.ts";
 import { fundamentalsRoutes } from "./routes/fundamentals.ts";
 import { screenerRoutes } from "./routes/screener.ts";
+import { serverTiming } from '@elysia/server-timing'
 
 export const app = new Elysia()
   .use(cors({
     origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(",") : ["http://localhost:3000", "http://127.0.0.1:3000"],
     methods: ["GET"],
   }))
+  .use(serverTiming())
+  // 性能监控：Prometheus 格式直方图（请求耗时/状态码/路径），端点 /api/metrics
+  .use(metricsMiddleware({ metricsPath: "/api/metrics" }))
   .get("/api/health", () => ({ ok: true, ts: Date.now() }))
   .use(companiesRoutes)
   .use(quotesRoutes)

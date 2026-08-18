@@ -1,8 +1,15 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { X } from 'lucide-react';
 import type { CompanyDetail } from '@/lib/api';
 import { getCompanyDetail, getKline, getApiBase } from '@/lib/api';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import PriceChart from './PriceChart';
 import RadarChart from './RadarChart';
 import CapZoneBadge from './CapZoneBadge';
@@ -42,17 +49,8 @@ const fmtYi = (v: number | null | undefined) =>
   v == null ? '—' : `${Math.round(v).toLocaleString()} 亿`;
 const fmtNum = (v: number | null | undefined) =>
   v == null ? '—' : v.toFixed(1);
-const fmtPrice = (v: number | null | undefined) =>
-  v == null ? '—' : v.toFixed(2);
-const fmtPct = (v: number | null | undefined) =>
-  v == null ? '—' : `${v > 0 ? '+' : ''}${v.toFixed(2)}%`;
 const fmtPctSigned = (v: number | null | undefined) =>
   v == null ? '—' : `${(v * 100).toFixed(1)}%`;
-
-function chgClass(v: number | null | undefined): string {
-  if (v == null) return 'chg-flat';
-  return v > 0 ? 'chg-up' : v < 0 ? 'chg-down' : 'chg-flat';
-}
 
 /** 从笔记正文提取 H2 章节（截止到下一个 H2） */
 function extractSection(md: string, heading: string): string | null {
@@ -77,9 +75,12 @@ function extractSection(md: string, heading: string): string | null {
 export default function CompanyDashboard({
   thscode,
   initial,
+  onClose,
 }: {
   thscode: string;
   initial?: CompanyDetail;
+  /** 内嵌看板模式：传入后头部显示 X 按钮，点击取消单选回到列表 */
+  onClose?: () => void;
 }) {
   const [detail, setDetail] = useState<CompanyDetail | null>(initial ?? null);
   const [bars, setBars] = useState<
@@ -177,7 +178,7 @@ export default function CompanyDashboard({
   return (
     <div className="detail-grid">
       {/* 头部 */}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-3">
             <h2 className="m-0 text-xl font-bold">{note.name}</h2>
@@ -197,14 +198,26 @@ export default function CompanyDashboard({
             )}
           </div>
         </div>
-        <a
-          className="back-link ml-auto"
-          href={`/companies/${note.thscode}`}
-          target="_blank"
-          rel="noreferrer"
-        >
-          独立页 ↗
-        </a>
+        <div className="flex items-center gap-2">
+          <a
+            className="back-link"
+            href={`/companies/${note.thscode}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            独立页 ↗
+          </a>
+          {onClose && (
+            <button
+              onClick={onClose}
+              aria-label="关闭详情，返回列表"
+              title="返回列表"
+              className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
+            >
+              <X className="size-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* 一句话判断 */}
@@ -258,40 +271,21 @@ export default function CompanyDashboard({
         )}
       </div>
 
-      {/* 实时行情 */}
+      {/* 股价走势（近一年日 K） */}
       <div className="card">
-        <h3>实时行情</h3>
-        <div className="price-row">
-          <span className="price-main">{fmtPrice(quote.price)}</span>
-          <span
-            className={chgClass(quote.changePct)}
-            style={{ fontSize: 16, fontFamily: 'var(--font-mono)' }}
-          >
-            {fmtPct(quote.changePct)}
-          </span>
-        </div>
-        <div className="metric-grid">
-          <div className="metric">
-            <div className="m-label">总市值</div>
-            <div className="m-value">{fmtYi(marketCapYi)}</div>
+        <h3>股价走势（近一年日 K）</h3>
+        {bars.length > 0 ? (
+          <PriceChart
+            bars={bars}
+            target={cap}
+            marketCapYi={marketCapYi}
+            totalSharesYi={totalSharesYi}
+          />
+        ) : (
+          <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>
+            K 线加载中或暂不可用…
           </div>
-          <div className="metric">
-            <div className="m-label">PE-TTM</div>
-            <div className="m-value">{fmtNum(quote.peTtm)}</div>
-          </div>
-          <div className="metric">
-            <div className="m-label">PB(MRQ)</div>
-            <div className="m-value">{fmtNum(quote.pbMrq)}</div>
-          </div>
-          <div className="metric">
-            <div className="m-label">PS-TTM</div>
-            <div className="m-value">{fmtNum(quote.psTtm)}</div>
-          </div>
-          <div className="metric">
-            <div className="m-label">PCF-TTM</div>
-            <div className="m-value">{fmtNum(quote.pcfTtm)}</div>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* 安全边际 + 六维雷达 */}
@@ -548,7 +542,27 @@ export default function CompanyDashboard({
             }}
           >
             {fundamental?.needsUpdate === true ? (
-              <span className="badge badge-red">基本面需更新</span>
+              <TooltipProvider delayDuration={150}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="badge badge-red">基本面需更新</span>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-xs">
+                    <ul className="space-y-1">
+                      {(fundamental.items ?? []).length > 0 ? (
+                        fundamental.items!.map((f, i) => (
+                          <li key={i} className="flex items-start gap-1.5">
+                            <span className="shrink-0 font-mono text-[10px] opacity-70">{f.date}</span>
+                            <span className="min-w-0 flex-1 break-words">{f.title}</span>
+                          </li>
+                        ))
+                      ) : (
+                        <li>存在未采信财报</li>
+                      )}
+                    </ul>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             ) : fundamental?.needsUpdate === false ? (
               <span className="badge badge-green">已最新</span>
             ) : (
@@ -605,23 +619,6 @@ export default function CompanyDashboard({
             </div>
           </div>
         </div>
-      </div>
-
-      {/* K 线 */}
-      <div className="card">
-        <h3>股价走势（近一年日 K）</h3>
-        {bars.length > 0 ? (
-          <PriceChart
-            bars={bars}
-            target={cap}
-            marketCapYi={marketCapYi}
-            totalSharesYi={totalSharesYi}
-          />
-        ) : (
-          <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>
-            K 线加载中或暂不可用…
-          </div>
-        )}
       </div>
 
       {/* 调研章节 */}

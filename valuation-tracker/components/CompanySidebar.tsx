@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ListChecks, Search, X } from "lucide-react";
+import { pinyin } from "pinyin-pro";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -29,12 +30,24 @@ export default function CompanySidebar({
 
   const selectedSet = useMemo(() => new Set(selected), [selected]);
 
-  // 搜索公司（名称 / 代码）
-  const base = query.trim()
-    ? items.filter(
-        (it) => it.name.toLowerCase().includes(query.toLowerCase()) || it.thscode.includes(query),
-      )
-    : items;
+  // 搜索公司（名称 / 代码 / 拼音首字母）
+  const base = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return items;
+    return items.filter((it) => {
+      if (it.name.toLowerCase().includes(q) || it.thscode.includes(q)) return true;
+      if (!/^[a-z]+$/i.test(q)) return false;
+      const initials = pinyin(it.name, {
+        pattern: "first",
+        toneType: "none",
+        type: "array",
+      })
+        .map((s) => s[0])
+        .join("")
+        .toLowerCase();
+      return initials.includes(q);
+    });
+  }, [items, query]);
 
   // 多选时选中的公司置顶（单选模式保持原始顺序）
   const visible = useMemo(() => {
@@ -94,7 +107,7 @@ export default function CompanySidebar({
         <Input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="搜索公司名 / 代码…"
+          placeholder="搜索公司名 / 代码 / 拼音首字母…"
           className="h-8 pl-9 text-[13px]"
         />
         {query && (
@@ -130,7 +143,7 @@ export default function CompanySidebar({
                   }
                   className={cn(
                     "flex cursor-pointer items-center gap-2 px-2 py-1.5 transition-colors",
-                    checked ? "bg-[rgba(0,112,243,0.12)]" : "hover:bg-muted/40",
+                    checked ? "bg-[rgba(212,175,55,0.12)]" : "hover:bg-muted/40",
                   )}
                 >
                   {multiSelect && (

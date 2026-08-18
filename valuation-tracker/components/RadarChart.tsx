@@ -33,10 +33,10 @@ export default function RadarChart({
     const indicators = DIMS.map((d) => ({
       name: d.label,
       max: 10,
-      axisLabel: { color: "#6b7699" },
+      axisLabel: { color: "#666666" },
     }));
 
-    const palettes = ["#5b8cff", "#34d399", "#fbbf24", "#f87171", "#a78bfa", "#22d3ee"];
+    const palettes = ["#d4af37", "#34d399", "#fbbf24", "#f87171", "#a78bfa", "#22d3ee"];
     const list = series && series.length > 0
       ? series
       : scores
@@ -48,16 +48,16 @@ export default function RadarChart({
       animation: false,
       tooltip: { trigger: "item" },
       legend: list.length > 1
-        ? { top: 0, textStyle: { color: "#a3aecb" }, data: list.map((s) => s.name) }
+        ? { top: 0, textStyle: { color: "#a1a1a1" }, data: list.map((s) => s.name) }
         : undefined,
       radar: {
         indicator: indicators,
         radius: "62%",
         center: ["50%", list.length > 1 ? "55%" : "50%"],
-        axisName: { color: "#a3aecb", fontSize: 11 },
-        splitArea: { areaStyle: { color: ["rgba(91,140,255,0.03)", "rgba(91,140,255,0.06)"] } },
-        splitLine: { lineStyle: { color: "#1e2747" } },
-        axisLine: { lineStyle: { color: "#2a3356" } },
+        axisName: { color: "#a1a1a1", fontSize: 11 },
+        splitArea: { areaStyle: { color: ["rgba(212,175,55,0.03)", "rgba(212,175,55,0.06)"] } },
+        splitLine: { lineStyle: { color: "#262626" } },
+        axisLine: { lineStyle: { color: "#333333" } },
       },
       series: [
         {

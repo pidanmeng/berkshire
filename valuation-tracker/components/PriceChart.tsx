@@ -45,11 +45,22 @@ export default function PriceChart({
     const targetPerShare = (capYi?: number) =>
       capYi !== undefined && shareYi ? +(capYi / shareYi).toFixed(1) : undefined;
 
-    const markLines: MarkLineData = [
-      capLine(targetPerShare(target?.pessimistic), "#34d399", "悲观"),
-      capLine(targetPerShare(target?.neutral), "#fbbf24", "合理"),
-      capLine(targetPerShare(target?.optimistic), "#f87171", "乐观"),
-    ].filter((x): x is MarkLineData[number] => x !== null);
+    // 开盘前没有当日股价时（最后一根 bar 非今日，如盘前/休市），不展示悲/合/乐分割线
+    const todayStr = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Shanghai",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date());
+    const hasTodayBar = bars.length > 0 && bars[bars.length - 1].date === todayStr;
+
+    const markLines: MarkLineData = hasTodayBar
+      ? [
+          capLine(targetPerShare(target?.pessimistic), "#34d399", "悲观"),
+          capLine(targetPerShare(target?.neutral), "#fbbf24", "合理"),
+          capLine(targetPerShare(target?.optimistic), "#f87171", "乐观"),
+        ].filter((x): x is MarkLineData[number] => x !== null)
+      : [];
 
     chart.setOption({
       backgroundColor: "transparent",
@@ -57,13 +68,13 @@ export default function PriceChart({
       tooltip: {
         trigger: "axis",
         axisPointer: { type: "cross" },
-        backgroundColor: "rgba(26,37,80,0.96)",
-        borderColor: "#2a3356",
-        textStyle: { color: "#e5eaf5" },
+        backgroundColor: "rgba(17,17,17,0.96)",
+        borderColor: "#333333",
+        textStyle: { color: "#f5f5f5" },
       },
       legend: {
         data: ["K线", "成交量"],
-        textStyle: { color: "#a3aecb" },
+        textStyle: { color: "#a1a1a1" },
         top: 0,
       },
       grid: [
@@ -71,20 +82,20 @@ export default function PriceChart({
         { left: 60, right: 30, top: "74%", height: "16%" },
       ],
       xAxis: [
-        { type: "category", data: dates, boundaryGap: true, axisLine: { lineStyle: { color: "#2a3356" } }, axisLabel: { color: "#6b7699" } },
-        { type: "category", gridIndex: 1, data: dates, axisLabel: { show: false }, axisLine: { lineStyle: { color: "#2a3356" } } },
+        { type: "category", data: dates, boundaryGap: true, axisLine: { lineStyle: { color: "#333333" } }, axisLabel: { color: "#666666" } },
+        { type: "category", gridIndex: 1, data: dates, axisLabel: { show: false }, axisLine: { lineStyle: { color: "#333333" } } },
       ],
       yAxis: [
         {
           scale: true,
-          axisLabel: { color: "#6b7699", fontFamily: "JetBrains Mono, Consolas, monospace" },
-          splitLine: { lineStyle: { color: "#1e2747", type: "dashed" } },
+          axisLabel: { color: "#666666", fontFamily: "JetBrains Mono, Consolas, monospace" },
+          splitLine: { lineStyle: { color: "#262626", type: "dashed" } },
         },
         { gridIndex: 1, axisLabel: { show: false }, splitLine: { show: false } },
       ],
       dataZoom: [
         { type: "inside", xAxisIndex: [0, 1], start: 40, end: 100 },
-        { type: "slider", xAxisIndex: [0, 1], bottom: 4, start: 40, end: 100, textStyle: { color: "#6b7699" } },
+        { type: "slider", xAxisIndex: [0, 1], bottom: 4, start: 40, end: 100, textStyle: { color: "#666666" } },
       ],
       series: [
         {
@@ -100,7 +111,7 @@ export default function PriceChart({
           xAxisIndex: 1,
           yAxisIndex: 1,
           data: volumes,
-          itemStyle: { color: "rgba(91,140,255,0.5)" },
+          itemStyle: { color: "rgba(212,175,55,0.5)" },
         },
       ],
     });

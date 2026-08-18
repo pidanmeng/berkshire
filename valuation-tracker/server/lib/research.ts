@@ -104,14 +104,22 @@ export function resolveResearchRoot(): string {
   return candidates[0];
 }
 
-/** 从正文正则提取质量筛查结论与综合质量分 */
-function parseQuality(content: string): { verdict: string | null; score: number | null } {
-  const verdict = content.match(/筛查结论[\s\S]{0,60}?(GREEN|YELLOW|RED)/i);
-  const score = content.match(/综合质量分[:：]\s*([\d.]+)\s*\/\s*10/);
-  return {
-    verdict: verdict ? verdict[1].toUpperCase() : null,
-    score: score ? Math.round(parseFloat(score[1]) * 10) / 10 : null,
-  };
+/**
+ * 读取质量筛查结论 —— 仅从 frontmatter 读取（调研流程 quality-screen 产出后直接回填
+ * quality_verdict/quality_score；存量笔记由 .trae/scripts/valuation/migrate-quality.ts 一次性回填）。
+ * 运行时不做任何正文解析。
+ */
+function readQuality(data: Record<string, unknown>): { verdict: string | null; score: number | null } {
+  let verdict: string | null = null;
+  if (typeof data.quality_verdict === "string") {
+    const v = data.quality_verdict.trim().toUpperCase();
+    if (v === "GREEN" || v === "YELLOW" || v === "RED") verdict = v;
+  }
+  let score: number | null = null;
+  if (typeof data.quality_score === "number" && Number.isFinite(data.quality_score)) {
+    score = Math.round(data.quality_score * 10) / 10;
+  }
+  return { verdict, score };
 }
 
 /** 解析 frontmatter financials 块（snake_case → camelCase；YYYY 型日期已被 ymd 归一化） */
@@ -147,7 +155,7 @@ function parseFinancials(rawFin: Record<string, unknown> | null): Financials | n
 }
 
 function parseNote(relPath: string, content: string): CompanyNote | null {
-  const { data, content: body } = matter(content);
+  const { data } = matter(content);
   // 公司文件夹内可能存在 deep-dive-update 等非公司类型产物，跳过以免被当成独立公司
   if (typeof data.type === "string" && data.type !== "company") return null;
   const sc = (data.stock_code ?? data.stockCode) as string | undefined;
@@ -155,7 +163,7 @@ function parseNote(relPath: string, content: string): CompanyNote | null {
   if (!thscode) return null;
 
   const name = (data.name ?? data.company ?? data.title) as string | undefined;
-  const q = parseQuality(body);
+  const q = readQuality(data);
 
   // frontmatter 为 snake_case，映射为 camelCase
   const rawScores = data.scores && typeof data.scores === "object" ? data.scores as Record<string, number> : null;
@@ -303,7 +311,7 @@ function parseUpdate(relPath: string, content: string): CompanyUpdate | null {
   if (typeof data.type !== "string" || !UPDATE_TYPES.has(data.type)) return null;
   const sc = (data.stock_code ?? data.stockCode) as string | undefined;
   if (typeof sc !== "string") return null;
-  const q = parseQuality(body);
+  const q = readQuality(data);
   const rawFin = data.financials && typeof data.financials === "object"
     ? data.financials as Record<string, unknown> : null;
   return {

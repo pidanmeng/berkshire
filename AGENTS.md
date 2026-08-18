@@ -191,7 +191,7 @@ else:
 - **数据流**：Markdown 笔记为唯一事实源（请求时解析 frontmatter + 60s 缓存）；数据库只存动态状态（价格快照、基本面检测缓存）。**综合评分不人工给出**，由六维评分经 `.trae/scripts/valuation/composite.ts` 权重加权现算，改权重一处全局生效（前后端共用同一文件）。
 - **部署数据**：`bun run build` 自动执行 `sync-data`（`scripts/build-research-db.ts`），把调研文档 gzip 压缩入库为单文件 `research-data/research.db`（约原始 28%）；Git 集成部署时构建环境存在 `../Research`，云端现场重建并打包进函数，本地无需预生成；CLI 从 `valuation-tracker/` 目录上传时构建环境无 `../Research`，需本地先跑 `bun run sync-data` 再上传。配置 `TURSO_URL` 时 build 同时同步同一批数据到 Turso（云上无打包库时 doc-store 自动降级读取，探测链：FS → 打包 DB → Turso）。dev/自托管仍直读 `../Research/`（改笔记即时生效）。
 - **维护**：`bun run snapshot` 批量快照行情入库；`bun run build` 自动执行 `sync-data:remote`（生成 research.db + 同步 Turso，配置 `TURSO_URL` 时）；新增公司调研后自动出现（Markdown 解析），回填存量笔记用 `bun run .trae/scripts/valuation/backfill.ts`。
-- **结构化字段**（公司笔记 frontmatter，backfill 生成）：`scores`（六维 0-10 分）/ `target_market_cap_yi`（悲观/合理/乐观，亿元）/ `forward_pe`（含 factors/directions）/ `research_cutoff`（财报期+公告截止日，用于判断基本面是否需更新）。
+- **结构化字段**（公司笔记 frontmatter，backfill 生成）：`scores`（六维 0-10 分）/ `target_market_cap_yi`（悲观/合理/乐观，亿元）/ `forward_pe`（含 factors/directions）/ `research_cutoff`（财报期+公告截止日，用于判断基本面是否需更新）。**质量字段 `quality_verdict`（GREEN/YELLOW/RED）+ `quality_score`（0-10 一位小数）由调研流程在调研时经 quality-screen 产出后直接写入 frontmatter（非 backfill、非文本解析所得）**。
 - **API**：`/api/companies`（列表+行情+安全边际分档）、`/api/companies/:thscode`（详情+笔记全文）、`/api/kline/:thscode`、`/api/fundamentals/:thscode`（巨潮检测，`?refresh=1` 强制刷新）、`/api/quotes`（轮询）。
 - **部署**：前端可一键部署到 Vercel（设置 `API_BASE_URL` 指向自托管 Elysia）；后端自托管（`bun run server`，bun:sqlite）或 Elysia Serverless + Turso（`.env` 配 `TURSO_URL`）。
 
@@ -207,7 +207,7 @@ else:
 | **Phase 1 InfoHunter** | earnings-report 财报抓取 + quality-screen 初筛前置 | 增强 `.trae/scripts/stock-data/stock.ts --financial` + `bun run .trae/scripts/file-ingestion/fetch-file.ts <pdf-url> --pdf-markdown --output --name "<可读标题>"` 自动拉取**最近 3 个完整财年年报**（上市不足 3 年则覆盖全部历史年报；报告缺失则说明替代方案）+ 最近 1 期中报/季报（如有），提取完整 Markdown 以可读标题保存为 `.md` 到 `Research/00-Workspace/02-Processing/pdf-texts/<公司名>/`（**必须传 `--name` 指定可读标题，禁止用源文件名**，如 `--name "2025年年度报告"`），远程 PDF 成功转换后清理；文本提取后 Agent 须带着问题清单精读原文 | 每次公司级采集必跑 |
 | **Phase 2 InfoAlchemist** | investment-research 的结构化指标提取 | 在核心指标提取清单中**强制包含** quality-screen 8 项指标（ROE/毛利率/净利率/OCF-NI/负债率/PE/营收增长/净利增长），确保下游可跑自动评分 | 由 self-check 脚本强制校验不缺字段 |
 | **Phase 3 CrossValidator** | investment-checklist 的 No-Go 条款注入 | 置信度评分时将 quality-screen 的 RED 级红牌直接降一档（若触发 No-Go 条款，单条事实置信度最高不得 ≥8） | 每条公司级事实评分时 |
-| **Phase 4 KnowledgeArchitect** | **quality-screen**（7 质量 + 8 财务） + **earnings-review 10 项精读** | 写入 `02-公司研究/` 前，**必须调用 `quality-screen.ts --file` 生成《质量筛查报告》段落** + 使用 `evaluate.ts` 生成的 10 项财报精读检查表，两者一并嵌入公司笔记 | 每家公司节点必跑，红牌 ≥2 时不得标注为「值得跟踪」等级 |
+| **Phase 4 KnowledgeArchitect** | **quality-screen**（7 质量 + 8 财务） + **earnings-review 10 项精读** | 写入 `02-公司研究/` 前，**必须调用 `quality-screen.ts --file` 生成《质量筛查报告》段落** + 使用 `evaluate.ts` 生成的 10 项财报精读检查表，两者一并嵌入公司笔记，**并将同一轮筛查的 `quality_verdict`（GREEN/YELLOW/RED）与 `quality_score`（0-10 一位小数）回填 frontmatter**（供 valuation-tracker 直接消费，禁止事后从正文解析） | 每家公司节点必跑，红牌 ≥2 时不得标注为「值得跟踪」等级 |
 | **Phase 5 ReportWriter** | **50-item investment-checklist** + 多视角并行 | 报告附录**必须包含**《50 项投资决策清单 AUTO 扫描块》（`investment-checklist-auto.ts` 输出）+ 《质量筛查汇总》；HTML 设计风格锁死见 `design.md`（不是 ai-berkshire 风格，是本系统自研暗黑专业风） | 每份最终报告必附 |
 | **Phase 6 归档/复盘** | investment-checklist 的复盘触发 | 归档时保存 quality-screen 总分 + 投资清单结果至 frontmatter，供 30/90 天 KQI 回溯对比（如"当时 CRITICAL ❌ 项是否事后应验"） | KQI-tracker 已读 frontmatter 字段 |
 
@@ -299,6 +299,7 @@ bun run .trae/skills/research-quality-gate/scripts/kqi-tracker.ts \
 - [ ] 数据带单位与时点
 - [ ] 置信度 <7 的结论在报告中显式标注「存疑」
 - [ ] 知识节点 properties 完整（`type` 必填，关联字段用 `[[双链]]`）
+- [ ] **公司笔记 frontmatter 含质量筛查字段**：`quality_verdict`（GREEN/YELLOW/RED）+ `quality_score`（0-10 一位小数）由调研流程（quality-screen 同一轮筛查）直接写入，禁止依赖正文文本解析
 - [ ] **知识节点三段式目录齐全**（00-行业概览 / 01-细分行业 / 02-公司研究 均有产出）
 - [ ] 公司笔记 → 关联行业/细分行业；行业笔记 → 关联公司/细分行业
 - [ ] 报告输出 md + html 双份（HTML 独立编写、图表 ECharts CDN）

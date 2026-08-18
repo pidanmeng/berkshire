@@ -18,9 +18,10 @@ permission:
 6. 使用完整的 properties 与双链建立知识网络
 7. 优先使用 skills 提供的专业能力（加载 `obsidian-vault-manager`、`obsidian-note-synthesizer`、`research-quality-gate`）
 8. **公司信息不足时，主动补充调研**（你有 websearch/webfetch 权限），不能留空白
-9. **[ai-berkshire 融入] Phase 4 每家公司入库前必做两步**：
+9. **[ai-berkshire 融入] Phase 4 每家公司入库前必做三步**：
    a. 调用共享脚本 `evaluate.ts` 获取 10 项财报精读检查表 + 四大师星级建议 + 估值快照（内容可直接嵌入公司笔记）
    b. 调用共享脚本 `quality-screen.ts` 获取《质量筛查报告》段落，**必须嵌入公司笔记**；若质量结论 = RED，不得标注该公司为「建议重点跟踪」等级
+   c. **质量结论回填 frontmatter（必填）**：把同一轮 `quality-screen.ts` 筛查的 `quality_verdict`（GREEN/YELLOW/RED）与 `quality_score`（0-10 一位小数）写入公司笔记 frontmatter（字段见 `research_cutoff` 之后），供 valuation-tracker 直接消费；**严禁留空**，也不得依赖事后正文解析补 verdict
 
 ## 四大师投资哲学指引（入库阶段）
 
@@ -69,6 +70,7 @@ Research/10-Knowledge/XX-一级行业/
   - `target_market_cap_yi`（目标市值，亿元）：pessimistic / neutral / optimistic，由「目标每股价格 × 总股本」推导并与「预测净利 × 情景PE」交叉校验
   - `forward_pe`：value（当前价对应 Forward PE）、base_net_profit_yi（预测期净利）、base_period（如 2026E）、factors（核心影响因素）、directions（可能发展方向）
   - `research_cutoff`：report_period（已精读的最新财报期 FY/Q1/Q2/Q3）、report_date（披露日期）、announcement_date（调研完成日）
+  - `quality_verdict` / `quality_score`（必填，由步骤 9c 回填）：GREEN/YELLOW/RED + 0-10 一位小数，与正文《质量筛查报告》同一轮筛查同源
   - `earns_from` / `earns_type` / `why_invest` / `why_not_invest`（一句话判断，必填）：赚谁的钱 / 赚的是什么钱 / 为什么投资他 / 为什么不投资他——各一句话，作为公司研究的核心结论，供 valuation-tracker 展示
 - **估值与股价快照（必填，紧跟评分卡）**：
   - 最新股价 / 总市值 / **PE-TTM / PB-MRQ / PS-TTM / PCF-TTM** / 股息率 / 52周高低
@@ -118,7 +120,8 @@ Research/10-Knowledge/XX-一级行业/
 - [ ] 仅写入高置信度（≥8）信息；补充调研数据带来源
 - [ ] properties 完整（type 必填）
 - [ ] 每家公司体现优势与劣势、周期位置、护城河评估
-- [ ] **估值追踪结构化字段齐全**：`scores`（六维）/`target_market_cap_yi`/`forward_pe`/`research_cutoff`；**不填写综合分**（由系统加权计算）
+- [ ] **估值追踪结构化字段齐全**：`scores`（六维）/`target_market_cap_yi`/`forward_pe`/`research_cutoff`/`quality_verdict`/`quality_score`；**不填写综合分**（由系统加权计算）
+- [ ] **质量筛查字段已回填**：frontmatter `quality_verdict`（GREEN/YELLOW/RED）+ `quality_score`（0-10 一位小数）与正文《质量筛查报告》同一轮筛查同源，非文本解析所得
 - [ ] **一句话判断齐全**：`earns_from`/`earns_type`/`why_invest`/`why_not_invest` 四字段均有内容，且与正文「一句话判断」章节一致
 - [ ] 双链双向成立
 - [ ] MOC 已更新（按三段式分类）

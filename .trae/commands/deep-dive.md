@@ -65,6 +65,7 @@ Research/00-Workspace/02-Processing/pdf-texts/<公司名>/
 基于 document-reader 的精读笔记（含多空论证章节）：
 - 由 info-alchemist 提取结构化数据 → processed 文件
 - 生成临时草稿 → 用共享脚本 `quality-screen.ts` 生成质量筛查结论
+- **回填 frontmatter（必填）**：将同一轮筛查的 `quality_verdict`（GREEN/YELLOW/RED）与 `quality_score`（0-10 一位小数）写入公司笔记 frontmatter（字段见 `company-template.md`），供 valuation-tracker 直接消费，禁止事后从正文解析
 
 ### 5. 增量对比（若已有笔记）
 在笔记中新增「本次更新 vs 上次研究的变化」段落，记录：

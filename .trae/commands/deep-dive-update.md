@@ -65,7 +65,7 @@ description: 对已有研究笔记的公司进行基本面增量更新（重大�
 
 ### 6. 写入知识库
 
-- 公司文件夹新增 `<公司名>-基本面更新.md`（**frontmatter 元数据与公司笔记同构**：`type: "deep-dive-update"`，含 `name/stock_code/industry/sub_industry/related_notes/tags/created/updated/deep_dive_at/data_as_of/valuation_as_of/valuation_status/quality_status/research_conclusion/update_history/scores/target_market_cap_yi/forward_pe/research_cutoff` 等字段，触发字段 `trigger`、基线字段 `based_on`）
+- 公司文件夹新增 `<公司名>-基本面更新.md`（**frontmatter 元数据与公司笔记同构**：`type: "deep-dive-update"`，含 `name/stock_code/industry/sub_industry/related_notes/tags/created/updated/deep_dive_at/data_as_of/valuation_as_of/valuation_status/quality_status/research_conclusion/update_history/scores/target_market_cap_yi/forward_pe/research_cutoff/quality_verdict/quality_score` 等字段，触发字段 `trigger`、基线字段 `based_on`）
 - **`financials` 结构化字段（必填）**：与公司笔记的 `financials` 块同构（`report_period/revenue_yi/net_profit_yi/roe/gross_margin/net_margin/asset_liability_ratio/ocf_yi/ocf_to_ni/revenue_yoy/net_profit_yoy`），供看板「基本面对比（上次研究 vs 本次更新）」图表消费；口径与上次研究保持一致，无法可靠取数的指标置 `null`
 - **命名规范（多份产物并存时）**：`<公司名>-基本面更新-<变更简写|报告时间>.md`
   - 变更简写：重大变更的简短描述，如 `2026中报`、`股东减持`、`回购进展`、`重大合同`、`定增获批`

@@ -73,6 +73,11 @@ research_cutoff:             # 调研截止（基本面更新检测锚点）
   report_period: "2025FY"    # 已精读的最新财报期（FY/Q1/Q2/Q3）
   report_date: "YYYY-MM-DD"  # 该财报披露日期（巨潮公告日期）
   announcement_date: "YYYY-MM-DD"  # 公告覆盖截止日（调研完成日）
+# ===== 质量筛查结论（供 valuation-tracker 消费，必填；由调研流程调用 quality-screen 产出后直接回填，禁止留空、禁止事后从正文解析）=====
+# quality_verdict: GREEN（质量优秀，可跟踪）/ YELLOW（质量中性）/ RED（质量存疑，建议排除）
+# quality_score 为同一轮筛查综合质量分（0-10 一位小数），与正文「质量筛查报告」段落同源
+quality_verdict: ""        # GREEN / YELLOW / RED
+quality_score: 0.0         # 0-10 一位小数
 ---
 
 # 公司名称（股票代码）
@@ -96,6 +101,9 @@ research_cutoff:             # 调研截止（基本面更新检测锚点）
 | **综合** | — | **系统计算** | **系统计算** | 由 `scores` 六维按 `.trae/scripts/valuation/composite.ts` 权重加权得出 |
 
 > **星级说明**: ★ = 1 分，☆ = 0.5 分，✩ = 0 分。5 星 = 顶级优秀，4 星 = 优秀，3 星 = 合格，2 星 = 存疑，1 星 = 不建议跟踪。**十分制 = 星级 × 2**（0.1 精度）；综合分由系统加权计算，不人工填写。
+
+## 质量筛查报告
+<!-- Phase 4 由共享脚本 quality-screen.ts 输出的《质量筛查报告》段落整体嵌入此处；同一轮筛查结论同步回填 frontmatter quality_verdict / quality_score（供 valuation-tracker 消费），禁止依赖正文事后解析 -->
 
 ## 公司概览
 <!-- 公司简介：主营业务、所属 [[一级行业]] / [[细分行业]] 定位 -->

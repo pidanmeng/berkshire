@@ -93,6 +93,8 @@ export interface CompanyItem {
   needsUpdate: boolean | null;
   latestReportDate: string | null;
   updateCount: number;
+  /** 调研截止后未采信的财报列表（基本面 tooltip 展示） */
+  fundamentalItems?: { title: string; date: string }[];
 }
 
 export interface CompaniesResponse { list: CompanyItem[]; fetchedAt: number }
@@ -208,7 +210,14 @@ export interface CompanyDetail {
   markdown: string | null;
   updates: CompanyUpdate[];
   docs: CompanyDocs;
-  fundamental: { needsUpdate: boolean | null; latestTitle: string; latestDate: string; cachedAt: string } | null;
+  fundamental: {
+    needsUpdate: boolean | null;
+    latestTitle: string;
+    latestDate: string;
+    cachedAt: string;
+    /** 调研截止后未采信的财报列表（tooltip 展示） */
+    items?: { title: string; date: string }[];
+  } | null;
 }
 
 export function getCompanies(): Promise<CompaniesResponse> {

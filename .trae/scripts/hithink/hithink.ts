@@ -14,6 +14,7 @@
  *   getIndicators(thscode, report) 财务指标
  *   getValuations(thscodes)      估值快照
  *   getMarketCapFromEastmoney(thscodes) 总市值（东财 push2，同花顺无市值字段时补充）
+ *   getKlineFromEastmoney(thscode, days) 历史日 K（东财 push2his 前复权，同花顺 K 线超时降级用）
  */
 
 // 同花顺金融数据 API Key 配置
@@ -532,6 +533,51 @@ export async function getMarketCapFromEastmoney(
       change_pct: num(d['f3']),
       market_cap: num(d['f20']),
       industry,
+    };
+  });
+}
+
+/**
+ * 历史日 K（东财 push2his，前复权）— 同花顺 K 线超时/失败时的降级数据源。
+ * 字段：f51 日期、f52 开盘、f53 收盘、f54 最高、f55 最低、f56 成交量（手）。
+ * 返回字段与同花顺 KlineItem 对齐（date_ms / open_price / ...），便于上层统一映射。
+ */
+export async function getKlineFromEastmoney(
+  thscode: string,
+  days = 250,
+): Promise<
+  {
+    date_ms: number;
+    open_price: number;
+    high_price: number;
+    low_price: number;
+    close_price: number;
+    volume: number;
+  }[]
+> {
+  const secid = toEastmoneySecid(thscode);
+  const lmt = Math.max(1, Math.min(1000, Math.round(days)));
+  const url =
+    `https://push2his.eastmoney.com/api/qt/stock/kline/get` +
+    `?secid=${secid}&klt=101&fqt=1&lmt=${lmt}&end=20500101` +
+    `&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55,f56`;
+  const res = await fetch(url, {
+    headers: { 'User-Agent': EM_UA },
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!res.ok) throw new Error(`东财 K 线 HTTP ${res.status}`);
+  const json = (await res.json()) as { data?: { klines?: string[] } };
+  const rows = json.data?.klines ?? [];
+  return rows.map((line) => {
+    const [date, open, close, high, low, volume] = line.split(',');
+    return {
+      // 东财返回 YYYY-MM-DD，转北京时间 0 点时间戳（与同花顺 date_ms 口径一致）
+      date_ms: new Date(`${date}T00:00:00+08:00`).getTime(),
+      open_price: Number(open),
+      high_price: Number(high),
+      low_price: Number(low),
+      close_price: Number(close),
+      volume: Number(volume),
     };
   });
 }

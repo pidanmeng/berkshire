@@ -2,6 +2,7 @@
  * 巨潮 cninfo 公告查询 — 基本面更新检测（移植自 .trae/scripts/stock-data/stock.ts）
  * 用于判断：调研截止日之后是否出现了新的定期报告（年报/半年报/业绩报表）。
  */
+import { shDate } from "./sh-date.ts";
 
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
@@ -12,6 +13,10 @@ const CATEGORY_MAP: Record<string, string> = {
   ndbg: "category_ndbg_szsh",   // 年度报告
   bndbg: "category_bndbg_szsh", // 半年度报告
 };
+
+// 巨潮 API 对部分类别编码静默忽略（实测 yjbb 返回全量公告，ndbg/bndbg 生效）。
+// 对不受支持的类别，客户端按公告标题正则兜底过滤，只保留财报。
+const YJBB_TITLE_RE = /业绩(?:快报|报表)/;
 
 export interface Announcement {
   title: string;
@@ -92,14 +97,16 @@ export async function queryAnnouncements(
   const json = (await res.json()) as { announcements?: { announcementTitle: string; announcementTime: number; adjunctUrl: string }[] };
   return (json.announcements ?? []).map((a) => ({
     title: a.announcementTitle,
-    date: new Date(a.announcementTime).toISOString().slice(0, 10),
+    // announcementTime 为北京时间毫秒时间戳，按东八区格式化避免日期偏移
+    date: shDate(a.announcementTime),
     pdfUrl: a.adjunctUrl ? `https://static.cninfo.com.cn/${a.adjunctUrl}` : "",
   }));
 }
 
 /**
- * 基本面更新检测：调研截止日之后是否出现新的定期报告（年报/半年报/业绩报表/业绩预告）
- * @returns needsUpdate: true=需更新 / false=无新公告 / null=无法判断（缺调研截止信息）
+ * 基本面更新检测：调研截止日之后是否出现新的定期报告（财报，不含业绩预告等公告）
+ * 只看未采信的财报（年报/半年报/业绩报表），不看未采信的公告（业绩预告 yjyg 属公告，已剔除）。
+ * @returns needsUpdate: true=需更新 / false=无新财报 / null=无法判断（缺调研截止信息）
  */
 export async function checkFundamentalUpdate(
   companyName: string,
@@ -113,12 +120,14 @@ export async function checkFundamentalUpdate(
   const stock = stocks[0];
 
   const all: Announcement[] = [];
-  for (const cat of ["ndbg", "bndbg", "yjbb", "yjyg"]) {
+  for (const cat of ["ndbg", "bndbg", "yjbb"]) {
     try {
-      all.push(...await queryAnnouncements(
+      const list = await queryAnnouncements(
         { code: stock.code, orgId: stock.orgId, market: stock.market },
         { category: cat, days: 365 },
-      ));
+      );
+      // 巨潮对 yjbb 类别静默忽略（返回全量公告），按标题正则兜底过滤，只保留业绩快报/报表
+      all.push(...(cat === "yjbb" ? list.filter((a) => YJBB_TITLE_RE.test(a.title)) : list));
     } catch {
       // 单类别失败不阻断
     }

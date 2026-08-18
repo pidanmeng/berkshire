@@ -18,11 +18,13 @@ import {
   SidebarRail,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
+import AppIconRail from './AppIconRail';
 import TagSidebar, { buildTagStats } from './TagSidebar';
 import CompanySidebar from './CompanySidebar';
 import WatchlistTable from './WatchlistTable';
 import CompanyDashboard from './CompanyDashboard';
 import CompareTable from './CompareTable';
+import DonateDialog from './DonateDialog';
 import { useDashboardStore } from '@/lib/dashboard-store';
 
 /** 右侧分割（公司列表 | 主内容）宽度布局持久化 key */
@@ -47,6 +49,7 @@ export default function Dashboard({
   const companyMultiSelect = useDashboardStore((s) => s.companyMultiSelect);
   const toggleCompany = useDashboardStore((s) => s.toggleCompany);
   const selectCompany = useDashboardStore((s) => s.selectCompany);
+  const clearCompanies = useDashboardStore((s) => s.clearCompanies);
 
   const onLayoutChanged = useCallback(
     (layout: Layout, meta: { isUserInteraction: boolean }) => {
@@ -142,12 +145,22 @@ export default function Dashboard({
   }, [tagFiltered]);
 
   return (
-    <SidebarProvider style={{ '--sidebar-width': '14rem' } as CSSProperties}>
-      {/* ===== 左面板：行业 / 标签（shadcn Sidebar，offcanvas 自带折叠/rail）===== */}
-      <Sidebar collapsible="offcanvas">
-        <SidebarContent>
-          <TagSidebar tags={tagStats} />
-        </SidebarContent>
+    <SidebarProvider
+      style={
+        {
+          '--sidebar-width': '17rem',
+          '--sidebar-width-icon': '2.5rem',
+        } as CSSProperties
+      }
+    >
+      {/* ===== 左面板：ICON 列（并排于行业列表左侧，仅图标，hover tooltip）+ 行业/标签；收起时保留 ICON 列 ===== */}
+      <Sidebar collapsible="icon">
+        <div className="flex h-full min-h-0 w-full">
+          <AppIconRail className="h-full" />
+          <SidebarContent className="group-data-[collapsible=icon]:hidden min-w-0 flex-1">
+            <TagSidebar tags={tagStats} />
+          </SidebarContent>
+        </div>
         <SidebarRail />
       </Sidebar>
 
@@ -164,22 +177,7 @@ export default function Dashboard({
               </div>
             </div>
           </div>
-          <a
-            href="/screener"
-            className="text-muted-foreground hover:text-muted-foreground-hover text-xs"
-            style={{ cursor: 'pointer' }}
-          >
-            全市场初筛 ↗
-          </a>
-          <a
-            href="http://localhost:3001/api/health"
-            target="_blank"
-            rel="noreferrer"
-            className="text-muted-foreground hover:text-muted-foreground-hover text-xs"
-            style={{ cursor: 'pointer' }}
-          >
-            API 状态 ↗
-          </a>
+          <DonateDialog />
         </header>
         {/* ===== 右侧内容区：公司列表 | 主内容（resizable 分割）===== */}
         {/* min-h-0：允许 SidebarInset 收缩到剩余高度，min-w-0 防止 Group 撑出横向溢出 */}
@@ -308,7 +306,7 @@ export default function Dashboard({
               )}
 
               {mode === 'single' && activeCode && (
-                <CompanyDashboard thscode={activeCode} />
+                <CompanyDashboard thscode={activeCode} onClose={clearCompanies} />
               )}
 
               {mode === 'compare' && <CompareTable items={selectedItems} />}

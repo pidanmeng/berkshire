@@ -51,7 +51,7 @@
   --card-foreground: oklch(0.21 0.034 264.665);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.21 0.034 264.665);
-  --primary: oklch(0.55 0.163 261.826);
+  --primary: oklch(0.72 0.16 85);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.967 0.001 286.375);
   --secondary-foreground: oklch(0.21 0.034 264.665);
@@ -62,7 +62,7 @@
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.92 0.004 286.32);
   --input: oklch(0.92 0.004 286.32);
-  --ring: oklch(0.55 0.163 261.826);
+  --ring: oklch(0.72 0.16 85);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -79,7 +79,7 @@
 }
 
 .dark {
-  /* 与 design.md Vercel Dark 色板对齐 */
+  /* 与 design.md 黑金色板对齐 */
   --background: #000000;
   --foreground: #ffffff;
   --card: #0a0a0a;
@@ -98,13 +98,13 @@
   --destructive-foreground: #ffffff;
   --border: #1a1a1a;
   --input: #1a1a1a;
-  --ring: #0070f3;
-  --chart-1: #0070f3;
+  --ring: #d4af37;
+  --chart-1: #d4af37;
   --chart-2: #34d399;
   --chart-3: #fbbf24;
   --chart-4: #ee0000;
   --chart-5: #a78bfa;
-  /* sidebar（Vercel Dark：surface 底、white 文字、Vercel Blue ring） */
+  /* sidebar（黑金：surface 底、white 文字、Gold ring） */
   --sidebar-background: #0a0a0a;
   --sidebar-foreground: #ffffff;
   --sidebar-primary: #ffffff;
@@ -112,7 +112,7 @@
   --sidebar-accent: #111111;
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: #1a1a1a;
-  --sidebar-ring: #0070f3;
+  --sidebar-ring: #d4af37;
 }
 
 @layer base {
@@ -150,8 +150,8 @@
   --text-secondary: #a1a1a1;  /* ink-muted Silver */
   --text-muted: #666666;      /* ink-subtle Slate */
 
-  --accent-primary: #0070f3;  /* accent Vercel Blue */
-  --accent-hover: #3291ff;    /* accent-hover Blue Hover */
+  --accent-primary: #d4af37;  /* accent Gold */
+  --accent-hover: #e6c25c;    /* accent-hover Gold Hover */
   --accent-success: #34d399;
   --accent-warning: #fbbf24;
   --accent-danger: #ee0000;   /* danger Red */
@@ -238,7 +238,7 @@ body {
 }
 .tag-chip:hover { border-color: var(--accent-primary); color: var(--text-primary); }
 .tag-chip.active {
-  background: rgba(0, 112, 243, 0.18);
+  background: rgba(212, 175, 55, 0.18);
   border-color: var(--accent-primary);
   color: var(--accent-primary);
   font-weight: 600;
@@ -286,7 +286,7 @@ table.data-table td .co-code { color: var(--text-muted); font-size: 11px; font-f
 .badge-yellow { background: hsla(43, 60%, 56%, 0.08);  color: hsl(43, 60%, 56%); }
 .badge-red    { background: hsla(0, 60%, 47%, 0.08); color: hsl(0, 60%, 47%); }
 .badge-muted  { background: rgba(148, 163, 184, 0.08); color: var(--text-secondary); }
-.badge-primary{ background: hsla(212, 60%, 48%, 0.09);  color: hsl(212, 60%, 48%); }
+.badge-primary{ background: rgba(212, 175, 55, 0.09);  color: #d4af37; }
 
 /* 分档色 */
 .zone-deep_undervalued { background: hsla(156, 45%, 67%, 0.2); color: hsl(156, 45%, 67%); }
@@ -430,7 +430,7 @@ a.back-link:hover { color: var(--accent-primary); }
 .doc-file:hover { border-color: var(--accent-primary); color: var(--text-secondary); }
 .doc-file-active {
   border-color: var(--accent-primary);
-  background: rgba(0, 112, 243, 0.12);
+  background: rgba(212, 175, 55, 0.12);
   color: var(--text-primary);
 }
 .doc-file-name {
@@ -459,5 +459,5 @@ a.back-link:hover { color: var(--accent-primary); }
 }
 
 /* 选中行高亮 */
-table.data-table tr.row-selected { background: rgba(0, 112, 243, 0.1); }
-table.data-table tr.row-selected:hover { background: rgba(0, 112, 243, 0.16); }
+table.data-table tr.row-selected { background: rgba(212, 175, 55, 0.1); }
+table.data-table tr.row-selected:hover { background: rgba(212, 175, 55, 0.16); }

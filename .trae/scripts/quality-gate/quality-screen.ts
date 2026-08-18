@@ -635,6 +635,8 @@ ${redFlags.length === 0 ? '- （无）' : redFlags.map((r) => `- 🚨 ${r}`).joi
 ### 筛查结论
 ${emojiVerdict} **${verdict}** → ${verdictText}
 
+> **frontmatter 回填**（供 valuation-tracker 消费，禁止事后从正文解析）：quality_verdict: "${verdict}" 与 quality_score: ${overallScore.toFixed(1)} 两值写入公司笔记（或基本面更新产物）frontmatter，与本节同一轮筛查同源
+
 *本报告仅供初筛。红牌≠必然失败，需结合行业特性（如金融行业高杠杆属正常）、管理层、周期性位置做定性判断。*
 `.trim();
 

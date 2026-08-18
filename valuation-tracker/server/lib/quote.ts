@@ -10,8 +10,10 @@ import {
   getSnapshot,
   getValuations,
   getKline,
+  getKlineFromEastmoney,
   getMarketCapFromEastmoney,
 } from "../../../.trae/scripts/hithink/hithink.ts";
+import { shDate } from "./sh-date.ts";
 
 export interface Quote {
   thscode: string;
@@ -85,15 +87,42 @@ export async function getQuotes(thscodes: string[]): Promise<Map<string, Quote>>
   return map;
 }
 
-/** 历史 K 线（前复权，同花顺） */
-export async function getKlineBars(thscode: string, days = 250): Promise<KlineBar[]> {
-  const bars = await getKline(thscode, days);
-  return bars.map((k) => ({
-    date: new Date(k.date_ms).toISOString().slice(0, 10),
+/**
+ * 历史 K 线（前复权）— 同花顺优先，超时/失败自动降级东财 push2his。
+ * 返回数据源标记 source，便于前端与日志区分数据来源。
+ */
+export async function getKlineBars(
+  thscode: string,
+  days = 250,
+): Promise<{ bars: KlineBar[]; source: 'hithink' | 'eastmoney' }> {
+  try {
+    const bars = await getKline(thscode, days);
+    if (bars.length > 0) return { bars: bars.map(toBar), source: 'hithink' };
+    // 上游 code=0 但返回空数组（静默空）也会导致图表空白，同样降级
+    console.warn(`[quote] 同花顺 K 线返回空，降级东财 ${thscode}`);
+  } catch (err) {
+    console.warn(`[quote] 同花顺 K 线失败，降级东财 ${thscode}:`, (err as Error).message);
+  }
+  const bars = await getKlineFromEastmoney(thscode, days);
+  return { bars: bars.map(toBar), source: 'eastmoney' };
+}
+
+/** 数据源统一映射：date_ms（北京时间 0 点）+ OHLC + volume → KlineBar */
+function toBar(k: {
+  date_ms: number;
+  open_price: number;
+  high_price: number;
+  low_price: number;
+  close_price: number;
+  volume: number;
+}): KlineBar {
+  return {
+    // date_ms 为北京时间交易日 0 点时间戳，按东八区格式化避免 UTC 偏移一天
+    date: shDate(k.date_ms),
     open: k.open_price,
     high: k.high_price,
     low: k.low_price,
     close: k.close_price,
     volume: k.volume,
-  }));
+  };
 }
