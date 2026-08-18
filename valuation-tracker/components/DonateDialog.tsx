@@ -34,7 +34,7 @@ export default function DonateDialog({ open, onOpenChange }: DonateDialogProps) 
         aria-label="请我喝杯咖啡"
       >
         <Coffee className="donate-icon size-4" />
-        请我喝杯咖啡
+        <span className="hidden sm:inline">请我喝杯咖啡</span>
       </button>
 
       <Dialog open={open} onOpenChange={onOpenChange}>

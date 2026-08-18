@@ -131,8 +131,12 @@ function ChangeChart({ points }: { points: DarkTradeHistoryPoint[] }) {
     });
     const onResize = () => chart.resize();
     window.addEventListener("resize", onResize);
+    // 容器尺寸变化（移动端断点切换/侧栏折叠）时自适应
+    const ro = new ResizeObserver(onResize);
+    ro.observe(ref.current);
     return () => {
       window.removeEventListener("resize", onResize);
+      ro.disconnect();
       chart.dispose();
     };
   }, [points]);

@@ -109,8 +109,12 @@ export default function PriceChart({
 
     const onResize = () => chart.resize();
     window.addEventListener("resize", onResize);
+    // 容器尺寸变化（侧栏折叠/面板拖拽/移动端断点切换）时自适应
+    const ro = new ResizeObserver(onResize);
+    ro.observe(ref.current);
     return () => {
       window.removeEventListener("resize", onResize);
+      ro.disconnect();
       chart.dispose();
       chartRef.current = null;
     };

@@ -257,7 +257,7 @@ export default function DarkTradeDashboard({ initial }: { initial: DarkTradeList
                             title={isFav ? "取消自选" : "加入自选"}
                             aria-label={isFav ? `取消自选 ${r.name}` : `加入自选 ${r.name}`}
                             className={cn(
-                              "flex size-6 items-center justify-center transition-colors",
+                              "relative flex size-6 items-center justify-center transition-colors after:absolute after:-inset-1",
                               isFav
                                 ? "text-[var(--accent-primary)]"
                                 : "text-[var(--text-muted)] hover:text-[var(--text-primary)]",

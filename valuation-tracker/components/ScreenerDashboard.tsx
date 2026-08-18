@@ -244,7 +244,7 @@ export default function ScreenerDashboard({ initial }: { initial: ScreenerRespon
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       {/* ===== Header ===== */}
-      <header className="px-4 py-2 flex items-center justify-between border-b">
+      <header className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b px-4 py-2">
         <div className="flex min-w-0 items-center gap-2">
           <div>
             <h1 className="text-xl font-bold">全市场初筛</h1>

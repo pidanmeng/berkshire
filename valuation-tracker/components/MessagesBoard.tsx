@@ -44,13 +44,13 @@ function DonateGuide() {
         <b className="text-[var(--accent-primary)]">3 元 Token</b>
         ；网站目前服务器、域名均为自费运营。
       </p>
-      <div className="mt-3 grid grid-cols-2 gap-4">
+      <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <figure className="flex flex-col items-center gap-1.5">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/donate/wechat-pay.png"
             alt="微信收款码"
-            className="w-50 border border-[var(--border-subtle)] object-contain"
+            className="w-40 border border-[var(--border-subtle)] object-contain sm:w-50"
           />
           <figcaption className="text-[11px] text-[var(--text-muted)]">微信收款码</figcaption>
         </figure>
@@ -59,7 +59,7 @@ function DonateGuide() {
           <img
             src="/donate/wechat-friend.png"
             alt="微信添加好友二维码"
-            className="w-50 border border-[var(--border-subtle)] object-contain"
+            className="w-40 border border-[var(--border-subtle)] object-contain sm:w-50"
           />
           <figcaption className="text-[11px] text-[var(--text-muted)]">微信添加好友</figcaption>
         </figure>

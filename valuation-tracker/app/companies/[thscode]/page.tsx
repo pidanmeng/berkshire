@@ -27,7 +27,7 @@ export default async function CompanyPage({ params }: { params: Promise<{ thscod
 
   return (
     <div className="page-wrapper">
-      <header className="topbar">
+      <header className="topbar flex-wrap gap-2">
         <div>
           <a className="back-link" href="/">← 返回看板</a>
           <div className="sub" style={{ marginTop: 6 }}>估值追踪系统 · 公司详情</div>

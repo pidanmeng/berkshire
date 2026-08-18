@@ -37,7 +37,7 @@ export default async function DarkTradeHistoryPage({
       <AppIconRail className="h-full" />
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
         <div className="page-wrapper">
-          <header className="topbar">
+          <header className="topbar flex-wrap gap-2">
             <div>
               <a className="back-link" href="/darktrade">← 返回暗盘列表</a>
               <div className="sub" style={{ marginTop: 6 }}>估值追踪系统 · 暗盘追踪 · 单股历史</div>

@@ -157,7 +157,7 @@ export default function CompanySidebar({
                       checked={checked}
                       onClick={(e) => e.stopPropagation()}
                       onCheckedChange={() => toggleCompany(it.thscode)}
-                      className="size-4"
+                      className="relative size-4 after:absolute after:-inset-2"
                     />
                   ) : (
                     <button
@@ -168,7 +168,7 @@ export default function CompanySidebar({
                       title={isFavorite ? "取消收藏（自选）" : "收藏为自选股"}
                       aria-label={isFavorite ? "取消收藏" : "收藏为自选股"}
                       className={cn(
-                        "flex size-4 shrink-0 items-center justify-center transition-colors",
+                        "relative flex size-4 shrink-0 items-center justify-center transition-colors after:absolute after:-inset-2",
                         isFavorite
                           ? "text-[var(--accent-primary)]"
                           : "text-muted-foreground/50 hover:text-muted-foreground",

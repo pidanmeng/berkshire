@@ -27,12 +27,16 @@ import CompareTable from './CompareTable';
 import DonateDialog from './DonateDialog';
 import { useDashboardStore } from '@/lib/dashboard-store';
 import { useFavorites } from '@/hooks/use-favorites';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 /** 右侧分割（公司列表 | 主内容）宽度布局持久化 key */
 const SPLIT_LAYOUT_KEY = 'valuation-split-layout';
 
 /** 默认右侧分割（flexGrow）：公司列表 / 主内容 */
 const DEFAULT_LAYOUT: Layout = { companies: 14, main: 86 };
+
+/** 移动端（<768px）上下堆叠：公司列表在上 / 主内容在下 */
+const MOBILE_LAYOUT: Layout = { companies: 38, main: 62 };
 
 export default function Dashboard({
   initial,
@@ -43,6 +47,9 @@ export default function Dashboard({
   const [lastUpdated, setLastUpdated] = useState<number>(initial.fetchedAt);
   const [error, setError] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // 移动端：<768px 时左侧 Sidebar 渲染为抽屉，右侧公司列表/主内容改为上下堆叠
+  const isMobile = useIsMobile();
 
   // 首次访问自动弹出「请我喝杯咖啡」，勾选「不再提醒」后不再弹出
   const [donateOpen, setDonateOpen] = useState(false);
@@ -189,7 +196,8 @@ export default function Dashboard({
       {/* ===== 左面板：ICON 列（并排于行业列表左侧，仅图标，hover tooltip）+ 行业/标签；收起时保留 ICON 列 ===== */}
       <Sidebar collapsible="icon">
         <div className="flex h-full min-h-0 w-full">
-          <AppIconRail className="h-full" />
+          {/* 桌面保留 ICON 列；移动端抽屉内隐藏，由右侧页面级左列统一承担（全站一致） */}
+          <AppIconRail className="hidden h-full md:flex" />
           <SidebarContent className="group-data-[collapsible=icon]:hidden min-w-0 flex-1">
             <TagSidebar tags={tagStats} favorites={favorites} favoriteSet={favoriteSet} />
           </SidebarContent>
@@ -199,7 +207,7 @@ export default function Dashboard({
 
       {/* 右侧：header 固定 + 内容区占满视口剩余高度，整页不滚动 */}
       <div className="flex h-dvh min-w-0 w-full flex-col overflow-hidden">
-        <header className="px-4 py-2 flex items-center justify-between border-b">
+        <header className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b px-4 py-2">
           <div className="flex min-w-0 items-center gap-2">
             <SidebarTrigger className="-ml-2" />
             <div>
@@ -214,33 +222,37 @@ export default function Dashboard({
             <DonateDialog open={donateOpen} onOpenChange={handleDonateChange} />
           </div>
         </header>
-        {/* ===== 右侧内容区：公司列表 | 主内容（resizable 分割）===== */}
-        {/* min-h-0：允许 SidebarInset 收缩到剩余高度，min-w-0 防止 Group 撑出横向溢出 */}
-        <SidebarInset className="min-h-0 min-w-0">
-          <ResizablePanelGroup
-            id="dashboard"
-            orientation="horizontal"
-            defaultLayout={DEFAULT_LAYOUT}
-            onLayoutChanged={onLayoutChanged}
-          >
-            {/* 公司列表 */}
-            <ResizablePanel
-              id="companies"
-              defaultSize="14"
-              minSize="12"
-              maxSize="24"
+        {/* ===== 右侧内容区：移动端左侧固定 40px 页面导航列 + 面板（桌面由 Sidebar 提供）===== */}
+        <div className="flex min-h-0 min-w-0 flex-1">
+          <AppIconRail className="h-full md:hidden" />
+          {/* min-h-0：允许 SidebarInset 收缩到剩余高度，min-w-0 防止 Group 撑出横向溢出 */}
+          <SidebarInset className="min-h-0 min-w-0">
+            <ResizablePanelGroup
+              id="dashboard"
+              key={isMobile ? 'dashboard-v' : 'dashboard-h'}
+              orientation={isMobile ? 'vertical' : 'horizontal'}
+              defaultLayout={isMobile ? MOBILE_LAYOUT : DEFAULT_LAYOUT}
+              onLayoutChanged={onLayoutChanged}
             >
-              <CompanySidebar
-                items={tagFiltered}
-                mode={selectedTags.length > 0 ? 'tag' : 'all'}
-                favoriteSet={favoriteSet}
-                toggleFavorite={toggleFavorite}
-              />
-            </ResizablePanel>
-            <ResizableHandle withHandle />
+              {/* 公司列表（移动端在上方，桌面在左侧） */}
+              <ResizablePanel
+                id="companies"
+                defaultSize={isMobile ? '38' : '14'}
+                minSize={isMobile ? '25' : '12'}
+                maxSize={isMobile ? '55' : '24'}
+              >
+                <CompanySidebar
+                  items={tagFiltered}
+                  mode={selectedTags.length > 0 ? 'tag' : 'all'}
+                  favoriteSet={favoriteSet}
+                  toggleFavorite={toggleFavorite}
+                />
+              </ResizablePanel>
+              {/* 窄屏隐藏拖拽条：移动端为固定上下堆叠 */}
+              {!isMobile && <ResizableHandle withHandle />}
 
-            {/* 主内容：面板内独立滚动 */}
-            <ResizablePanel id="main" defaultSize="86" minSize="40">
+              {/* 主内容：面板内独立滚动 */}
+              <ResizablePanel id="main" defaultSize={isMobile ? '62' : '86'} minSize={isMobile ? '45' : '40'}>
               <div className="h-full min-h-0 overflow-y-auto p-4">
                 {error && (
                 <div className="status-bar" style={{ marginBottom: 12 }}>
@@ -363,6 +375,7 @@ export default function Dashboard({
             </ResizablePanel>
           </ResizablePanelGroup>
         </SidebarInset>
+        </div>
       </div>
     </SidebarProvider>
   );
