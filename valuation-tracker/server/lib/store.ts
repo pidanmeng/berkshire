@@ -23,6 +23,23 @@ export interface FundamentalCheck {
   detail: string;                 // 新公告列表摘要（JSON 字符串）
 }
 
+/** 留言（公开匿名提交；type 白名单在路由层校验） */
+export interface Message {
+  id: number;
+  type: string;             // qa/feature/wish/correction/other
+  content: string;
+  tip_amount: number | null;    // 打赏金额（元），置空则无
+  tip_marked_at: string | null; // 打赏标记时间（ISO），与 tip_amount 同步置/清
+  reply: string | null;         // 管理员回复，null=未回复
+  replied_at: string | null;    // 回复时间（ISO）
+  created_at: string;           // 创建时间（ISO）
+}
+
+export interface MessageCreateInput {
+  type: string;
+  content: string;
+}
+
 export interface Store {
   /** 追加一条价格快照（自动清理 90 天前的旧数据） */
   saveSnapshot(snap: PriceSnapshot): Promise<void>;
@@ -32,12 +49,28 @@ export interface Store {
   setCheck(check: FundamentalCheck): Promise<void>;
   /** 读基本面检测结果 */
   getCheck(thscode: string): Promise<FundamentalCheck | null>;
+  /** 全部已回复留言（公开展示），按创建时间倒序 */
+  listRepliedMessages(): Promise<Message[]>;
+  /** 全部留言（含未回复，管理员可见），按创建时间倒序 */
+  listAllMessages(): Promise<Message[]>;
+  /** 新增留言（公开匿名提交） */
+  createMessage(input: MessageCreateInput): Promise<Message>;
+  /** 回复留言（管理员）：reply 非空；tipAmount 可空；找不到返回 null */
+  replyMessage(id: number, reply: string, tipAmount: number | null): Promise<Message | null>;
+}
+
+/** 留言创建时间倒序比较（ISO 字符串 + id 兜底，保证同毫秒稳定排序） */
+function sortByCreatedDesc(a: Message, b: Message): number {
+  if (a.created_at !== b.created_at) return b.created_at < a.created_at ? -1 : 1;
+  return b.id - a.id;
 }
 
 /** 内存降级实现（无 SQLite / 无 Turso 时使用；仅当前进程生命周期） */
 export function createMemoryStore(): Store {
   const snaps = new Map<string, PriceSnapshot[]>();
   const checks = new Map<string, FundamentalCheck>();
+  const messages: Message[] = [];
+  let nextId = 1;
   return {
     async saveSnapshot(snap) {
       const list = snaps.get(snap.thscode) ?? [];
@@ -52,6 +85,36 @@ export function createMemoryStore(): Store {
     },
     async getCheck(thscode) {
       return checks.get(thscode) ?? null;
+    },
+    async listRepliedMessages() {
+      return messages.filter((m) => m.replied_at !== null).sort(sortByCreatedDesc);
+    },
+    async listAllMessages() {
+      return [...messages].sort(sortByCreatedDesc);
+    },
+    async createMessage(input) {
+      const message: Message = {
+        id: nextId++,
+        type: input.type,
+        content: input.content,
+        tip_amount: null,
+        tip_marked_at: null,
+        reply: null,
+        replied_at: null,
+        created_at: new Date().toISOString(),
+      };
+      messages.push(message);
+      return message;
+    },
+    async replyMessage(id, reply, tipAmount) {
+      const message = messages.find((m) => m.id === id);
+      if (!message) return null;
+      const now = new Date().toISOString();
+      message.reply = reply;
+      message.replied_at = now;
+      message.tip_amount = tipAmount;
+      message.tip_marked_at = tipAmount === null ? null : now;
+      return { ...message };
     },
   };
 }

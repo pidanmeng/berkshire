@@ -11,12 +11,13 @@ import { quotesRoutes } from "./routes/quotes.ts";
 import { klineRoutes } from "./routes/kline.ts";
 import { fundamentalsRoutes } from "./routes/fundamentals.ts";
 import { screenerRoutes } from "./routes/screener.ts";
+import { messagesRoutes } from "./routes/messages.ts";
 import { serverTiming } from '@elysia/server-timing'
 
 export const app = new Elysia()
   .use(cors({
     origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(",") : ["http://localhost:3000", "http://127.0.0.1:3000"],
-    methods: ["GET"],
+    methods: ["GET", "POST"],
   }))
   .use(serverTiming())
   // 性能监控：Prometheus 格式直方图（请求耗时/状态码/路径），端点 /api/metrics
@@ -27,6 +28,7 @@ export const app = new Elysia()
   .use(klineRoutes)
   .use(fundamentalsRoutes)
   .use(screenerRoutes)
+  .use(messagesRoutes)
   .onError(({ code, error }) => {
     console.error(`[Elysia] ${code}: ${(error as Error).message}`);
     return new Response(JSON.stringify({ error: code, message: (error as Error).message }), {
