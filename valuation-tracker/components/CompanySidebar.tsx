@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ListChecks, Search, X } from "lucide-react";
+import { ListChecks, Search, Star, X } from "lucide-react";
 import { pinyin } from "pinyin-pro";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import type { CompanyItem } from "@/lib/api";
 import { useDashboardStore } from "@/lib/dashboard-store";
+import { useFavorites } from "@/hooks/use-favorites";
 
 const fmtPct = (v: number | null) => (v == null ? "—" : `${v > 0 ? "+" : ""}${v.toFixed(2)}%`);
 
@@ -20,6 +21,7 @@ export default function CompanySidebar({
   mode: "tag" | "all";
 }) {
   const [query, setQuery] = useState("");
+  const { favorites, favoriteSet, toggleFavorite } = useFavorites();
   const selected = useDashboardStore((s) => s.selectedCompanies);
   const multiSelect = useDashboardStore((s) => s.companyMultiSelect);
   const toggleCompany = useDashboardStore((s) => s.toggleCompany);
@@ -49,13 +51,19 @@ export default function CompanySidebar({
     });
   }, [items, query]);
 
-  // 多选时选中的公司置顶（单选模式保持原始顺序）
+  // 多选时选中的公司置顶；单选时自选股收藏置顶（均保持其余公司原始顺序）
   const visible = useMemo(() => {
-    if (!multiSelect || selected.length === 0) return base;
-    const pinned = base.filter((it) => selectedSet.has(it.thscode));
-    const rest = base.filter((it) => !selectedSet.has(it.thscode));
+    if (multiSelect) {
+      if (selected.length === 0) return base;
+      const pinned = base.filter((it) => selectedSet.has(it.thscode));
+      const rest = base.filter((it) => !selectedSet.has(it.thscode));
+      return [...pinned, ...rest];
+    }
+    if (favorites.length === 0) return base;
+    const pinned = base.filter((it) => favoriteSet.has(it.thscode));
+    const rest = base.filter((it) => !favoriteSet.has(it.thscode));
     return [...pinned, ...rest];
-  }, [base, selected, selectedSet, multiSelect]);
+  }, [base, selected, selectedSet, multiSelect, favorites, favoriteSet]);
 
   const allSelected = visible.length > 0 && visible.every((it) => selectedSet.has(it.thscode));
 
@@ -128,6 +136,7 @@ export default function CompanySidebar({
             )}
             {visible.map((it) => {
               const checked = selectedSet.has(it.thscode);
+              const isFavorite = favoriteSet.has(it.thscode);
               return (
                 <div
                   key={it.thscode}
@@ -146,13 +155,32 @@ export default function CompanySidebar({
                     checked ? "bg-[rgba(242,193,78,0.12)]" : "hover:bg-muted/40",
                   )}
                 >
-                  {multiSelect && (
+                  {multiSelect ? (
                     <Checkbox
                       checked={checked}
                       onClick={(e) => e.stopPropagation()}
                       onCheckedChange={() => toggleCompany(it.thscode)}
                       className="size-4"
                     />
+                  ) : (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFavorite(it.thscode);
+                      }}
+                      title={isFavorite ? "取消收藏（自选）" : "收藏为自选股"}
+                      aria-label={isFavorite ? "取消收藏" : "收藏为自选股"}
+                      className={cn(
+                        "flex size-4 shrink-0 items-center justify-center transition-colors",
+                        isFavorite
+                          ? "text-[var(--accent-primary)]"
+                          : "text-muted-foreground/50 hover:text-muted-foreground",
+                      )}
+                    >
+                      <Star
+                        className={cn("size-3.5", isFavorite && "fill-current")}
+                      />
+                    </button>
                   )}
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[13px] text-foreground">{it.name}</span>
