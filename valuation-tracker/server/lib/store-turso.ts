@@ -4,7 +4,7 @@
  * Turso 与 SQLite 完全同构，表结构与 store-sqlite.ts 一致。
  */
 import { createClient } from "@libsql/client";
-import type { Store, PriceSnapshot, FundamentalCheck, Message, MessageCreateInput } from "./store.ts";
+import type { Store, PriceSnapshot, FundamentalCheck, Message, MessageCreateInput, Announcement } from "./store.ts";
 
 export function createTursoStore(url: string, authToken?: string): Store {
   const client = createClient({ url, authToken });
@@ -40,6 +40,13 @@ export function createTursoStore(url: string, authToken?: string): Store {
           reply TEXT,
           replied_at TEXT,
           created_at TEXT NOT NULL
+        );
+      `);
+      await client.execute(`
+        CREATE TABLE IF NOT EXISTS announcement (
+          id INTEGER PRIMARY KEY CHECK (id = 1),
+          content TEXT NOT NULL,
+          updated_at TEXT NOT NULL
         );
       `);
     })());
@@ -158,6 +165,25 @@ export function createTursoStore(url: string, authToken?: string): Store {
         args: [id],
       });
       return Number(res.rowsAffected) > 0;
+    },
+    async getAnnouncement(): Promise<Announcement | null> {
+      await ensure();
+      const res = await client.execute({
+        sql: `SELECT content, updated_at FROM announcement WHERE id = 1`,
+        args: [],
+      });
+      const row = res.rows[0];
+      return row ? { content: String(row.content), updatedAt: String(row.updated_at) } : null;
+    },
+    async setAnnouncement(content: string): Promise<Announcement> {
+      await ensure();
+      const now = new Date().toISOString();
+      await client.execute({
+        sql: `INSERT INTO announcement (id, content, updated_at) VALUES (1, ?, ?)
+              ON CONFLICT(id) DO UPDATE SET content = excluded.content, updated_at = excluded.updated_at`,
+        args: [content, now],
+      });
+      return { content, updatedAt: now };
     },
   };
 }

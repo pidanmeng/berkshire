@@ -40,6 +40,12 @@ export interface MessageCreateInput {
   content: string;
 }
 
+/** 置顶公告（单行单例；camelCase 与前端 Announcement 类型一致） */
+export interface Announcement {
+  content: string;
+  updatedAt: string;  // ISO 时间
+}
+
 export interface Store {
   /** 追加一条价格快照（自动清理 90 天前的旧数据） */
   saveSnapshot(snap: PriceSnapshot): Promise<void>;
@@ -61,6 +67,10 @@ export interface Store {
   replyMessage(id: number, reply: string, tipAmount: number | null): Promise<Message | null>;
   /** 删除留言（管理员）：找到并删除返回 true，不存在返回 false */
   deleteMessage(id: number): Promise<boolean>;
+  /** 读取置顶公告（未设置返回 null） */
+  getAnnouncement(): Promise<Announcement | null>;
+  /** 写入置顶公告（覆盖更新，刷新 updatedAt） */
+  setAnnouncement(content: string): Promise<Announcement>;
 }
 
 /** 留言创建时间倒序比较（ISO 字符串 + id 兜底，保证同毫秒稳定排序） */
@@ -75,6 +85,7 @@ export function createMemoryStore(): Store {
   const checks = new Map<string, FundamentalCheck>();
   const messages: Message[] = [];
   let nextId = 1;
+  let announcement: Announcement | null = null;
   return {
     async saveSnapshot(snap) {
       const list = snaps.get(snap.thscode) ?? [];
@@ -128,6 +139,13 @@ export function createMemoryStore(): Store {
       if (idx < 0) return false;
       messages.splice(idx, 1);
       return true;
+    },
+    async getAnnouncement() {
+      return announcement;
+    },
+    async setAnnouncement(content) {
+      announcement = { content, updatedAt: new Date().toISOString() };
+      return announcement;
     },
   };
 }

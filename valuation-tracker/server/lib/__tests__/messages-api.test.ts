@@ -73,6 +73,13 @@ describe("留言板 API", () => {
     expect(data.adminEnabled).toBe(true);
   });
 
+  test("GET /api/messages 响应含 announcement 且初始为 null", async () => {
+    const res = await call("GET", "/api/messages");
+    expect(res.status).toBe(200);
+    const data = (await res.json()) as { announcement: { content: string; updatedAt: string } | null };
+    expect(data.announcement).toBeNull();
+  });
+
   test("游客创建留言：未回复前公开列表不可见", async () => {
     const created = await call("POST", "/api/messages", { body: { type: "qa", content: "请问如何看估值？" } });
     expect(created.status).toBe(200);
@@ -157,13 +164,43 @@ describe("留言板 API", () => {
     expect(missing.status).toBe(404);
   });
 
-  test("未配置 ADMIN_TOKEN 时登录返回明确提示（503）", async () => {
+  test("PUT /api/messages/announcement：无 token 401、空内容/超长 400、带 token 200 且 GET 可见", async () => {
+    // 无 token
+    const noAuth = await call("PUT", "/api/messages/announcement", { body: { content: "公告" } });
+    expect(noAuth.status).toBe(401);
+
+    const token = await login();
+    // 空内容（trim 后）
+    const empty = await call("PUT", "/api/messages/announcement", { body: { content: "   " }, token });
+    expect(empty.status).toBe(400);
+    // 超长（超过 MAX_CONTENT_LEN = 2000）
+    const tooLong = await call("PUT", "/api/messages/announcement", { body: { content: "x".repeat(2001) }, token });
+    expect(tooLong.status).toBe(400);
+
+    // 成功写入
+    const ok = await call("PUT", "/api/messages/announcement", { body: { content: "置顶公告内容" }, token });
+    expect(ok.status).toBe(200);
+    const ann = (await ok.json()) as { content: string; updatedAt: string };
+    expect(ann.content).toBe("置顶公告内容");
+    expect(ann.updatedAt).toBeTruthy();
+
+    // 公开 GET 与 all=1 均可见
+    const pub = (await (await call("GET", "/api/messages")).json()) as { announcement: { content: string } | null };
+    expect(pub.announcement?.content).toBe("置顶公告内容");
+    const all = (await (await call("GET", "/api/messages?all=1", { token })).json()) as { announcement: { content: string } | null };
+    expect(all.announcement?.content).toBe("置顶公告内容");
+  });
+
+  test("未配置 ADMIN_TOKEN 时登录与更新公告返回明确提示（503）", async () => {
     delete process.env.ADMIN_TOKEN;
     try {
       const res = await call("POST", "/api/messages/admin/login", { body: { password: "anything" } });
       expect(res.status).toBe(503);
       const data = (await res.json()) as { message: string };
       expect(data.message).toContain("ADMIN_TOKEN");
+
+      const put = await call("PUT", "/api/messages/announcement", { body: { content: "x" } });
+      expect(put.status).toBe(503);
     } finally {
       process.env.ADMIN_TOKEN = "test-admin";
     }

@@ -4,7 +4,7 @@
  * 注意：bun:sqlite 仅在 Bun 运行时存在；改为函数内动态 import，
  * 使 Node.js 运行环境（如 Vercel Serverless）加载本模块不报错，由 db.ts 降级到 Turso/内存。
  */
-import type { Store, PriceSnapshot, FundamentalCheck, Message, MessageCreateInput } from "./store.ts";
+import type { Store, PriceSnapshot, FundamentalCheck, Message, MessageCreateInput, Announcement } from "./store.ts";
 
 export async function createSqliteStore(dbPath = "data/tracker.db"): Promise<Store> {
   // @ts-ignore bun:sqlite 仅 Bun 运行时存在；Node（Vercel）类型环境无此模块声明，由 db.ts 捕获后降级
@@ -35,6 +35,11 @@ export async function createSqliteStore(dbPath = "data/tracker.db"): Promise<Sto
       reply TEXT,
       replied_at TEXT,
       created_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS announcement (
+      id INTEGER PRIMARY KEY CHECK (id = 1),
+      content TEXT NOT NULL,
+      updated_at TEXT NOT NULL
     );
   `);
 
@@ -140,6 +145,21 @@ export async function createSqliteStore(dbPath = "data/tracker.db"): Promise<Sto
       const res = db.run(`DELETE FROM messages WHERE id = ?`, [id]);
       return res.changes > 0;
     },
+    async getAnnouncement(): Promise<Announcement | null> {
+      const row = db
+        .query(`SELECT content, updated_at FROM announcement WHERE id = 1`)
+        .get() as unknown as AnnouncementRow | null;
+      return row ? { content: row.content, updatedAt: row.updated_at } : null;
+    },
+    async setAnnouncement(content: string): Promise<Announcement> {
+      const now = new Date().toISOString();
+      db.run(
+        `INSERT INTO announcement (id, content, updated_at) VALUES (1, ?, ?)
+         ON CONFLICT(id) DO UPDATE SET content = excluded.content, updated_at = excluded.updated_at`,
+        [content, now],
+      );
+      return { content, updatedAt: now };
+    },
   };
 }
 
@@ -172,6 +192,11 @@ type MessageRow = {
   reply: string | null;
   replied_at: string | null;
   created_at: string;
+};
+
+type AnnouncementRow = {
+  content: string;
+  updated_at: string;
 };
 
 function mapMessageRow(r: MessageRow): Message {

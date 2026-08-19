@@ -1,13 +1,20 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Coffee, Lock, LogOut, MessageSquare, Send, Trash2 } from "lucide-react";
+import { Coffee, Lock, LogOut, MessageSquare, Pencil, Pin, Send, Trash2 } from "lucide-react";
 import AppIconRail from "./AppIconRail";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import type { Message, MessageType, MessagesResponse } from "@/lib/api";
-import { getMessages, createMessage, adminLogin, replyMessage, deleteMessage } from "@/lib/api";
+import type { Announcement, Message, MessageType, MessagesResponse } from "@/lib/api";
+import {
+  getMessages,
+  createMessage,
+  adminLogin,
+  replyMessage,
+  deleteMessage,
+  updateAnnouncement,
+} from "@/lib/api";
 
 const TOKEN_KEY = "vt-admin-token";
 
@@ -38,11 +45,11 @@ function fmtTime(iso: string): string {
 function DonateGuide() {
   return (
     <div className="border border-[var(--border-default)] bg-[var(--bg-elevated)] p-4">
-      <p className="flex items-center gap-1.5 text-xs leading-relaxed text-[var(--text-secondary)]">
+      <p className="flex flex-wrap items-center gap-1.5 text-xs leading-relaxed text-[var(--text-secondary)]">
         <Coffee className="size-3.5 shrink-0 text-[var(--accent-primary)]" />
-        每次调研一只股票需要花费约
-        <b className="text-[var(--accent-primary)]">3 元 Token</b>
-        ；网站目前服务器、域名均为自费运营。
+        网站由我利用
+        <b className="text-[var(--accent-primary)]">业余时间</b>
+        独立维护：服务器、域名自费，每次调研还有约 3 元 Token 成本。
       </p>
       <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <figure className="flex flex-col items-center gap-1.5">
@@ -66,12 +73,128 @@ function DonateGuide() {
       </div>
       <p className="mt-3 text-center text-xs leading-relaxed text-[var(--text-secondary)]">
         打赏
-        <b className="mx-1 text-[var(--accent-warning)]">3 元以上</b>
-        ，备注
-        <b className="mx-1">股票代码或股票名称</b>
-        ，我看到后会启动调研流程。
+        <b className="mx-1 text-[var(--accent-warning)]">纯属自愿</b>
+        、金额随意，不打赏也完全没关系；
+        想调研的股票去留言板
+        <b className="mx-1">许愿公司调研</b>
+        告诉我即可，我会
+        <b className="mx-1 text-[var(--accent-warning)]">免费</b>
+        帮你调研。
       </p>
     </div>
+  );
+}
+
+/** 置顶公告横幅（公开只读展示；管理员模式可编辑，未设置公告时管理员仍可见编辑入口） */
+function AnnouncementBanner({
+  announcement,
+  isAdmin,
+  token,
+  onUpdated,
+}: {
+  announcement: Announcement | null;
+  isAdmin: boolean;
+  token: string | null;
+  onUpdated: (a: Announcement) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // 公告内容长度限制与后端 MAX_CONTENT_LEN 一致
+  const MAX_ANNOUNCEMENT_LEN = 2000;
+
+  // 公共视图且未设置公告 → 不渲染
+  if (!announcement && !isAdmin) return null;
+
+  const startEdit = () => {
+    setDraft(announcement?.content ?? "");
+    setError(null);
+    setEditing(true);
+  };
+
+  const cancelEdit = () => {
+    setEditing(false);
+    setError(null);
+  };
+
+  const handleSave = async () => {
+    const content = draft.trim();
+    if (!content) {
+      setError("公告内容不能为空");
+      return;
+    }
+    if (content.length > MAX_ANNOUNCEMENT_LEN) {
+      setError(`公告内容不能超过 ${MAX_ANNOUNCEMENT_LEN} 字`);
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      const updated = await updateAnnouncement(content, token ?? "");
+      onUpdated(updated);
+      setEditing(false);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <section className="border border-[var(--border-default)] bg-[var(--bg-card)] p-4">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--accent-primary)]">
+          <Pin className="size-3.5 shrink-0" />
+          置顶公告
+        </span>
+        {announcement && (
+          <span className="text-[11px] text-[var(--text-muted)]">更新于 {fmtTime(announcement.updatedAt)}</span>
+        )}
+        {isAdmin && (
+          <Button
+            type="button"
+            variant="outline"
+            size="xs"
+            className="ml-auto"
+            onClick={startEdit}
+            disabled={editing}
+            title="编辑置顶公告"
+          >
+            <Pencil className="size-3.5" />
+            编辑公告
+          </Button>
+        )}
+      </div>
+
+      {editing ? (
+        <div className="mt-3 space-y-2">
+          <textarea
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="输入公告内容，支持换行…"
+            rows={4}
+            className="h-auto min-h-24 w-full resize-y border border-[var(--border-default)] bg-transparent px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none transition-[border-color,box-shadow] focus-visible:border-[var(--accent-primary)] focus-visible:ring-[3px] focus-visible:ring-[rgba(242,193,78,0.25)]"
+          />
+          <div className="flex flex-wrap items-center gap-2">
+            <Button type="button" size="sm" onClick={handleSave} disabled={saving}>
+              {saving ? "保存中…" : "保存公告"}
+            </Button>
+            <Button type="button" size="sm" variant="outline" onClick={cancelEdit} disabled={saving}>
+              取消
+            </Button>
+            {error && <span className="text-xs text-[var(--accent-danger)]">{error}</span>}
+          </div>
+        </div>
+      ) : (
+        announcement && (
+          <p className="mt-2 break-words whitespace-pre-wrap text-sm leading-relaxed text-[var(--text-primary)]">
+            {announcement.content}
+          </p>
+        )
+      )}
+    </section>
   );
 }
 
@@ -218,6 +341,7 @@ function MessageItem({
 export default function MessagesBoard({ initial }: { initial: MessagesResponse | null }) {
   const [messages, setMessages] = useState<Message[]>(initial?.messages ?? []);
   const [adminEnabled, setAdminEnabled] = useState(initial?.adminEnabled ?? false);
+  const [announcement, setAnnouncement] = useState<Announcement | null>(initial?.announcement ?? null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const [loginOpen, setLoginOpen] = useState(false);
@@ -246,6 +370,7 @@ export default function MessagesBoard({ initial }: { initial: MessagesResponse |
         setToken(t);
         setAdminEnabled(res.adminEnabled);
         setMessages(res.messages);
+        setAnnouncement(res.announcement ?? null);
       })
       .catch(() => {
         try {
@@ -275,6 +400,7 @@ export default function MessagesBoard({ initial }: { initial: MessagesResponse |
       const res = await getMessages(true, t);
       setMessages(res.messages);
       setAdminEnabled(res.adminEnabled);
+      setAnnouncement(res.announcement ?? null);
     } catch (err) {
       setLoginError((err as Error).message);
     } finally {
@@ -296,6 +422,7 @@ export default function MessagesBoard({ initial }: { initial: MessagesResponse |
       .then((res) => {
         setMessages(res.messages);
         setAdminEnabled(res.adminEnabled);
+        setAnnouncement(res.announcement ?? null);
       })
       .catch(() => {
         // 恢复公共视图失败，保留现有列表
@@ -407,6 +534,14 @@ export default function MessagesBoard({ initial }: { initial: MessagesResponse |
         {/* 内容区 */}
         <div className="min-h-0 flex-1 overflow-y-auto">
           <div className="mx-auto max-w-3xl space-y-6 px-4 py-6">
+            {/* 置顶公告（管理员可编辑） */}
+            <AnnouncementBanner
+              announcement={announcement}
+              isAdmin={isAdmin}
+              token={token}
+              onUpdated={setAnnouncement}
+            />
+
             {/* 发布留言 */}
             <section className="space-y-3">
               <h2 className="text-sm font-semibold text-[var(--text-secondary)]">发布留言</h2>

@@ -44,10 +44,13 @@ export default function DonateDialog({ open, onOpenChange }: DonateDialogProps) 
           <DialogHeader>
             <DialogTitle>请我喝杯咖啡</DialogTitle>
             <DialogDescription className="text-balance leading-relaxed">
-              每次调研一只股票需要花费约
+              网站由我利用
+              <b className="mx-1 text-[var(--accent-primary)]">业余时间</b>
+              独立维护，服务器、域名均为
+              <b className="mx-1 text-[var(--accent-primary)]">自费</b>
+              ，每次调研还有约
               <b className="mx-1 text-[var(--accent-primary)]">3 元 Token</b>
-              ；网站目前服务器、域名均为
-              <b className="mx-1 text-[var(--accent-primary)]">自费运营</b>。
+              成本。
             </DialogDescription>
           </DialogHeader>
 
@@ -78,10 +81,13 @@ export default function DonateDialog({ open, onOpenChange }: DonateDialogProps) 
             </div>
             <p className="text-center text-[13px] leading-relaxed text-[var(--text-secondary)]">
               打赏
-              <b className="mx-1 text-[var(--accent-warning)]">3 元以上</b>
-              ，备注
-              <b className="mx-1">股票代码或股票名称</b>
-              ，我看到后会启动调研流程。
+              <b className="mx-1 text-[var(--accent-warning)]">纯属自愿</b>
+              、金额随意，不打赏也完全没关系；
+              想调研的股票去留言板
+              <b className="mx-1">许愿公司调研</b>
+              告诉我即可，我会
+              <b className="mx-1 text-[var(--accent-warning)]">免费</b>
+              帮你调研。
             </p>
             <button
               type="button"

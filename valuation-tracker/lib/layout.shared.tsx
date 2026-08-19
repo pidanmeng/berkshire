@@ -15,12 +15,6 @@ export function baseOptions(): BaseLayoutProps {
       ),
       url: '/docs',
     },
-    links: [
-      {
-        text: '返回估值追踪',
-        url: '/',
-        active: 'none',
-      },
-    ],
+    links: [],
   };
 }

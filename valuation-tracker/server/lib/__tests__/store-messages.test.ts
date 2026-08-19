@@ -40,6 +40,29 @@ for (const name of ["memory", "sqlite"] as const) {
       return name === "memory" ? createMemoryStore() : (await sqliteStorePromise)!;
     }
 
+    test("getAnnouncement：初始为 null", async () => {
+      const store = await freshStore();
+      expect(await store.getAnnouncement()).toBeNull();
+    });
+
+    test("setAnnouncement：设置后可读、覆盖更新并刷新 updatedAt", async () => {
+      const store = await freshStore();
+      const a1 = await store.setAnnouncement("第一条公告");
+      expect(a1.content).toBe("第一条公告");
+      expect(a1.updatedAt).toBeTruthy();
+      expect(await store.getAnnouncement()).toEqual(a1);
+
+      // 覆盖更新：内容替换、updatedAt 刷新
+      await new Promise((r) => setTimeout(r, 5));
+      const a2 = await store.setAnnouncement("更新后的公告");
+      expect(a2.content).toBe("更新后的公告");
+      expect(new Date(a2.updatedAt).getTime()).toBeGreaterThan(new Date(a1.updatedAt).getTime());
+      const got = await store.getAnnouncement();
+      expect(got).not.toBeNull();
+      expect(got!.content).toBe("更新后的公告");
+      expect(got!.updatedAt).toBe(a2.updatedAt);
+    });
+
     test("createMessage：初始为未回复，不出现在公开列表，出现在全部列表", async () => {
       const store = await freshStore();
       const m = await store.createMessage({ type: "qa", content: "测试留言" });

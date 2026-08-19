@@ -1,14 +1,15 @@
 /**
  * 留言板路由
- * GET  /api/messages            → 已回复留言（公开）
- * GET  /api/messages?all=1      → 全部留言（含未回复，管理员 Bearer token）
+ * GET  /api/messages            → 已回复留言（公开，含置顶公告）
+ * GET  /api/messages?all=1      → 全部留言（含未回复，管理员 Bearer token，含置顶公告）
  * POST /api/messages            → 游客匿名留言（type + content）
  * POST /api/messages/admin/login → 管理员密码校验，返回 token（前端存 sessionStorage）
  * POST /api/messages/:id/reply  → 管理员回复 + 标注打赏金额（Bearer token）
  * DELETE /api/messages/:id      → 管理员删除留言（Bearer token）
+ * PUT /api/messages/announcement → 管理员更新置顶公告（Bearer token）
  */
 import { Elysia, t } from "elysia";
-import type { Message } from "../lib/store.ts";
+import type { Announcement, Message } from "../lib/store.ts";
 import { getDb } from "../lib/db.ts";
 import { getAdminTokenConfig, issueAdminToken, verifyAdminPassword, verifyAdminToken } from "../lib/admin-auth.ts";
 
@@ -40,6 +41,11 @@ function toDto(m: Message) {
   };
 }
 
+/** 置顶公告 DTO（存储层已是 camelCase，直接透传） */
+function toAnnouncementDto(a: Announcement | null) {
+  return a ? { content: a.content, updatedAt: a.updatedAt } : null;
+}
+
 export const messagesRoutes = new Elysia({ prefix: "/api" })
   .get("/messages", async ({ query, headers, set }) => {
     const store = await getDb();
@@ -50,9 +56,17 @@ export const messagesRoutes = new Elysia({ prefix: "/api" })
         set.status = 401;
         return { error: "UNAUTHORIZED", message: "管理员验证失败，请重新登录" };
       }
-      return { messages: (await store.listAllMessages()).map(toDto), adminEnabled: true };
+      return {
+        messages: (await store.listAllMessages()).map(toDto),
+        adminEnabled: true,
+        announcement: toAnnouncementDto(await store.getAnnouncement()),
+      };
     }
-    return { messages: (await store.listRepliedMessages()).map(toDto), adminEnabled };
+    return {
+      messages: (await store.listRepliedMessages()).map(toDto),
+      adminEnabled,
+      announcement: toAnnouncementDto(await store.getAnnouncement()),
+    };
   })
   .post(
     "/messages",
@@ -145,4 +159,31 @@ export const messagesRoutes = new Elysia({ prefix: "/api" })
       params: t.Object({ id: t.Numeric() }),
       body: t.Object({ reply: t.String(), tipAmount: t.Union([t.Number(), t.Null()]) }),
     },
+  )
+  .put(
+    "/messages/announcement",
+    async ({ body, headers, set }) => {
+      // 与管理员登录一致：未配置 ADMIN_TOKEN 时明确提示 503
+      if (!getAdminTokenConfig()) {
+        set.status = 503;
+        return { error: "ADMIN_DISABLED", message: "管理员功能未启用：后端未配置 ADMIN_TOKEN，请在 .env 中配置后重启" };
+      }
+      const token = bearerToken((headers as Record<string, string | undefined>).authorization);
+      if (!verifyAdminToken(token)) {
+        set.status = 401;
+        return { error: "UNAUTHORIZED", message: "管理员验证失败，请重新登录" };
+      }
+      const content = body.content.trim();
+      if (!content) {
+        set.status = 400;
+        return { error: "EMPTY_CONTENT", message: "公告内容不能为空" };
+      }
+      if (content.length > MAX_CONTENT_LEN) {
+        set.status = 400;
+        return { error: "CONTENT_TOO_LONG", message: `公告内容不能超过 ${MAX_CONTENT_LEN} 字` };
+      }
+      const store = await getDb();
+      return toAnnouncementDto(await store.setAnnouncement(content));
+    },
+    { body: t.Object({ content: t.String() }) },
   );

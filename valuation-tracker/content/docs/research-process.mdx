@@ -1,94 +1,277 @@
 ---
 title: 研报生产流程
-description: 每篇研报如何产生——六阶段 Agent 流水线、三层调研结构、多空论证与质量门禁
+description: 每篇研报如何产生——六阶段流水线、三层调研结构、多空论证与质量保障
 ---
 
 # 研报生产流程
 
-每篇研报都不是「搜索一下再写」，而是由一套**六阶段串行、逐阶段验收**的 Agent 流水线产出。任何一阶段的验收不通过，都会打回补充，绝不跳过、绝不糊弄。
+你在这里读到的每一篇研报，都不是「搜索一下再写」的产物，而是由一套**六阶段串行、逐阶段验收**的流水线生产出来的：每一阶段的产出都必须通过验收，不通过就**打回前一环节补充**，绝不跳过、绝不糊弄。下面先看整条流水线长什么样，再逐层展开每个环节为什么这样设计。
+
+## 六阶段流水线总览
+
+<svg viewBox="0 0 860 190" className="w-full h-auto" role="img" aria-label="图1 六阶段流水线总览" xmlns="http://www.w3.org/2000/svg">
+<title>图1 六阶段流水线总览</title>
+<defs>
+<marker id="rp1-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#f2c14e" /></marker>
+</defs>
+<rect x="26" y="30" width="100" height="58" fill="#151515" stroke="#2b2b2b" />
+<text x="76" y="54" textAnchor="middle" fontSize="13" fontWeight="bold" fill="#e5e5e5">1 信息采集</text>
+<text x="76" y="74" textAnchor="middle" fontSize="11" fill="#9ca3af">原始素材包</text>
+<rect x="144" y="30" width="100" height="58" fill="rgba(242,193,78,0.08)" stroke="#f2c14e" />
+<text x="194" y="54" textAnchor="middle" fontSize="13" fontWeight="bold" fill="#e5e5e5">1.5 原文精读</text>
+<text x="194" y="74" textAnchor="middle" fontSize="11" fill="#9ca3af">精读笔记</text>
+<rect x="262" y="30" width="100" height="58" fill="#151515" stroke="#2b2b2b" />
+<text x="312" y="54" textAnchor="middle" fontSize="13" fontWeight="bold" fill="#e5e5e5">2 信息处理</text>
+<text x="312" y="74" textAnchor="middle" fontSize="11" fill="#9ca3af">结构化数据</text>
+<rect x="380" y="30" width="100" height="58" fill="#151515" stroke="#2b2b2b" />
+<text x="430" y="54" textAnchor="middle" fontSize="13" fontWeight="bold" fill="#e5e5e5">3 交叉验证</text>
+<text x="430" y="74" textAnchor="middle" fontSize="11" fill="#9ca3af">验证报告</text>
+<rect x="498" y="30" width="100" height="58" fill="#151515" stroke="#2b2b2b" />
+<text x="548" y="54" textAnchor="middle" fontSize="13" fontWeight="bold" fill="#e5e5e5">4 信息入库</text>
+<text x="548" y="74" textAnchor="middle" fontSize="11" fill="#9ca3af">知识库条目</text>
+<rect x="616" y="30" width="100" height="58" fill="rgba(242,193,78,0.08)" stroke="#f2c14e" />
+<text x="666" y="54" textAnchor="middle" fontSize="13" fontWeight="bold" fill="#e5e5e5">5 报告生成</text>
+<text x="666" y="74" textAnchor="middle" fontSize="11" fill="#9ca3af">最终研报</text>
+<rect x="734" y="30" width="100" height="58" fill="#151515" stroke="#2b2b2b" />
+<text x="784" y="54" textAnchor="middle" fontSize="13" fontWeight="bold" fill="#e5e5e5">6 归档</text>
+<text x="784" y="74" textAnchor="middle" fontSize="11" fill="#9ca3af">留存可回溯</text>
+<path d="M126,59 L142,59" stroke="#f2c14e" strokeWidth="2" markerEnd="url(#rp1-arr)" />
+<path d="M244,59 L260,59" stroke="#f2c14e" strokeWidth="2" markerEnd="url(#rp1-arr)" />
+<path d="M362,59 L378,59" stroke="#f2c14e" strokeWidth="2" markerEnd="url(#rp1-arr)" />
+<path d="M480,59 L496,59" stroke="#f2c14e" strokeWidth="2" markerEnd="url(#rp1-arr)" />
+<path d="M598,59 L614,59" stroke="#f2c14e" strokeWidth="2" markerEnd="url(#rp1-arr)" />
+<path d="M716,59 L732,59" stroke="#f2c14e" strokeWidth="2" markerEnd="url(#rp1-arr)" />
+<path d="M194,88 L194,116 L76,116 L76,88" fill="none" stroke="#f2c14e" strokeWidth="1.5" strokeDasharray="4 3" markerEnd="url(#rp1-arr)" />
+<path d="M312,88 L312,116 L194,116 L194,88" fill="none" stroke="#f2c14e" strokeWidth="1.5" strokeDasharray="4 3" markerEnd="url(#rp1-arr)" />
+<path d="M430,88 L430,116 L312,116 L312,88" fill="none" stroke="#f2c14e" strokeWidth="1.5" strokeDasharray="4 3" markerEnd="url(#rp1-arr)" />
+<path d="M548,88 L548,116 L430,116 L430,88" fill="none" stroke="#f2c14e" strokeWidth="1.5" strokeDasharray="4 3" markerEnd="url(#rp1-arr)" />
+<path d="M666,88 L666,116 L548,116 L548,88" fill="none" stroke="#f2c14e" strokeWidth="1.5" strokeDasharray="4 3" markerEnd="url(#rp1-arr)" />
+<path d="M784,88 L784,116 L666,116 L666,88" fill="none" stroke="#f2c14e" strokeWidth="1.5" strokeDasharray="4 3" markerEnd="url(#rp1-arr)" />
+<text x="135" y="138" textAnchor="middle" fontSize="11" fill="#9ca3af">阶段验收</text>
+<text x="253" y="138" textAnchor="middle" fontSize="11" fill="#9ca3af">阶段验收</text>
+<text x="371" y="138" textAnchor="middle" fontSize="11" fill="#9ca3af">阶段验收</text>
+<text x="489" y="138" textAnchor="middle" fontSize="11" fill="#9ca3af">阶段验收</text>
+<text x="607" y="138" textAnchor="middle" fontSize="11" fill="#9ca3af">阶段验收</text>
+<text x="725" y="138" textAnchor="middle" fontSize="11" fill="#9ca3af">阶段验收</text>
+<text x="430" y="168" textAnchor="middle" fontSize="12" fill="#9ca3af">逐阶段验收：每个环节的产出必须通过验收；不通过即沿虚线打回前一环节补充，直到通过才继续</text>
+</svg>
+
+整条流水线从信息采集开始，依次经过原文精读、信息处理、交叉验证、信息入库、报告生成，最后归档。每两个环节之间都有一道**阶段验收**：产出不合格就沿虚线打回前一环节补充，直到验收通过才允许进入下一环节。**只有上一环节的产出质量过关，下一环节才有高质量输入可加工**——这正是串行执行与逐阶段验收的意义所在。
+
+每个环节由专门的团队角色负责、各司其职：
+
+| 阶段 | 负责角色 | 产出 | 保证什么 |
+|------|---------|------|---------|
+| 1 信息采集 | 信息猎手 | 原始素材包 | 三个层级均有实质采集；关键论点有来源可溯；核心数据至少 2 个独立来源 |
+| 1.5 原文精读 | 文档精读官 | 精读笔记（含多空论证） | 带着投资目的精读财报 / 研报 / 公告原文，强制覆盖最近 3 个完整财年年报 |
+| 2 信息处理 | 信息炼金师 | 结构化数据 | 口径标准化、按三层归类，区分「生意模式数据」与「周期性数据」 |
+| 3 交叉验证 | 交叉验证官 | 验证报告 | 逐条置信度评分（1-10）、反共识检验、管理层诚信检查 |
+| 4 信息入库 | 知识架构师 | 知识库条目 | 只有高置信度（≥8 分）的信息被沉淀，并完成质量筛查 |
+| 5 报告生成 | 报告撰写官 | 最终研报（文字版 + 网页版） | 多空论证综合裁决、增长驱动与护城河可持续性分析、反向检查清单完整 |
+| 6 归档 | 系统 | 归档留存 | 每份研报的生产链条可回溯 |
 
 ## 三层调研结构
 
-每篇研报覆盖三个层级，由各阶段协同保证：
+<svg viewBox="0 0 860 330" className="w-full h-auto" role="img" aria-label="图2 三层调研结构" xmlns="http://www.w3.org/2000/svg">
+<title>图2 三层调研结构</title>
+<rect x="20" y="20" width="820" height="230" fill="#151515" stroke="#2b2b2b" />
+<text x="430" y="48" textAnchor="middle" fontSize="15" fontWeight="bold" fill="#f2c14e">行业级</text>
+<text x="430" y="76" textAnchor="middle" fontSize="13" fill="#e5e5e5">行业全景 · 产业链图谱 · 政策环境</text>
+<text x="430" y="100" textAnchor="middle" fontSize="13" fill="#9ca3af">海外 / 历史类比，判断时间框架</text>
+<rect x="120" y="112" width="620" height="138" fill="#1a1a1a" stroke="#3d3d3d" />
+<text x="430" y="138" textAnchor="middle" fontSize="15" fontWeight="bold" fill="#f2c14e">细分行业级</text>
+<text x="430" y="164" textAnchor="middle" fontSize="13" fill="#e5e5e5">按投资意义识别细分赛道（宁缺毋滥）</text>
+<text x="430" y="186" textAnchor="middle" fontSize="13" fill="#9ca3af">赛道特点 · 周期 · 优劣势</text>
+<rect x="250" y="198" width="360" height="52" fill="rgba(242,193,78,0.08)" stroke="#f2c14e" />
+<text x="430" y="220" textAnchor="middle" fontSize="15" fontWeight="bold" fill="#f2c14e">公司级</text>
+<text x="430" y="240" textAnchor="middle" fontSize="13" fill="#e5e5e5">公司概览 · 财务分析 · 竞争格局 · 估值</text>
+<text x="430" y="278" textAnchor="middle" fontSize="12" fill="#9ca3af">三层层层聚焦：先看行业全景，再辨细分赛道，最后落到公司本身</text>
+<rect x="20" y="292" width="820" height="30" fill="rgba(242,193,78,0.08)" stroke="#f2c14e" />
+<text x="430" y="311" textAnchor="middle" fontSize="12" fill="#e5e5e5">采集硬标准：关键论点 ≥1 个权威来源 · 核心数据 ≥2 个独立来源交叉验证 · 业绩数据回法定披露平台核对 · 财报原文优先</text>
+</svg>
 
-| 层级 | 知识库位置 | 考察内容 |
-|------|-----------|---------|
-| 行业级 | `10-Knowledge/XX-行业/00-行业概览/` | 行业全景、产业链图谱、政策 |
-| 细分行业级 | `10-Knowledge/XX-行业/01-细分行业/` | 按投资意义识别细分赛道（宁缺毋滥） |
-| 公司级 | `10-Knowledge/XX-行业/02-公司研究/` | 公司概览、财务、竞争格局（优劣势） |
+每一篇研报都不是只盯着公司本身，而是把研究对象放在**行业 → 细分行业 → 公司**三层框架里层层聚焦：先看清行业全景与历史参照，再识别真正值得研究的细分赛道，最后落到公司的财务、竞争格局与估值。这样得出的结论才有「上下文」，不会只见树木不见森林。
 
-采集充分性标准：**关键论点 ≥1 权威来源、核心数据 ≥2 独立来源交叉验证**（业绩类数据回法定披露平台核对），财报原文优先。
+采集充分性有硬标准：**关键论点至少 1 个权威来源、核心数据至少 2 个独立来源交叉验证**；业绩类数据回法定披露平台核对，**财报原文优先**。如果某一层采集不充分，后续环节会主动补充调研，绝不用单薄素材硬写结论。
 
-## 六阶段流程
+## 关键环节一：原文精读
 
-| 阶段 | 角色 | 产出 | 验收要点 |
-|------|------|------|---------|
-| Phase 1 信息获取 | 信息猎手 InfoHunter | `01-Inbox/YYYY-MM-DD-主题-raw.md` | 三层均有实质采集、关键论点有 URL 来源锚点、核心数据 ≥2 独立来源 |
-| Phase 1.5 原文精读 | 文档精读官 DocumentReader | `02-Processing/YYYY-MM-DD-主题-deep-read.md` | 9 大精读目标全覆盖、最近 3 个完整财年年报精读、**多空论证（Bull/Bear Case）**完整 |
-| Phase 2 信息处理 | 信息炼金师 InfoAlchemist | `02-Processing/YYYY-MM-DD-主题-processed.md` | 口径标准化、按三层归类、核心投资指标完整 |
-| Phase 3 交叉验证 | 交叉验证官 CrossValidator | `03-Validation/YYYY-MM-DD-主题-validated.md` | 逐条置信度评分（1-10）、反共识检验、管理层诚信检查 |
-| Phase 4 信息整理 | 知识架构师 KnowledgeArchitect | `10-Knowledge/**` 三段式 + MOC | 高置信度（≥8 分）信息入库、双链校验、质量筛查嵌入 |
-| Phase 5 报告生成 | 报告撰写官 ReportWriter | `20-Reports/YYYY-MM-DD-主题-report.md` + `.html` | Markdown + HTML 双份、多空论证综合裁决、增长与护城河可持续性分析 |
-| Phase 6 归档 | 编排器 | 中间产物移入 `04-Archive/` | frontmatter 添加 `archived_at` 与 `report_link` |
+<svg viewBox="0 0 860 404" className="w-full h-auto" role="img" aria-label="图3 原文精读关键环节" xmlns="http://www.w3.org/2000/svg">
+<title>图3 原文精读关键环节</title>
+<defs>
+<marker id="rp3-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#f2c14e" /></marker>
+</defs>
+<rect x="330" y="20" width="200" height="52" fill="rgba(242,193,78,0.08)" stroke="#f2c14e" />
+<text x="430" y="42" textAnchor="middle" fontSize="14" fontWeight="bold" fill="#e5e5e5">财报 / 研报 / 公告</text>
+<text x="430" y="62" textAnchor="middle" fontSize="11" fill="#9ca3af">强制覆盖最近 3 个完整财年年报</text>
+<path d="M430,72 L430,88" stroke="#f2c14e" strokeWidth="2" markerEnd="url(#rp3-arr)" />
+<rect x="255" y="90" width="350" height="100" fill="#151515" stroke="#2b2b2b" />
+<text x="430" y="114" textAnchor="middle" fontSize="15" fontWeight="bold" fill="#f2c14e">精读重点（带着投资目的）</text>
+<text x="340" y="138" textAnchor="middle" fontSize="13" fill="#e5e5e5">增长飞轮与业务模型</text>
+<text x="520" y="138" textAnchor="middle" fontSize="13" fill="#e5e5e5">财务状况</text>
+<text x="340" y="160" textAnchor="middle" fontSize="13" fill="#e5e5e5">竞争格局</text>
+<text x="520" y="160" textAnchor="middle" fontSize="13" fill="#e5e5e5">管理层质量</text>
+<text x="340" y="182" textAnchor="middle" fontSize="13" fill="#e5e5e5">风险与逆向检查</text>
+<text x="520" y="182" textAnchor="middle" fontSize="13" fill="#e5e5e5">历史类比</text>
+<path d="M430,190 L430,204" stroke="#f2c14e" strokeWidth="2" markerEnd="url(#rp3-arr)" />
+<rect x="255" y="206" width="350" height="90" fill="#151515" stroke="#2b2b2b" />
+<text x="430" y="230" textAnchor="middle" fontSize="15" fontWeight="bold" fill="#f2c14e">精读后必答三问</text>
+<text x="430" y="254" textAnchor="middle" fontSize="13" fill="#e5e5e5">① 基本面是否逐年变好？</text>
+<text x="430" y="272" textAnchor="middle" fontSize="13" fill="#e5e5e5">② 三年年报是否连贯（口径 / 会计政策 / 数字衔接）？</text>
+<text x="430" y="290" textAnchor="middle" fontSize="13" fill="#e5e5e5">③ 管理层是否诚实（表述与数据一致性）？</text>
+<path d="M430,296 L430,316 L210,316 L210,328" fill="none" stroke="#f2c14e" strokeWidth="2" markerEnd="url(#rp3-arr)" />
+<path d="M430,296 L430,316 L650,316 L650,328" fill="none" stroke="#f2c14e" strokeWidth="2" markerEnd="url(#rp3-arr)" />
+<text x="340" y="310" textAnchor="middle" fontSize="11" fill="#9ca3af">全部通过</text>
+<text x="560" y="310" textAnchor="middle" fontSize="11" fill="#9ca3af">任一不过</text>
+<rect x="30" y="330" width="360" height="54" fill="#151515" stroke="#2b2b2b" />
+<text x="210" y="352" textAnchor="middle" fontSize="14" fontWeight="bold" fill="#e5e5e5">输出精读笔记</text>
+<text x="210" y="372" textAnchor="middle" fontSize="12" fill="#9ca3af">含多空论证</text>
+<rect x="470" y="330" width="360" height="54" fill="rgba(242,193,78,0.08)" stroke="#f2c14e" />
+<text x="650" y="352" textAnchor="middle" fontSize="14" fontWeight="bold" fill="#f2c14e">No-Go 红线</text>
+<text x="650" y="372" textAnchor="middle" fontSize="12" fill="#9ca3af">结论不得乐观化 · 研报显式标注</text>
+</svg>
 
-### 关键环节：原文精读（Phase 1.5）
+研报的可信度，首先来自**读的是原文而不是二手转述**。文档精读官带着投资目的逐字精读财报、研报与公告，围绕增长飞轮、财务状况、竞争格局、管理层质量、风险与逆向检查、历史类比六个方面建立认知，并且**强制覆盖最近 3 个完整财年年报**——只看一年看不出趋势，只看两年看不出连贯。
 
-带着投资目的精读财报 / 研报 / 公告原文，搞清：
+精读之后必须回答三个问题：**基本面是否逐年变好、三年年报是否连贯、管理层是否诚实**。其中「三年连贯性断裂」或「管理层不诚实」属于**一票否决的 No-Go 红线**：结论不得乐观化，并且会在研报中显式标注，绝不粉饰。
 
-1. 增长飞轮与业务模型
-2. 财务状况
-3. 竞争格局
-4. 管理层质量
-5. 风险与逆向检查
-6. 历史类比
+## 关键环节二：多空论证与综合裁决
 
-**强制覆盖最近 3 个完整财年年报**，精读后必须回答：
+<svg viewBox="0 0 860 480" className="w-full h-auto" role="img" aria-label="图4 多空论证与综合裁决" xmlns="http://www.w3.org/2000/svg">
+<title>图4 多空论证与综合裁决</title>
+<defs>
+<marker id="rp4-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#f2c14e" /></marker>
+</defs>
+<rect x="30" y="40" width="380" height="180" fill="#151515" stroke="#2b2b2b" />
+<text x="220" y="68" textAnchor="middle" fontSize="15" fontWeight="bold" fill="#f2c14e">多方论点 · Bull</text>
+<text x="115" y="104" textAnchor="middle" fontSize="13" fill="#e5e5e5">增长飞轮</text>
+<text x="325" y="104" textAnchor="middle" fontSize="13" fill="#e5e5e5">护城河拓宽</text>
+<text x="115" y="132" textAnchor="middle" fontSize="13" fill="#e5e5e5">财务质量</text>
+<text x="325" y="132" textAnchor="middle" fontSize="13" fill="#e5e5e5">估值安全边际</text>
+<text x="220" y="176" textAnchor="middle" fontSize="12" fill="#9ca3af">基于同一套原文证据</text>
+<rect x="450" y="40" width="380" height="180" fill="#151515" stroke="#2b2b2b" />
+<text x="640" y="68" textAnchor="middle" fontSize="15" fontWeight="bold" fill="#f2c14e">空方论点 · Bear</text>
+<text x="535" y="104" textAnchor="middle" fontSize="13" fill="#e5e5e5">增长见顶</text>
+<text x="745" y="104" textAnchor="middle" fontSize="13" fill="#e5e5e5">护城河侵蚀</text>
+<text x="535" y="132" textAnchor="middle" fontSize="13" fill="#e5e5e5">财务红旗</text>
+<text x="745" y="132" textAnchor="middle" fontSize="13" fill="#e5e5e5">估值过高</text>
+<text x="640" y="160" textAnchor="middle" fontSize="13" fill="#e5e5e5">产能过剩与地缘风险</text>
+<text x="640" y="196" textAnchor="middle" fontSize="12" fill="#9ca3af">基于同一套原文证据</text>
+<rect x="30" y="248" width="800" height="42" fill="#151515" stroke="#2b2b2b" />
+<text x="430" y="274" textAnchor="middle" fontSize="13" fill="#e5e5e5">双方均须原文引用 · 区分事实与观点 · 预判对方论点并回应 · 诚实记录本方脆弱点</text>
+<path d="M220,220 L220,292 L350,292 L350,306" fill="none" stroke="#f2c14e" strokeWidth="2" markerEnd="url(#rp4-arr)" />
+<path d="M640,220 L640,292 L510,292 L510,306" fill="none" stroke="#f2c14e" strokeWidth="2" markerEnd="url(#rp4-arr)" />
+<rect x="230" y="308" width="400" height="64" fill="#151515" stroke="#2b2b2b" />
+<text x="430" y="330" textAnchor="middle" fontSize="15" fontWeight="bold" fill="#f2c14e">综合裁决</text>
+<text x="430" y="352" textAnchor="middle" fontSize="12" fill="#9ca3af">结合产业理解 · 行业周期 · 国际形势 · 政策形势</text>
+<path d="M430,372 L430,390" stroke="#f2c14e" strokeWidth="2" markerEnd="url(#rp4-arr)" />
+<rect x="230" y="392" width="400" height="60" fill="rgba(242,193,78,0.08)" stroke="#f2c14e" />
+<text x="430" y="414" textAnchor="middle" fontSize="15" fontWeight="bold" fill="#f2c14e">研报结论</text>
+<text x="430" y="436" textAnchor="middle" fontSize="12" fill="#9ca3af">多空分歧显式标注 · 给出裁决理由</text>
+</svg>
 
-- 基本面是否逐年变好？
-- 三年年报是否连贯（口径 / 会计政策 / 数字衔接）？
-- 管理层是否诚实（前后表述与数据一致性）？
+任何一家公司都能讲出一个好故事，也能讲出一个坏故事。为了对抗「先入为主」的偏差，每个结论都基于**同一套原文证据**完成多空双视角论证：多方论证增长飞轮、护城河拓宽、财务质量与估值安全边际，空方论证增长见顶、护城河侵蚀、财务红旗、估值过高与产能过剩 / 地缘风险。双方都必须原文引用、区分事实与观点、预判对方论点并回应、诚实记录本方脆弱点。
 
-> **No-Go 红线**：三年连贯性断裂或管理层不诚实 → 必须在 deep-read 中显式标注，相关结论不得乐观化。
+写作研报时，再结合**产业理解、行业周期、国际形势、政策形势**等外围因素做最终裁决：多空分歧点显式标注，并给出裁决理由——这就是你看到「为什么最终得出这个结论」的来源。
 
-### 关键环节：多空论证（Bull / Bear Case）
+## 质量保障：三层门禁
 
-基于**同一套原文证据**完成多空双视角论证：
+<svg viewBox="0 0 860 310" className="w-full h-auto" role="img" aria-label="图5 质量保障三层门禁" xmlns="http://www.w3.org/2000/svg">
+<title>图5 质量保障三层门禁</title>
+<defs>
+<marker id="rp5-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#f2c14e" /></marker>
+</defs>
+<rect x="30" y="30" width="420" height="72" fill="#151515" stroke="#2b2b2b" />
+<text x="240" y="54" textAnchor="middle" fontSize="15" fontWeight="bold" fill="#f2c14e">第一层 · 阶段内自检</text>
+<text x="240" y="80" textAnchor="middle" fontSize="12" fill="#e5e5e5">每个环节提交前自动检查，不通过则修正后重新提交</text>
+<path d="M240,102 L240,118" stroke="#f2c14e" strokeWidth="2" markerEnd="url(#rp5-arr)" />
+<rect x="30" y="120" width="420" height="84" fill="#151515" stroke="#2b2b2b" />
+<text x="240" y="144" textAnchor="middle" fontSize="15" fontWeight="bold" fill="#f2c14e">第二层 · 阶段间验收</text>
+<text x="240" y="166" textAnchor="middle" fontSize="12" fill="#e5e5e5">评分卡三维：完整性 · 准确性 · 投资视角（各 0-10）</text>
+<text x="240" y="186" textAnchor="middle" fontSize="12" fill="#9ca3af">总分低于 24 打回重做 · 24-28 有条件通过 · 28-30 完全通过</text>
+<path d="M240,204 L240,220" stroke="#f2c14e" strokeWidth="2" markerEnd="url(#rp5-arr)" />
+<rect x="30" y="222" width="420" height="72" fill="#151515" stroke="#2b2b2b" />
+<text x="240" y="246" textAnchor="middle" fontSize="15" fontWeight="bold" fill="#f2c14e">第三层 · 发布后复盘</text>
+<text x="240" y="272" textAnchor="middle" fontSize="12" fill="#e5e5e5">发布后按时间轴持续复盘，校准方法、反哺后续研报</text>
+<path d="M450,258 L488,258" stroke="#f2c14e" strokeWidth="2" markerEnd="url(#rp5-arr)" />
+<path d="M490,258 L820,258" stroke="#3d3d3d" strokeWidth="2" />
+<circle cx="520" cy="258" r="4" fill="#f2c14e" />
+<circle cx="675" cy="258" r="4" fill="#f2c14e" />
+<circle cx="820" cy="258" r="4" fill="#f2c14e" />
+<text x="520" y="242" textAnchor="middle" fontSize="13" fill="#e5e5e5">7 天</text>
+<text x="520" y="282" textAnchor="middle" fontSize="11" fill="#9ca3af">质疑检查</text>
+<text x="675" y="242" textAnchor="middle" fontSize="13" fill="#e5e5e5">30 天</text>
+<text x="675" y="282" textAnchor="middle" fontSize="11" fill="#9ca3af">风险吻合度</text>
+<text x="820" y="242" textAnchor="middle" fontSize="13" fill="#e5e5e5">90 天</text>
+<text x="820" y="282" textAnchor="middle" fontSize="11" fill="#9ca3af">预测准确度</text>
+</svg>
 
-- **多方**：增长飞轮、护城河拓宽、财务质量、估值安全边际
-- **空方**：增长见顶、护城河侵蚀、财务红旗、估值过高、产能过剩与地缘风险
+质量不是事后检查出来的，而是**三层门禁**逐层守出来的：
 
-双方均须原文引用、区分事实与观点、预判对方论点并回应、诚实记录本方脆弱点。报告撰写时综合产业理解、行业周期、国际形势、政策形势等外围因素做**最终裁决**，多空分歧点显式标注并给出裁决理由。
+- **第一层 · 阶段内自检**：每个环节在提交产出前，都要通过自动质量检查，不通过就修正后重新提交——问题在源头被拦住。
+- **第二层 · 阶段间验收**：编排者按评分卡验收，从**完整性、准确性、投资视角**三个维度打分（各 0-10 分）：总分低于 24 分直接打回重做；24-28 分有条件通过（标注风险提示）；28-30 分完全通过。
+- **第三层 · 发布后复盘**：研报发布后按 7 天 / 30 天 / 90 天时间轴持续复盘——7 天检查是否有事实性质疑，30 天对照期间事件与报告风险提示的吻合度，90 天对比核心预测与实际数据，用结果校准方法。
 
-## 质量体系（三层门禁）
+长期质量指标（每份研报都记账，持续追踪）：
 
-| 层级 | 机制 | 说明 |
-|------|------|------|
-| 第一层 | 阶段内自检 | 每个 Agent 提交前运行 self-check 脚本自动检查，不通过自动修正 |
-| 第二层 | 阶段间验收 | 编排器用评分卡验收（完整性 / 准确性 / 投资视角，各 0-10），总分 &lt;24 打回 |
-| 第三层 | 发布后复盘 | 7 天质疑检查、30 天风险吻合度、90 天预测准确度，更新 KQI |
+- 来源覆盖率 &gt;90%：关键事实有 ≥2 个独立来源的比例
+- 高置信度占比 &gt;70%：置信度 ≥8 分的事实占比
+- 四大师框架覆盖率 100%：护城河 / 生意模式 / 反向清单 / 历史类比全部覆盖
+- 返工率 &lt;15%：因质量不通过而回退的阶段占比
+- 知识复用率 &gt;50%：新研究引用已有知识节点的比例
 
-**关键质量指标（KQI）**：来源覆盖率 >90%、高置信度占比 >70%、四大师覆盖率 100%、返工率 &lt;15%、知识复用率 >50%。
+## 流程模式路由
 
-## 常见命令
+<svg viewBox="0 0 860 400" className="w-full h-auto" role="img" aria-label="图6 流程模式路由" xmlns="http://www.w3.org/2000/svg">
+<title>图6 流程模式路由</title>
+<defs>
+<marker id="rp6-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#f2c14e" /></marker>
+</defs>
+<rect x="330" y="20" width="200" height="44" fill="rgba(242,193,78,0.08)" stroke="#f2c14e" />
+<text x="430" y="46" textAnchor="middle" fontSize="15" fontWeight="bold" fill="#f2c14e">接到研究主题</text>
+<path d="M430,64 L430,80" stroke="#f2c14e" strokeWidth="2" markerEnd="url(#rp6-arr)" />
+<rect x="330" y="82" width="200" height="54" fill="#151515" stroke="#2b2b2b" />
+<text x="430" y="104" textAnchor="middle" fontSize="13" fill="#e5e5e5">知识库已有覆盖？</text>
+<text x="430" y="124" textAnchor="middle" fontSize="13" fill="#e5e5e5">且调研时间较近（&lt;90 天）？</text>
+<text x="571" y="101" textAnchor="middle" fontSize="12" fill="#f2c14e">是</text>
+<path d="M530,109 L610,109" stroke="#f2c14e" strokeWidth="2" markerEnd="url(#rp6-arr)" />
+<rect x="612" y="84" width="218" height="50" fill="#151515" stroke="#2b2b2b" />
+<text x="721" y="104" textAnchor="middle" fontSize="14" fontWeight="bold" fill="#f2c14e">快速模式</text>
+<text x="721" y="124" textAnchor="middle" fontSize="11" fill="#9ca3af">已有覆盖 · 单轮精简流程</text>
+<text x="448" y="150" textAnchor="middle" fontSize="12" fill="#9ca3af">否</text>
+<path d="M430,136 L430,158" stroke="#f2c14e" strokeWidth="2" markerEnd="url(#rp6-arr)" />
+<rect x="330" y="160" width="200" height="54" fill="#151515" stroke="#2b2b2b" />
+<text x="430" y="182" textAnchor="middle" fontSize="13" fill="#e5e5e5">是否重大投资决策？</text>
+<text x="430" y="202" textAnchor="middle" fontSize="13" fill="#9ca3af">需要最谨慎的评估</text>
+<text x="571" y="179" textAnchor="middle" fontSize="12" fill="#f2c14e">是</text>
+<path d="M530,187 L610,187" stroke="#f2c14e" strokeWidth="2" markerEnd="url(#rp6-arr)" />
+<rect x="612" y="162" width="218" height="50" fill="rgba(242,193,78,0.08)" stroke="#f2c14e" />
+<text x="721" y="182" textAnchor="middle" fontSize="14" fontWeight="bold" fill="#f2c14e">深度模式</text>
+<text x="721" y="202" textAnchor="middle" fontSize="11" fill="#9ca3af">评估最严 · 回溯三年历史</text>
+<text x="448" y="228" textAnchor="middle" fontSize="12" fill="#9ca3af">否</text>
+<path d="M430,214 L430,236" stroke="#f2c14e" strokeWidth="2" markerEnd="url(#rp6-arr)" />
+<rect x="330" y="238" width="200" height="54" fill="#151515" stroke="#2b2b2b" />
+<text x="430" y="260" textAnchor="middle" fontSize="13" fill="#e5e5e5">只需补充特定公司 / 赛道？</text>
+<text x="430" y="280" textAnchor="middle" fontSize="13" fill="#9ca3af">不重开整条流水线</text>
+<text x="571" y="257" textAnchor="middle" fontSize="12" fill="#f2c14e">是</text>
+<path d="M530,265 L610,265" stroke="#f2c14e" strokeWidth="2" markerEnd="url(#rp6-arr)" />
+<rect x="612" y="240" width="218" height="50" fill="#151515" stroke="#2b2b2b" />
+<text x="721" y="260" textAnchor="middle" fontSize="14" fontWeight="bold" fill="#f2c14e">增量模式</text>
+<text x="721" y="280" textAnchor="middle" fontSize="11" fill="#9ca3af">定向补充 · 复用已有结论</text>
+<text x="448" y="306" textAnchor="middle" fontSize="12" fill="#9ca3af">否</text>
+<path d="M430,292 L430,318" stroke="#f2c14e" strokeWidth="2" markerEnd="url(#rp6-arr)" />
+<rect x="330" y="320" width="200" height="52" fill="#151515" stroke="#2b2b2b" />
+<text x="430" y="342" textAnchor="middle" fontSize="14" fontWeight="bold" fill="#f2c14e">标准模式</text>
+<text x="430" y="362" textAnchor="middle" fontSize="11" fill="#9ca3af">默认 · 全量六阶段流程</text>
+</svg>
 
-| 命令 | 用途 |
-|------|------|
-| `/research [主题]` | 完整投研流程（`--mode standard/fast/deep/incremental`） |
-| `/search [查询]` | 仅 Phase 1 信息获取 |
-| `/validate [文件]` | 仅 Phase 3 交叉验证 |
-| `/report [主题]` | 基于已有知识生成报告 |
-| `/revise [报告] [意见]` | 修订报告 |
-| `/sync-links` | 修复断链与缺失 properties |
-| `/update-moc` | 更新 MOC 索引 |
-| `/screen` | A 股全市场初筛 |
+不是每一次研究都需要走完全量流程。系统会根据主题情况自动选择**最合适的流程模式**：
 
-## 流程模式
+| 模式 | 适用场景 | 流程差异 |
+|------|---------|---------|
+| 标准模式 | 全新主题首次研究（默认） | 全量六阶段 + 原文精读 |
+| 快速模式 | 知识库已有覆盖且调研时间较近（&lt;90 天） | 精简为单轮采集 + 精读 + 验证 |
+| 深度模式 | 重大投资决策前 | 强制四大师评估 + 财报精读全量覆盖 + 回溯 3 年历史数据 |
+| 增量模式 | 补充特定公司 / 赛道 | 定向搜索 + 追加写入，复用已有验证结论 |
 
-- **标准模式**（默认）：全新主题首次覆盖，全量串行 + 原文精读
-- **快速模式**：已有覆盖且时间 &lt;90 天，精简为单轮采集 + 精读 + 验证
-- **深度模式**：重大投资决策前（`--decision-critical`），强制四大师评估 + 财报精读全量覆盖 + 回溯 3 年历史
-- **增量模式**：补充特定公司/赛道（`--company-only` / `--sector-only`），定向搜索 + 追加写入
-
-## 支撑脚本
-
-研报生产全程由 bun 脚本支撑：财报下载与文本提取（`stock-data/stock.ts` + `file-ingestion/fetch-file.ts`）、四大师评估与估值路由（`evaluation/evaluate.ts`）、质量筛查（`quality-gate/quality-screen.ts`）、全市场初筛（`screener/screen.ts`）等，具体用法见根目录 `AGENTS.md` 的「共享脚本用法」章节。
+无论哪种模式，研报生产全程由系统工具链自动支撑：你只需要输入主题、提出疑问、等待一份**可回溯的严谨研报**——每一句结论都能顺着生产链条找到它的出处。

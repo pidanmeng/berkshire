@@ -18,6 +18,7 @@ permission:
 
 ## 文档中心约定
 
+- **读者定位**：面向股票投资者（用户）。写作视角一律从「投资者如何理解与使用」出发；开发者向信息（架构 / API / 脚本 / 部署）属于 `AGENTS.md` 与代码，不写进文档中心
 - **内容目录**：`valuation-tracker/content/docs/`（.mdx 文件，Fumadocs MDX 渲染，挂载 `/docs`）
 - **Frontmatter schema**（与 fumadocs-mdx 13 兼容）：
   - `title`：必填，页面标题

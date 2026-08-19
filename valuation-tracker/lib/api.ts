@@ -78,6 +78,17 @@ async function post<T>(path: string, body?: unknown, token?: string | null): Pro
   });
 }
 
+async function put<T>(path: string, body?: unknown, token?: string | null): Promise<T> {
+  return request<T>(path, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+}
+
 async function del<T>(path: string, token?: string | null): Promise<T> {
   return request<T>(path, {
     method: "DELETE",
@@ -448,10 +459,18 @@ export interface Message {
   createdAt: string;
 }
 
+/** 置顶公告（管理员可编辑，公开可读；content/updatedAt 与后端 toDto 对应） */
+export interface Announcement {
+  content: string;
+  updatedAt: string;   // ISO 时间
+}
+
 export interface MessagesResponse {
   messages: Message[];
   /** 后端是否已配置 ADMIN_TOKEN（未配置时管理员登录禁用） */
   adminEnabled: boolean;
+  /** 置顶公告（未设置时为 null） */
+  announcement: Announcement | null;
 }
 
 /** 留言列表：all=true 返回全部（含未回复，需管理员 token），默认只返回已回复留言 */
@@ -478,4 +497,9 @@ export function replyMessage(id: number, reply: string, tipAmount: number | null
 /** 管理员删除留言 */
 export function deleteMessage(id: number, token: string): Promise<{ ok: boolean }> {
   return del(`/api/messages/${id}`, token);
+}
+
+/** 管理员更新置顶公告（覆盖更新；content 由后端 trim 校验非空与长度） */
+export function updateAnnouncement(content: string, token: string): Promise<Announcement> {
+  return put("/api/messages/announcement", { content }, token);
 }
