@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0",
-  "updatedAt": "2026-08-17T11:01:52.391Z",
+  "updatedAt": "2026-08-19T01:41:55.696Z",
   "items": [
     {
       "problemCode": "qs-report-regex-range-misparse",
@@ -1342,7 +1342,7 @@
       "problemCode": "deep-dive-bear-report-coverage-gap",
       "targetKind": "process",
       "targetPath": "deep-dive 流程·步骤 2.4（研报采集）",
-      "symptom": "思瑞浦近 1100 天 35 篇研报全部为买入/增持/优于大市，无看空或谨慎评级研报；多空论证 Bear Case 主要依赖 document-reader 从财报原文自建 + 外部第三方谨慎观点（证券之星『股价偏高』、财股邦衰退信号），缺独立卖方看空观点交叉验证",
+      "symptom": "易点天下近 365 天研报仅 2 篇且均为买入（中航 2026-06-01、中邮 2025-10-09），无看空/谨慎研报；多空论证 Bear Case 主要依赖 document-reader 自建（估值失锚/毛利率塌陷/利润依赖非经常项），缺少卖方谨慎视角外部佐证；且中邮证券 2025 预测归母 2.78 亿 vs 实际 1.58 亿偏差 -43%，券商系统性偏乐观无逆向研报对冲",
       "evidence": [
         {
           "grade": "C",
@@ -1388,15 +1388,20 @@
           "grade": "C",
           "detail": "2026-08-17 stock.ts --code 688536 --reports --days 1100 返回 35 条研报（国信/民生/中邮/华安/开源/华鑫/东莞/中邮）均为正面评级，无看空；编排器额外 WebSearch 外部谨慎观点（证券之星 2026-08-16 相对估值 204.77-226.32 元『股价偏高』、财股邦 5 条衰退信号）补足空方外部佐证；与长电科技/中石科技 review（#deep-dive-bear-report-coverage-gap）同型，第三次跨任务复现",
           "taskId": "deep-dive-思瑞浦-20260817-8472"
+        },
+        {
+          "grade": "C",
+          "detail": "2026-08-19 stock.ts --code 301171 --reports 仅返回 2 条研报且均为买入评级；document-reader 空方论点全部由财报原文自行构建，无券商谨慎/中性研报交叉验证；与 deep-dive-中石科技-20260817-cd4f #deep-dive-bear-report-coverage-gap 同型，跨任务复现（≥2 taskId + C 级证据）",
+          "taskId": "deep-dive-易点天下-20260819-7f3a"
         }
       ],
-      "rootCauseHypothesis": "A 股研报市场整体偏多（卖方鲜少看空），stock.ts 未提供跨券商补充检索或『谨慎评级』定向筛选；导致深度调研的多空论证空方缺乏独立卖方佐证，依赖人工外部检索",
-      "goal": "研报采集在卖方看空稀缺时，补充检索中性/谨慎评级或负面观点新闻作为空方外部证据源；多空论证标注『空方外部佐证来源』",
+      "rootCauseHypothesis": "A 股卖方研报整体偏多（鲜少看空），近一年该股仅 2 篇研报覆盖；stock.ts 未提供跨券商（慧博/研报客等）补充检索或『谨慎/中性评级』定向筛选；单篇研报预测偏差 -43% 亦无空方研报对冲",
+      "goal": "研报采集在卖方看空稀缺时，补充检索中性/谨慎评级或负面观点新闻作为空方外部证据源；对券商预测偏差（如 |实际-预测|/预测>25%）显式标注并引入反向假设检验；多空论证标注『空方外部佐证缺失』",
       "severity": "medium",
       "confidence": 0.75,
-      "benefit": "多空论证外部证据链更完整，减少单边依赖",
+      "benefit": "多空论证外部证据链更完整，减少单边依赖；券商系统性偏乐观被显式对冲",
       "risk": "增加采集步骤耗时；负面观点信源质量参差需人工甄别",
-      "acceptance": "多空论证空方至少 1 条外部佐证（或显式标注缺失原因）",
+      "acceptance": "多空论证空方至少 1 条外部佐证（或显式标注缺失原因）；券商预测偏差>25% 时报告风险章节显式警示",
       "fingerprint": "c796ae8932bb2616726d",
       "canonicalTargetPath": "deep-dive 流程·步骤 2.4（研报采集）",
       "status": "verified",
@@ -1408,12 +1413,13 @@
         "deep-dive-天孚通信-20260817-4f2a",
         "deep-dive-新易盛-20260817-3f9a",
         "deep-dive-利通电子-20260817-k7x2",
-        "deep-dive-思瑞浦-20260817-8472"
+        "deep-dive-思瑞浦-20260817-8472",
+        "deep-dive-易点天下-20260819-7f3a"
       ],
-      "occurrenceCount": 8,
+      "occurrenceCount": 9,
       "highestSeverity": "medium",
       "firstSeenAt": "2026-08-17T01:53:58.957Z",
-      "lastSeenAt": "2026-08-17T08:15:17.995Z",
+      "lastSeenAt": "2026-08-19T01:41:55.696Z",
       "batchIds": [
         "20260817-batch-004"
       ]
@@ -1422,31 +1428,37 @@
       "problemCode": "document-reader-selfcheck-missing",
       "targetKind": "agent",
       "targetPath": ".trae/agents/document-reader.md",
-      "symptom": "document-reader 角色无同名 .self-check.ts 自检脚本（info-alchemist/cross-validator/knowledge-architect/report-writer 均有），其产出（deep-read 9 大精读目标+多空论证）缺乏自动化校验，本次仅靠人工按质量标准自检（17 项全过）",
+      "symptom": "document-reader 角色无同名 .self-check.ts 自检脚本（info-alchemist/cross-validator/knowledge-architect/report-writer 均有），deep-read 产出（9 大精读目标+多空论证）缺乏自动化校验，本次仅靠人工按质量标准自检（17 项全过）",
       "evidence": [
         {
           "grade": "C",
           "detail": "2026-08-17 document-reader 子任务回报明确『.trae/agents/ 下不存在 document-reader.md.self-check.ts（Glob 确认仅有本体）』；AGENTS.md 列示的 6 个 Agent 自检脚本清单中 document-reader 项为空白",
           "taskId": "deep-dive-中石科技-20260817-cd4f"
+        },
+        {
+          "grade": "C",
+          "detail": "2026-08-19 编排器确认 .trae/agents/ 下无 document-reader.md.self-check.ts（Glob 确认仅有本体）；与 deep-dive-中石科技-20260817-cd4f #document-reader-selfcheck-missing 同型，跨任务复现（≥2 taskId + C 级证据）",
+          "taskId": "deep-dive-易点天下-20260819-7f3a"
         }
       ],
       "rootCauseHypothesis": "document-reader 角色先于自检脚本体系建立（或自检脚本一直未补），deep-read 的九大目标/多空论证覆盖率无脚本化验收",
       "goal": "为 document-reader 补建 document-reader.md.self-check.ts（校验 9 大精读目标覆盖率、三年年报覆盖、No-Go 红线标注、多空论证第十章完整性），纳入 Phase 1.5 验收",
       "severity": "low",
-      "confidence": 0.7,
+      "confidence": 0.75,
       "benefit": "deep-read 产出质量验收自动化，与其余角色自检体系对齐",
       "risk": "新增脚本需测试；多空论证为自由文本，校验规则需谨慎设计避免误判",
-      "acceptance": ".trae/agents/document-reader.md.self-check.ts 存在且能对中石科技 deep-read 返回通过结论",
+      "acceptance": ".trae/agents/document-reader.md.self-check.ts 存在且能对易点天下 deep-read 返回通过结论",
       "fingerprint": "4eaa612f9486234b0e06",
       "canonicalTargetPath": ".trae/agents/document-reader.md",
-      "status": "observing",
+      "status": "candidate",
       "taskIds": [
-        "deep-dive-中石科技-20260817-cd4f"
+        "deep-dive-中石科技-20260817-cd4f",
+        "deep-dive-易点天下-20260819-7f3a"
       ],
-      "occurrenceCount": 1,
+      "occurrenceCount": 2,
       "highestSeverity": "low",
       "firstSeenAt": "2026-08-17T01:53:58.957Z",
-      "lastSeenAt": "2026-08-17T01:53:58.957Z",
+      "lastSeenAt": "2026-08-19T01:41:55.696Z",
       "batchIds": []
     },
     {
@@ -2200,6 +2212,99 @@
       "highestSeverity": "medium",
       "firstSeenAt": "2026-08-17T10:17:30.256Z",
       "lastSeenAt": "2026-08-17T10:17:30.256Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "orchestrator-preset-attribution-bias",
+      "targetKind": "process",
+      "targetPath": "deep-dive 流程·步骤 3（编排器传参 document-reader）",
+      "symptom": "编排器在 document-reader 任务上下文中把 2026Q1 归母亏损 -0.64 亿归因于『H 股筹备相关衍生金融工具公允价值变动』，document-reader 从季报原文纠正为『证券投资（APPLOVIN/MOBVISTA/UNITY）市值回撤导致的公允价值变动 -1.28 亿』——预设归因与原文不符，虽被子 Agent 纠正，但存在污染精读结论的风险",
+      "evidence": [
+        {
+          "grade": "C",
+          "detail": "2026-08-19 document-reader 汇报明确『任务描述「与 H 股筹备相关」不准确——原文明确是证券投资市值波动，衍生金融负债 +790.98% 构成未披露（列入待核实）』；编排器传参源自 evaluate.ts 快照与研报摘要的混合推断，未回季报原文核验",
+          "taskId": "deep-dive-易点天下-20260819-7f3a"
+        }
+      ],
+      "rootCauseHypothesis": "编排器在传递评估快照/研报摘要时夹带了自己的归因推断（将衍生金融负债激增与 H 股筹备关联），未标注『线索待验证』；子 Agent 虽有纠错能力，但预设归因可能形成锚定",
+      "goal": "编排器向 document-reader 传递的上下文归因类信息统一标注『待验证线索』，禁止以确定语气断言归因；evaluate.ts/研报摘要中的推断须与财报事实分离标注",
+      "severity": "low",
+      "confidence": 0.6,
+      "benefit": "降低编排器预设归因对精读结论的锚定污染风险，子 Agent 纠错成本下降",
+      "risk": "指令措辞调整对流程无破坏性",
+      "acceptance": "deep-dive 编排器传参模板中的归因类描述统一加『待验证』标注（跨任务复现 2 次后升级 candidate）",
+      "fingerprint": "4377ed00753a428564b9",
+      "canonicalTargetPath": "deep-dive 流程·步骤 3（编排器传参 document-reader）",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-易点天下-20260819-7f3a"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "low",
+      "firstSeenAt": "2026-08-19T01:41:55.696Z",
+      "lastSeenAt": "2026-08-19T01:41:55.696Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "quality-screen-nonrecurring-caliber-inconsistency",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "quality-screen report 模式从 frontmatter financials 块读归母口径指标（ROE 4.34%、净利同比 -31.8%），auto 模式可传扣非口径（ROE 2.11%、净利 -64%）；公司净利含大额一次性损益（非经常损益占归母 50.6%）时两口径结论可能分歧——本次两口径碰巧均 RED（0.0 分），但 verdict/score 回填值对应归母口径运行结果，与 knowledge-architect 用 auto 扣非口径运行的结果同值属巧合，不同口径扣分项不同（红牌 2 vs 3），存在口径混用风险",
+      "evidence": [
+        {
+          "grade": "C",
+          "detail": "2026-08-19 quality-screen report 模式（归母口径）输出 overallScore 0.0/RED，红牌 2（ROE<5%、净利 -31.8%）；auto 模式（扣非口径 --nonrecurring-net-profit 0.78）输出 overallScore 0.0/RED，红牌 3（ROE 2.11%、扣非 -64%、净利含大额一次性损益）；两口径结论一致但扣分项/计算路径不同；deep-read 4.2 确认非经常损益占归母 50.6%",
+          "taskId": "deep-dive-易点天下-20260819-7f3a"
+        }
+      ],
+      "rootCauseHypothesis": "financials 块仅存归母口径指标，无扣非字段；report 模式无一次性损益失真检测输入（frontmatter 无 nonrecurring 字段），无法自动采用扣非口径；knowledge-architect 手工用 auto 模式补扣非口径造成同笔记两套筛查",
+      "goal": "quality-screen report 模式在 financials 无扣非字段且净利含大额一次性损益时，输出中显式标注『口径：归母，未剔除一次性损益』并提示人工补扣非口径；company-template frontmatter financials 块增加扣非字段（扣非净利/扣非增速/扣非ROE）供脚本消费",
+      "severity": "medium",
+      "confidence": 0.7,
+      "benefit": "自动化质量筛查在盈利失真公司上结论口径统一、可复现，避免回填值与筛查路径不一致",
+      "risk": "frontmatter 增字段需同步 backfill.ts 与 valuation-tracker 解析",
+      "acceptance": "对易点天下 report 模式输出标注归母口径并提示扣非；回填 verdict/score 与正文《质量筛查报告》明确同一口径（跨任务复现 2 次后升级 candidate）",
+      "fingerprint": "a1fd19d80387c6207188",
+      "canonicalTargetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-易点天下-20260819-7f3a"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "medium",
+      "firstSeenAt": "2026-08-19T01:41:55.696Z",
+      "lastSeenAt": "2026-08-19T01:41:55.696Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "evaluate-quote-field-missing",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "symptom": "evaluate.ts 估值快照『最新成交额』为 0.00、『当前股价历史分位』为 0.0%，当前股价无法直接读取，需由总市值 233.2 亿 ÷ 总股本 6.18 亿股反推（约 37.7 元）；PE-TTM 603.69 隐含 TTM 净利仅 0.386 亿（2025 归母 1.58 亿被 2026Q1 亏损 -0.64 亿滚动拉低），TTM 口径在单季巨额非经常亏损下与年报归母差异大，若未说明易误读",
+      "evidence": [
+        {
+          "grade": "C",
+          "detail": "2026-08-19 evaluate.ts --code 301171 输出最新成交额 0.00、股价历史分位 0.0%、PE-TTM 603.69、PCF 95.24；脚本运行日志无当前价字段；PE-TTM 倒推 TTM 净利 0.386 亿与年报归母 1.58 亿差异显著",
+          "taskId": "deep-dive-易点天下-20260819-7f3a"
+        }
+      ],
+      "rootCauseHypothesis": "同花顺 API 对当前价/成交额字段返回为空（数据源限制或字段名不匹配），脚本未降级到总市值/股本反推；PE-TTM 为滚动 4 季度口径，单季巨额非经常亏损会系统性放大 PE",
+      "goal": "evaluate.ts 当前价缺失时自动用总市值÷总股本反推并标注『反推值』；PE-TTM 与年报归母差异>50% 时提示检查单季非经常损益对 TTM 的扰动",
+      "severity": "low",
+      "confidence": 0.6,
+      "benefit": "估值快照字段完整性与 PE-TTM 可读性提升，避免下游误判当前价与估值",
+      "risk": "反推值可能引入股本口径误差，需校验总股本来源",
+      "acceptance": "易点天下 evaluate.ts 输出含反推当前价与 TTM 口径说明（跨任务复现 2 次后升级 candidate）",
+      "fingerprint": "a04118e7da8bac7cce3b",
+      "canonicalTargetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-易点天下-20260819-7f3a"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "low",
+      "firstSeenAt": "2026-08-19T01:41:55.696Z",
+      "lastSeenAt": "2026-08-19T01:41:55.696Z",
       "batchIds": []
     }
   ],

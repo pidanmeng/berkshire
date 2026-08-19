@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>【深度调研】易点天下（301171.SZ）— 内部研究</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+<style>
+:root {
+  /* ===== Black & Gold tokens (design.md) ===== */
+  --color-canvas: #000000;
+  --color-surface: #0a0a0a;
+  --color-surface-raised: #111111;
+  --color-border: #1a1a1a;
+  --color-ink: #ffffff;
+  --color-ink-muted: #a1a1a1;
+  --color-ink-subtle: #666666;
+  --color-accent: #d4af37;
+  --color-accent-hover: #e6c25c;
+  --color-danger: #ee0000;
+  /* A股习惯：红涨绿跌 */
+  --fin-up: #e5484d;
+  --fin-down: #46a758;
+  --fin-flat: #a1a1a1;
+  --star-on: #d4af37;
+  --star-half: #b8902a;
+  --star-off: #333333;
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-6: 24px; --sp-8: 32px; --sp-10: 40px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: 'Geist', 'Inter', -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-size: 16px; line-height: 24px;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 1120px; margin: 0 auto; padding: var(--sp-8) var(--sp-6) var(--sp-16); }
+/* ---------- 区块 ---------- */
+section { margin-top: var(--sp-10); }
+.section-title {
+  font-size: 24px; font-weight: 600; line-height: 32px; letter-spacing: -0.96px;
+  color: var(--color-ink); margin-bottom: var(--sp-4);
+  padding-left: var(--sp-3); border-left: 2px solid var(--color-accent);
+}
+.section-sub { color: var(--color-ink-muted); font-size: 14px; margin-bottom: var(--sp-4); }
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--sp-6);
+  margin-bottom: var(--sp-4);
+}
+.card-raised { background: var(--color-surface-raised); }
+/* ---------- 头部 ---------- */
+.hero { padding: var(--sp-10) 0 var(--sp-6); border-bottom: 1px solid var(--color-border); }
+.hero .kicker { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 12px; color: var(--color-accent); letter-spacing: 1.5px; text-transform: uppercase; }
+.hero h1 { font-size: 48px; font-weight: 600; line-height: 48px; letter-spacing: -2.4px; margin: var(--sp-3) 0 var(--sp-2); }
+.hero .meta { color: var(--color-ink-muted); font-size: 14px; font-family: 'Geist Mono', ui-monospace, monospace; }
+.tags { margin-top: var(--sp-4); display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+.tag { font-size: 12px; padding: 2px 10px; border: 1px solid var(--color-border); border-radius: 9999px; color: var(--color-ink-muted); }
+.tag.red { color: var(--fin-up); border-color: #3a1518; }
+.tag.gold { color: var(--color-accent); border-color: #3a3220; }
+/* ---------- 表格 ---------- */
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--color-border); vertical-align: top; }
+th { color: var(--color-ink-muted); font-weight: 500; font-size: 12px; letter-spacing: 0.5px; }
+tr:last-child td { border-bottom: none; }
+td.num, th.num { text-align: right; font-family: 'Geist Mono', ui-monospace, monospace; }
+.up { color: var(--fin-up); } .down { color: var(--fin-down); }
+.strong { color: var(--color-ink); font-weight: 600; }
+.muted { color: var(--color-ink-muted); }
+.subtle { color: var(--color-ink-subtle); }
+/* ---------- 置信度 / 徽章 ---------- */
+.conf { display: inline-block; font-size: 11px; padding: 1px 8px; border-radius: var(--radius-sm); border: 1px solid var(--color-border); color: var(--color-accent); margin-left: 6px; vertical-align: middle; }
+.badge-red { color: #ff6b6b; border-color: #3a1518; }
+.badge-yellow { color: #f0c674; border-color: #3a3220; }
+.badge-green { color: #7cc98f; border-color: #15331f; }
+/* ---------- 结论块 ---------- */
+.conclusion { display: flex; gap: var(--sp-3); padding: var(--sp-4) 0; border-bottom: 1px solid var(--color-border); }
+.conclusion:last-child { border-bottom: none; }
+.conclusion .idx { font-family: 'Geist Mono', ui-monospace, monospace; color: var(--color-accent); font-size: 14px; flex-shrink: 0; width: 28px; }
+.conclusion .body p { margin-bottom: var(--sp-2); }
+/* ---------- star-rating ---------- */
+.stars { font-size: 18px; letter-spacing: 2px; white-space: nowrap; }
+.stars .on { color: var(--star-on); }
+.stars .half { color: var(--star-half); }
+.stars .off { color: var(--star-off); }
+.stars + .score { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 12px; color: var(--color-ink-muted); margin-top: 2px; }
+/* ---------- 图表 ---------- */
+.chart-container { width: 100%; height: 380px; }
+.chart-source { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 11px; color: var(--color-ink-subtle); margin-top: var(--sp-2); }
+.chart-fallback { display: none; font-size: 13px; color: var(--color-ink-muted); }
+.chart-fallback table { margin-top: var(--sp-2); }
+/* ---------- 提示 ---------- */
+.callout { border: 1px solid var(--color-border); border-left: 2px solid var(--color-accent); border-radius: var(--radius-sm); padding: var(--sp-4); font-size: 14px; color: var(--color-ink-muted); margin: var(--sp-3) 0; background: var(--color-surface-raised); }
+.callout.red { border-left-color: var(--fin-up); }
+.callout.green { border-left-color: var(--fin-down); }
+/* ---------- 页脚 ---------- */
+footer { border-top: 1px solid var(--color-border); margin-top: var(--sp-16); padding-top: var(--sp-6); font-size: 12px; color: var(--color-ink-subtle); line-height: 20px; }
+a { color: var(--color-accent); text-decoration: none; }
+a:hover { color: var(--color-accent-hover); }
+h3 { font-size: 17px; font-weight: 600; margin: var(--sp-4) 0 var(--sp-2); }
+ul, ol { padding-left: 22px; margin: var(--sp-2) 0; }
+li { margin-bottom: var(--sp-1); }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4); }
+@media (max-width: 800px) { .grid2 { grid-template-columns: 1fr; } .hero h1 { font-size: 34px; line-height: 38px; } }
+.kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--sp-3); margin: var(--sp-4) 0; }
+.kpi { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--sp-4); }
+.kpi .label { font-size: 12px; color: var(--color-ink-muted); }
+.kpi .value { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 22px; font-weight: 600; margin-top: var(--sp-1); }
+.kpi .note { font-size: 11px; color: var(--color-ink-subtle); margin-top: var(--sp-1); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ==================== 头部 ==================== -->
+<header class="hero">
+  <div class="kicker">Deep-Dive Research · Phase 5 Report</div>
+  <h1>易点天下（301171.SZ）深度调研</h1>
+  <div class="meta">中国出海数字营销服务商 · 整合营销代理 Cyberklick + 程序化平台 Yeahmobi/zMaticoo + AI 营销 KreadoAI/EC MCP Server</div>
+  <div class="tags">
+    <span class="tag gold">deep-dive</span><span class="tag">company</span><span class="tag">传媒</span><span class="tag">广告营销</span>
+    <span class="tag red">质量筛查 RED 0.0/10</span><span class="tag">内部研究</span>
+  </div>
+  <div class="meta" style="margin-top:12px;">数据时点：2026-08-19 ｜ taskId：deep-dive-易点天下-20260819-7f3a ｜ 主验证源：[[2026-08-19-易点天下-deep-read]] ｜ confidence：中</div>
+</header>
+
+<!-- ==================== 1. 核心结论 ==================== -->
+<section id="conclusion">
+  <h2 class="section-title">核心结论（带置信度）</h2>
+  <div class="card">
+    <div class="conclusion"><div class="idx">01</div><div class="body">
+      <p><span class="strong">估值失锚，无安全边际</span><span class="conf">置信度：高</span></p>
+      <p>PE-TTM <span class="strong up">603.69x</span>（公司 2026-08-04 自曝滚动市盈率 517.86x，为行业「互联网和相关服务 I64」26.80x 的 <span class="strong">19 倍</span>）；Forward PE 67.6x（2027E）至 299x（2025 扣非口径）各口径均极高。三情景目标市值（30 / 55 / 100 亿）<span class="strong up">全部低于现市值 233.2 亿</span>——即便最乐观情景（2028E 归母 4.50 亿 × 22x）仍高估 57%+。空方「估值失锚」为多空双方最强论点。</p>
+    </div></div>
+    <div class="conclusion"><div class="idx">02</div><div class="body">
+      <p><span class="strong">增收不增利，增长在毁灭价值</span><span class="conf">置信度：高</span></p>
+      <p>营收 21.43→25.47→38.30 亿（2025 <span class="up">+50.39%</span>），但归母 1.58 亿（<span class="down">-31.80%</span>）、扣非 0.78 亿（<span class="down">-63.97%</span>）；毛利率 <span class="down">24.36%→18.58%→14.33%</span> 三年连降。「收入每 +100 元仅新增 14 元毛利」；同业汇量科技 2025 毛利率逆势 +0.2pp，说明下滑非行业共性——空方「利润率塌陷」论点获产业证据支撑。</p>
+    </div></div>
+    <div class="conclusion"><div class="idx">03</div><div class="body">
+      <p><span class="strong">利润对非经常项与证券投资高度敏感</span><span class="conf">置信度：高</span></p>
+      <p>2025 非经常性损益 +0.80 亿占归母 <span class="strong up">50.6%</span>（公允价值变动 +0.81 亿为第一大项）；2026Q1 归母转亏 <span class="down">-0.64 亿</span>（证券投资 APPLOVIN/MOBVISTA/UNITY 公允价值 <span class="down">-1.28 亿</span>）；信用减值 0.88 亿占归母 56%。<span class="strong">扣非口径才是主业真实盈利水平</span>。</p>
+    </div></div>
+    <div class="conclusion"><div class="idx">04</div><div class="body">
+      <p><span class="strong">资产负债表稳健，但盈利质量恶化</span><span class="conf">置信度：高</span></p>
+      <p>货币资金 24.89 亿 + 交易性金融资产 7.88 亿 vs 有息负债仅短借 5.71 亿（净现金约 26.8 亿）；毕马威三年标准无保留、商誉仅 0.36 亿。多方「现金底盘」论点成立，但利润表已被金融投资与减值显著污染，OCF/净利≈1.02 是巧合而非造血实力。</p>
+    </div></div>
+    <div class="conclusion"><div class="idx">05</div><div class="body">
+      <p><span class="strong">最大分歧点：利润率下行是「结构性恶化」还是「过渡成本」</span><span class="conf">置信度：中</span></p>
+      <p>裁决支点 = <span class="strong">2026-08-21 中报</span>（分季度毛利率 + 扣非趋势 + 证券投资处置进展），属可证伪分歧。当前证据天平偏空方（毛利率三年连降 + 汇量逆势提升 + 2025 下半年扣非转负 + 2026Q1 归母转亏）。</p>
+    </div></div>
+    <div class="conclusion"><div class="idx">06</div><div class="body">
+      <p><span class="strong">操作建议：高估可考虑减仓 / 观望</span><span class="conf badge-red">置信度：高</span></p>
+      <p>RED 质量结论（0.0/10）下<span class="strong up">不得建议买入</span>；现价约 37.7 元高于乐观情景目标价 16.18 元 1.3 倍以上，按安全边际框架处于「应卖出」区域。多方论点（AI/平台期权）仅作为「估值回落后的观察条件」。</p>
+    </div></div>
+  </div>
+</section>
+
+<!-- ==================== 2. 四大师综合评分卡 ==================== -->
+<section id="masters">
+  <h2 class="section-title">四大师综合评分卡</h2>
+  <div class="card">
+    <table>
+      <tr><th>维度</th><th>大师</th><th>星级（1-5）</th><th>0-10 分</th><th>核心判断</th></tr>
+      <tr><td>能力圈</td><td>巴菲特</td><td><span class="stars"><span class="on">★★★</span><span class="off">☆☆</span></span></td><td class="num">6.5/10</td><td>生意一句话可说清（出海营销代理+程序化平台），但媒体直客化、AI 原生广告使 10 年格局难预测</td></tr>
+      <tr><td>护城河</td><td>巴菲特</td><td><span class="stars"><span class="on">★★</span><span class="off">☆☆☆</span></span></td><td class="num">4.0/10</td><td><span class="strong up">窄且正在变窄</span>：毛利率三年连降为最硬证据；代理资质可被取消；平台壁垒未在报表兑现</td></tr>
+      <tr><td>生意模式</td><td>段永平</td><td><span class="stars"><span class="on">★★</span><span class="off">☆☆☆</span></span></td><td class="num">5.0/10</td><td>混合生意：代理通道无定价权 + 平台有网络效应雏形；利润被证券投资波动显著污染</td></tr>
+      <tr><td>管理层诚信（本分）</td><td>段永平</td><td><span class="stars"><span class="on">★★★</span><span class="off">☆☆</span></span></td><td class="num">6.5/10</td><td>审计无保留 + 披露透明；🟡 连续两年「剔除口径」选择性披露、激励作废、证券投资纪律存疑</td></tr>
+      <tr><td>反向检查清单</td><td>芒格</td><td><span class="stars"><span class="on">★★★</span><span class="off">☆☆</span></span></td><td class="num">7.0/10</td><td>红旗归因全面：扣非归因 / 8 项勾稽 / 证券敞口 / 四情景失败分析</td></tr>
+      <tr><td>历史类比与时间框架</td><td>李录</td><td><span class="stars"><span class="on">★★★</span><span class="off">☆☆</span></span></td><td class="num">6.5/10</td><td>蓝标（通道结局）vs 汇量（平台）类比恰当；行业洗牌期提示周期敏感性</td></tr>
+      <tr><td><span class="strong">综合</span></td><td>—</td><td colspan="3" class="muted">由系统按 scores 六维经 composite.ts 权重加权计算，本报告不人工给综合分</td></tr>
+    </table>
+    <p class="chart-source">星级说明：★=1 分、☆=0.5 分、✩=0 分。评分依据：易点天下-公司研究 frontmatter scores（capability 6.5 / moat 4.0 / business_model 5.0 / management 6.5 / inversion 7.0 / historical 6.5）</p>
+  </div>
+</section>
+
+<!-- ==================== 3. 估值快照 + 4. 估值区间 ==================== -->
+<section id="valuation">
+  <h2 class="section-title">估值与股价快照（2026-08-19）</h2>
+  <div class="kpi-row">
+    <div class="kpi"><div class="label">最新股价</div><div class="value">≈37.7 元</div><div class="note">250 日区间 25.20~62.53 · 中位 37.11</div></div>
+    <div class="kpi"><div class="label">总市值</div><div class="value">233.2 亿</div><div class="note">总股本约 6.18 亿股（10 转增 3 后）</div></div>
+    <div class="kpi"><div class="label">PE-TTM</div><div class="value up">603.69x</div><div class="note">公司自曝滚动 517.86x vs 行业 26.80x</div></div>
+    <div class="kpi"><div class="label">PB-MRQ / PS-TTM</div><div class="value">6.38 / 5.91</div><div class="note">PCF-TTM 95.24 · 股息率 ~0.07%</div></div>
+    <div class="kpi"><div class="label">Forward PE</div><div class="value up">67.6x</div><div class="note">2027E 中航归母 3.45 亿口径；2026E 94.4x；扣非口径 299x</div></div>
+    <div class="kpi"><div class="label">净现金</div><div class="value">≈26.8 亿</div><div class="note">货币资金 24.89 + 交易性金融资产 7.88 − 短借 5.71</div></div>
+  </div>
+
+  <div class="card">
+    <h3>估值区间与目标价（安全边际视角）</h3>
+    <table>
+      <tr><th>情景</th><th>估值假设</th><th>目标价（元）</th><th>目标市值（亿元）</th><th>隐含跌幅</th><th>置信度</th></tr>
+      <tr><td>悲观</td><td>净现金 26.8 亿托底 + 主业残值（正常化扣非 1.0 亿×20x），取 30 亿，PB≈0.81</td><td class="num">4.85</td><td class="num">30</td><td class="num down">-87%</td><td>中</td></tr>
+      <tr><td>中性</td><td>中航 2026E 归母 2.47 亿 × 22x（行业 26.8x 打折，盈利质量折价）</td><td class="num">8.90</td><td class="num">55</td><td class="num down">-76%</td><td>中</td></tr>
+      <tr><td>乐观</td><td>中航 2028E 归母 4.50 亿 × 22x（AI 平台期权 + 利润率回升兑现）</td><td class="num">16.18</td><td class="num">100</td><td class="num down">-57%</td><td>低</td></tr>
+    </table>
+    <div class="callout red" style="margin-top:var(--sp-4);">
+      <span class="strong">目标买入价 3.9 元</span>（悲观 30 亿 × 0.8 = 24 亿，PB≈0.65，仅作安全边际锚参照）｜
+      <span class="strong">目标卖出价 17.8 元</span>（乐观上沿 110 亿）｜
+      <span class="strong">当前操作建议：高估可考虑减仓 / 观望</span>——现价 37.7 元高于乐观情景目标价 1.3 倍、高于目标卖出价 1.1 倍，按安全边际框架处于「应卖出」区域，绝无买入理由。
+    </div>
+    <div class="chart-container" id="chart-valuation"></div>
+    <p class="chart-source">来源：易点天下-公司研究 frontmatter target_market_cap_yi（30/55/100 亿）÷ 6.18 亿股；现市值 233.2 亿（2026-08-19）。图中显示现市值 vs 三情景目标市值——三情景全部低于现市值。</p>
+  </div>
+</section>
+
+<!-- ==================== 5. 公司概览与生意模式 ==================== -->
+<section id="business">
+  <h2 class="section-title">公司概览与生意模式</h2>
+  <div class="card">
+    <p>易点天下（301171.SZ，2022-08-19 创业板上市，募资约 12.4 亿，总部西安）专注「中国企业出海」数字营销——上游从 Google/Meta/TikTok/字节等全球头部媒体采购流量，下游为跨境电商（SHEIN 系）、游戏、App、短剧等出海客户提供服务。2026-03-25 递表港交所拟 A+H 上市。中国出海数字营销市场第四（份额 5.0%，2024 流水口径，灼识咨询）；全球独立第三方移动广告平台第 13 名、中国同类第三。</p>
+    <table style="margin-top:var(--sp-4);">
+      <tr><th>业务线</th><th>品牌</th><th>2025 收入 / 占比</th><th>毛利率</th><th>生意性质</th></tr>
+      <tr><td>整合营销服务</td><td>Cyberklick</td><td class="num">19.54 亿 / 51.01%（+49.35%）</td><td class="num down">8.89%（-2.33pp）</td><td>代理型「返点差价」通道生意</td></tr>
+      <tr><td>广告平台业务</td><td>Yeahmobi / zMaticoo</td><td class="num">18.38 亿 / 47.99%（+48.92%）</td><td class="num down">20.31%（-6.20pp）</td><td>程序化 RTB / SDK 变现，较高毛利</td></tr>
+      <tr><td>AI 营销（期权）</td><td>KreadoAI / EC MCP Server</td><td class="num">未单列披露</td><td class="num">—</td><td>AI 素材 / 数字人 / MCP，收入未披露</td></tr>
+    </table>
+    <h3>生意模式评价（段永平框架）</h3>
+    <ul>
+      <li><span class="strong">怎么赚钱</span>：①整合营销赚「客户广告费 − 媒体采购费」返点差价（过手型、低毛利）；②广告平台按 CPM/CPA 效果分成；③AI 营销为期权业务。利润 = 客户广告费 − 媒体采购费 ± 返点 + 平台服务费。</li>
+      <li><span class="strong">谁付钱</span>：出海广告主（跨境电商 SHEIN 系、游戏、App），先充值后投放；<span class="strong up">上游媒体平台才是「隐性定价者」</span>（前五大供应商集中度 82.31%、第一大 30.73%，返点由媒体决定）。</li>
+      <li><span class="strong">为什么选它</span>：一级媒体代理资质 + SHEIN 十年粘性 + 平台规模（日均请求 1799 亿次、50+ SDK、独立设备超 20 亿）+ AI 素材效率；但蓝标/汇量/省广均可替代，大客户自身也在自建投放能力。</li>
+      <li><span class="strong">现金流特征</span>：OCF 三年 1.48/4.73/1.61 亿波动大；2025 OCF/归母≈1.02 表面健康实为巧合（非经常收益无现金支撑 + 应收扩张 -7.77 亿被应付 +7.02 亿对冲）；现金收入比 0.93。</li>
+      <li><span class="strong">资本密集度</span>：固定资产极轻（资本开支/OCF 约 5%），但<span class="strong">营运资本极重</span>（应收+媒体代收 27.76 亿占总资产 42.56%，过手型垫资随规模膨胀）。</li>
+      <li><span class="strong">整体评价</span>：<span class="strong up">一般偏坏生意（当前）</span>——通道无定价权、利润率结构性下行、利润被金融投资波动污染；唯一亮点是 zMaticoo 平台具备网络效应雏形，转型方向正确但未在报表兑现。</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== 7. 财务数据摘要 ==================== -->
+<section id="financials">
+  <h2 class="section-title">财务数据摘要（三年 + 2026Q1）</h2>
+  <div class="card">
+    <table>
+      <tr><th>指标</th><th class="num">2023</th><th class="num">2024</th><th class="num">2025</th><th class="num">2026Q1</th><th>趋势</th></tr>
+      <tr><td>营收（亿元）</td><td class="num">21.43（-7.04%）</td><td class="num">25.47（+18.83%）</td><td class="num up">38.30（+50.39%）</td><td class="num up">10.42（+12.13%）</td><td>加速向好</td></tr>
+      <tr><td>归母净利（亿元）</td><td class="num">2.17</td><td class="num">2.32（+6.81%）</td><td class="num down">1.58（-31.80%）</td><td class="num down">-0.64（-213.58%）</td><td class="down">恶化（转亏）</td></tr>
+      <tr><td>扣非净利（亿元）</td><td class="num">1.67（-27.21%）</td><td class="num">2.17（+30.10%）</td><td class="num down">0.78（-63.97%）</td><td class="num down">0.16（-73.41%）</td><td class="down">恶化（腰斩）</td></tr>
+      <tr><td>归母−扣非差额（亿元）</td><td class="num">+0.50</td><td class="num">+0.15</td><td class="num up">+0.80</td><td class="num down">-0.80</td><td>非经常项扰动加剧</td></tr>
+      <tr><td>差额占归母比</td><td class="num">23.2%</td><td class="num">6.4%</td><td class="num up strong">50.6%</td><td class="num">—</td><td class="up">扰动严重</td></tr>
+      <tr><td>毛利率</td><td class="num">24.36%</td><td class="num">18.58%</td><td class="num down">14.33%（-4.25pp）</td><td class="num">~15.12%（测算）</td><td class="down">连降 3 年</td></tr>
+      <tr><td>净利率（归母）</td><td class="num">10.13%</td><td class="num">9.10%</td><td class="num down">4.05%</td><td class="num down">-6.10%</td><td class="down">腰斩</td></tr>
+      <tr><td>ROE（加权）</td><td class="num">6.60%</td><td class="num">6.67%</td><td class="num down">4.34%</td><td class="num">—</td><td class="down">恶化（杜邦=净利率塌陷主导）</td></tr>
+      <tr><td>经营现金流（亿元）</td><td class="num">1.48</td><td class="num">4.73</td><td class="num down">1.61（-65.87%）</td><td class="num">0.53</td><td>波动（应收 -7.77 亿吞噬）</td></tr>
+      <tr><td>资产负债率</td><td class="num">~27.4%</td><td class="num">~38.2%</td><td class="num">42.88%</td><td class="num">—</td><td>上升但可控</td></tr>
+      <tr><td>归母净资产（亿元）</td><td class="num">33.93</td><td class="num">35.66</td><td class="num">37.08</td><td class="num">—</td><td>缓增</td></tr>
+    </table>
+    <div class="chart-container" id="chart-financials" style="margin-top:var(--sp-6);"></div>
+    <p class="chart-source">来源：三份年报「五、主要会计数据和财务指标」+ 2026Q1 报告（processed 文件，deep-read 核验口径）；2026Q1 毛利率为测算值。单位：亿元 / %。</p>
+    <div class="chart-container" id="chart-quarterly"></div>
+    <p class="chart-source">来源：2025 年报「六、分季度主要财务指标」。要点：Q4 营收最高但归母/扣非双亏（Q4 集中计提信用减值 0.88 亿），下半年扣非持续为负。</p>
+  </div>
+</section>
+
+<!-- ==================== 6. 护城河评估 ==================== -->
+<section id="moat">
+  <h2 class="section-title">护城河评估（巴菲特框架 · 多空对照）</h2>
+  <div class="card">
+    <table>
+      <tr><th>护城河类型</th><th>是否存在</th><th>量化证据</th><th>趋势</th><th>多空裁决</th></tr>
+      <tr><td>成本优势</td><td>部分</td><td>毛利率 14.33% 高于蓝标 2.63%（🟢），低于汇量 21.2%（🔴）；返点由媒体决定</td><td class="down">侵蚀（三年 -10pp）</td><td>空方占优：汇量逆势 +0.2pp 而公司 -4.25pp</td></tr>
+      <tr><td>品牌/定价权</td><td>弱</td><td>销售费用率仅 1.70%；各分部毛利率全面下滑</td><td class="down">侵蚀</td><td>空方占优：无定价权直接证据</td></tr>
+      <tr><td>网络效应</td><td>培育中</td><td>zMaticoo 日均请求 1799 亿次、50+ SDK、20 亿设备（🟢）</td><td>未在报表兑现</td><td>待验证：毛利率 -6.20pp 反向</td></tr>
+      <tr><td>转换成本</td><td>中</td><td>SHEIN 十年绑定（第一大客户 8.58%→12.45%）；但大客户议价力强</td><td>双向</td><td>中性</td></tr>
+      <tr><td>规模效应</td><td>部分</td><td>平台日均 1799 亿次请求有雏形；但规模扩张伴随毛利率下行</td><td>未兑现</td><td>空方占优：规模未带来议价权</td></tr>
+      <tr><td>牌照/特许</td><td>弱-中</td><td>Google/Meta/TikTok/Microsoft 一级代理（🟢）；可被取消（年报自认风险）</td><td>脆弱</td><td>双向：准入壁垒真实但可撤销</td></tr>
+    </table>
+    <div class="callout red">
+      <span class="strong">护城河宽度评分：4/10（窄，且正在变窄）</span> ｜ 能否持续 10 年以上：<span class="strong">不确定（偏否）</span>。侵蚀信号：毛利率三年连降、电商行业毛利率 -11.87pp、供应商集中度 82.31%、AppLovin 等海外平台侵蚀程序化中间层。
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 8. 管理层与诚信 ==================== -->
+<section id="management">
+  <h2 class="section-title">管理层与诚信（本分原则）</h2>
+  <div class="card">
+    <ul>
+      <li><span class="strong">审计与财务可信度</span>：<span class="badge-green" style="display:inline-block;font-size:12px;padding:1px 8px;border:1px solid #15331f;border-radius:6px;color:#7cc98f;">毕马威连续三年标准无保留</span>，2025 关键审计事项为收入确认 + 应收（含媒体代收）坏账准备（27.76 亿 / 42.56%）——报表可信度较高，但关键审计事项指向行业最易出问题环节。</li>
+      <li><span class="strong">关联交易</span>：出售 Bidease 35% 股权（1,200 万美元）程序合规；Xender/Bidease 日常关联交易小额无异常；未发现利益输送迹象。</li>
+      <li><span class="strong">资本配置</span>：分红率 23.9%→23.6%→<span class="up strong">10.4%</span> 骤降 + 转增 3 股稀释；<span class="up">约 8 亿资金投资同业股票（APPLOVIN/MOBVISTA/UNITY），2025 浮盈 +0.81 亿 → 2026Q1 亏损 -1.28 亿</span>，纪律存疑；2023 激励第二归属期业绩未达标作废 220 万股。</li>
+      <li><span class="strong">披露倾向（🟡 存疑，非 No-Go）</span>：连续两年用「剔除汇兑损益和股份支付」口径呈现增长（2025「+18.98%」、2026Q1「+12.45%」），但<span class="up">未剔除公允价值变动</span>（2025 为 +0.81 亿收益、2026Q1 为 -1.28 亿亏损）——剔除项恰为当期不利项，构成选择性披露倾向。</li>
+      <li><span class="strong">一票否决项</span>：无造假/违规证据，<span class="badge-green" style="display:inline-block;font-size:12px;padding:1px 8px;border:1px solid #15331f;border-radius:6px;color:#7cc98f;">未触发红线</span>（三年连贯性未断裂、诚实度 🟢）；「剔除口径」偏见与证券投资纪律为持续跟踪重点。</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== 9. 竞争劣势与风险（芒格） ==================== -->
+<section id="inversion">
+  <h2 class="section-title">竞争劣势与风险（芒格框架 · 反向检查清单）</h2>
+  <div class="card">
+    <h3>失败情景（5 年内最可能死法）</h3>
+    <ul>
+      <li><span class="strong">情景A 通道挤压致死</span>：媒体直客化 + 返点下调 → 整合营销毛利率趋近于 0（蓝标出海已降至 1.56%），时间框架 3-5 年。</li>
+      <li><span class="strong">情景B 大客户依赖断裂</span>：SHEIN 系（第一大 12.45%）因关税/合规/经营恶化削减投放 → 电商收入（11.43 亿，+122.80% 高基数）塌陷。</li>
+      <li><span class="strong">情景C 金融投资拖累</span>：证券投资持续回撤（Q1 已 -1.28 亿）叠加主营微利 → 戴维斯双杀。</li>
+      <li><span class="strong">情景D 应收坏账集中爆发</span>：27.76 亿应收+媒体代收坏账集中释放可吞掉全年利润。</li>
+    </ul>
+    <h3>历史错误 / 财务地雷 / 竞争侵蚀 / 心理偏差</h3>
+    <ul>
+      <li><span class="strong">历史错误</span>：8 亿同业股票投资造成利润波动；2023 激励目标过高作废；连续两年剔除口径选择性披露；分红率骤降。</li>
+      <li><span class="strong">财务地雷</span>：归母 vs 扣非背离（🔴）；净利率/毛利率三年连降（🔴）；证券投资波动（🔴）；信用减值占归母 56%（🟡）；应收+代收占总资产 42.56%（🟡）；商誉 0.36 亿（✅）；资本开支/OCF 5%（✅ 轻资产）。</li>
+      <li><span class="strong">竞争侵蚀</span>：Meta/Google 直客体系；AppLovin 等 AI 广告平台侵蚀程序化中间层；蓝标以规模挤压返点；SHEIN 自建投放团队；AI 全自动投放绕过代理商。</li>
+      <li><span class="strong">心理偏差</span>：市场对「AI 营销 + 出海」叙事存在过度乐观/锚定效应——现价 37.7 元被部分资金视为「低位」，但 603x PE 隐含 CAGR≈80% 利润增长假设，与 2025 扣非 -63.97%、2026Q1 转亏完全反向。</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== 10. 周期位置 + 12. 核心驱动 ==================== -->
+<section id="cycle">
+  <h2 class="section-title">周期位置与核心驱动因素</h2>
+  <div class="grid2">
+    <div class="card">
+      <h3>周期位置</h3>
+      <p>行业处于「出海高景气 + 结构性转型」叠加态：结构性（出海渗透率提升 + AI 营销渗透，行业 2024-2029 CAGR 18.4%）；周期性（2025 电商 +122.80% 建立在 SHEIN/Temu 激进投放与关税豁免窗口上，<span class="up">2026 年关税落地后投放增速必然回落</span>）。历史类比 2021-2023 洗牌期（2022 苹果 ATT + 广告预算收缩，公司 2021 巅峰 34.25 亿 → 2022 下滑 32.7%）提示行业对隐私政策与宏观广告周期高度敏感。</p>
+      <p><span class="strong">当前处于「收入高景气顶点的利润率下行段」，2026 中报（2026-08-21）是周期位置裁决点</span>。</p>
+    </div>
+    <div class="card">
+      <h3>核心驱动因素</h3>
+      <ul>
+        <li><span class="strong">客户</span>：SHEIN 系大客户（第一大 12.45%，电商 +122.80%）；阿里/腾讯/字节/米哈游等出海客户群。</li>
+        <li><span class="strong">技术</span>：zMaticoo SDK&DSP 2.0、DeepSeek-R1 私有化、KreadoAI、EC MCP Server、日均 Token 40 亿+（AI 收入未单列披露）；研发 1.59 亿（+74.28%）。</li>
+        <li><span class="strong">媒体资源</span>：Google/Meta/TikTok/Microsoft 一级代理 + 50+ 平台 SDK（媒体政策/返点变动为最大外部变量）。</li>
+        <li><span class="strong">政策</span>：顺风（出海渗透、一带一路）；逆风（美国关税 10%-30%、小包免税取消、ATT/GDPR 合规成本）。</li>
+        <li><span class="strong">资本</span>：2026-03-25 递表港交所拟 A+H（募资投向 AI/平台/并购，摊薄待评估）。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 13. 增长驱动分析 ==================== -->
+<section id="growth">
+  <h2 class="section-title">增长驱动分析（问题组 A：高增长能否持续）</h2>
+  <div class="card">
+    <div class="callout">
+      <span class="strong">A1 是否高增长：收入端高增长，利润端负增长——「增收不增利」的假高增。</span> 营收 -7.04%→+18.83%→+50.39%（2025 全年 38.30 亿）；归母 +6.81%→-31.80%；扣非 +30.10%→-63.97%；2026Q1 营收 +12.13% 已回落、归母转亏。增速口径上营收属高增长，但盈利口径负增长且利润率三年腰斩，增长质量差。
+    </div>
+    <h3>A2 当前高增长的促成原因（量化归因）</h3>
+    <table>
+      <tr><th>归因维度</th><th>是否贡献</th><th>量化证据</th><th>内/外因</th></tr>
+      <tr><td>量增（广告支出+客户群扩大）</td><td>✅ 主因</td><td>电商 +122.80%、应用娱乐代理及其他 +30.53%</td><td>外因为主</td></tr>
+      <tr><td>价增（提价/结构升级）</td><td>❌ 反向</td><td>毛利率 -4.25pp，各分部全面下滑——以价换量</td><td>—</td></tr>
+      <tr><td>新业务/第二曲线</td><td>✅ 部分</td><td>广告平台 18.38 亿/+48.92%（占比 47.99%）</td><td>内因</td></tr>
+      <tr><td>并购并表</td><td>❌ 无</td><td>商誉仅 0.36 亿，基本内生增长</td><td>—</td></tr>
+      <tr><td>行业景气/政策红利</td><td>✅ 重要外因</td><td>行业 CAGR 18.4%；SHEIN 在 Google/Meta 采购约 12.4 亿美元</td><td>外因</td></tr>
+      <tr><td>大客户放量</td><td>✅ 主因</td><td>电商收入 11.43 亿（+122.80%）；第一大客户 8.58%→12.45%</td><td>外因（单一生态依赖）</td></tr>
+    </table>
+    <h3>A3-A4 未来增长因素（内因 vs 外因）</h3>
+    <table>
+      <tr><th>未来增长因素</th><th>已兑现/待验证</th><th>内/外因</th><th>企业能否主导</th><th>持续性判断</th></tr>
+      <tr><td>跨境电商渗透率提升</td><td>待验证（长期）</td><td>外因</td><td>否</td><td>长期顺风但公司仅分通道费，关税逆风</td></tr>
+      <tr><td>SHEIN 系投放扩张</td><td>已兑现（2025）</td><td>外因</td><td>否</td><td class="up">高风险依赖：关税/直客化任一冲击即断崖</td></tr>
+      <tr><td>zMaticoo 全球扩张</td><td>已兑现部分（+48.92%）</td><td>内因</td><td>是</td><td>占比&gt;50% 且毛利率企稳才可结构性改善</td></tr>
+      <tr><td>AI 商业化</td><td>待验证</td><td>内因</td><td>是</td><td>AI 收入未披露；对标蓝标已披露 AI 收入 37.25 亿（占 5.42%）</td></tr>
+      <tr><td>H 股发行国际化</td><td>待验证</td><td>内因（双向）</td><td>部分</td><td>摊薄 EPS；募资用途效率待验证</td></tr>
+      <tr><td>行业投放预算（周期）</td><td>已兑现（2025 高增）</td><td>外因</td><td>否</td><td class="up">2026 关税落地后增速回归中枢</td></tr>
+    </table>
+    <div class="callout">
+      <span class="strong">A4 结论</span>：未来增长中「可主导的内因」（zMaticoo + AI）占比较低且尚未兑现；当前及近 1-2 年增长以<span class="up">外因（跨境电商景气 + 大客户投放）为主，须显式标注周期风险</span>——关税、媒体政策、大客户集中度三大外部变量任一恶化，增长即断崖。
+    </div>
+    <h3>A5 可持续性与跟踪阈值</h3>
+    <ul>
+      <li>边际增速信号：2025 分季度营收 9.29/8.08/9.80/11.13 亿；2026Q1 增速已回落至 +12.13%；下半年扣非持续为负（Q3 -0.04、Q4 -0.34 亿）。</li>
+      <li>跟踪阈值：营收增速 &lt;20% 视为增长失速信号；毛利率连续两季回升 + 扣非恢复正增长 = 多方翻盘信号；中报归母继续亏损或毛利率延续下滑 = 空方确认。</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== 14. 核心优势可持续性 ==================== -->
+<section id="edge">
+  <h2 class="section-title">核心优势可持续性分析（问题组 B：优势能否维持）</h2>
+  <div class="card">
+    <h3>B1 相对同行的核心优势（按实际突出维度）</h3>
+    <table>
+      <tr><th>公司/行业</th><th>优势指标值</th><th>差异</th><th>时点</th></tr>
+      <tr><td><span class="strong">本公司（易点天下）</span></td><td>毛利率 14.33%；程序化平台占比 47.99%</td><td>—</td><td>2025FY</td></tr>
+      <tr><td>蓝色光标（纯代理通道）</td><td>毛利率 2.63%（出海投放 1.56%）</td><td class="up">+11.7pp（本公司领先）</td><td>2025FY</td></tr>
+      <tr><td>汇量科技（纯程序化平台）</td><td>毛利率 21.2%（+0.2pp）</td><td class="down">-6.87pp（本公司落后）</td><td>2025FY</td></tr>
+      <tr><td>行业平均</td><td>毛利率约 13.97%~17.91%</td><td>公司居中下沿</td><td>2025</td></tr>
+    </table>
+    <p class="muted">优势维度：①程序化平台占比 47.99% 高于纯代理同业（结构性拉高毛利率 +11.7pp vs 蓝标）；②一级媒体代理资质 + SHEIN 十年粘性。<span class="strong up">相对汇量科技无优势</span>（平台毛利率 20.31% vs 21.2%，且趋势相反）。</p>
+    <h3>B2-B3 优势成因与趋势</h3>
+    <ul>
+      <li><span class="strong">成因</span>：产品结构（自研程序化平台占比近半）+ 牌照准入（头部媒体一级代理稀缺）+ 转换成本（SHEIN 十年绑定 + 数据中台）+ 技术投入（研发 1.59 亿/+74.28%）。</li>
+      <li><span class="strong">趋势：收窄（明确）</span>——毛利率三年 24.36%→14.33% 连降；各分部毛利率全面下滑（电商 -11.87pp、广告平台 -6.20pp、整合营销 -2.33pp）；电商行业毛利率 26.53%→23.19%→<span class="down">11.32%</span> 断崖；<span class="up">汇量逆势 +0.2pp 而公司 -4.25pp，优势收窄非行业共性</span>。</li>
+    </ul>
+    <h3>B4 优势被侵蚀的风险因素</h3>
+    <table>
+      <tr><th>侵蚀因素</th><th>概率</th><th>幅度</th><th>说明</th></tr>
+      <tr><td>媒体直客化（Meta/Google 直客体系）</td><td class="up">中-高</td><td class="up">大</td><td>直接绕过代理商，通道利润归零风险（蓝标路径）</td></tr>
+      <tr><td>媒体返点率下调 / 供应商集中 82.31%</td><td class="up">中-高</td><td class="up">大</td><td>返点由媒体决定，政策变动可击穿利润</td></tr>
+      <tr><td>电商大客户（SHEIN 系）低价放量持续</td><td>已发生</td><td class="up">大</td><td>电商毛利率 11.32%（-11.87pp），占比升至 29.83%</td></tr>
+      <tr><td>行业价格战（蓝标等规模挤压返点空间）</td><td class="up">中-高</td><td>中</td><td>广告平台毛利率 -6.20pp 即为竞争证据</td></tr>
+      <tr><td>AppLovin 等 AI 广告平台侵蚀程序化中间层</td><td>中</td><td>中</td><td>直接竞争 zMaticoo 的 RTB/SSP 环节</td></tr>
+      <tr><td>大客户自建投放团队/转向直客</td><td>中</td><td class="up">大</td><td>SHEIN 等大客户议价力强、可替代公司</td></tr>
+      <tr><td>关税/合规冲击中小出海客户投放</td><td class="up">中-高</td><td>中</td><td>2025 起对华关税 + 小包免税取消、ATT/GDPR</td></tr>
+    </table>
+    <h3>B5 独特壁垒（护城河 → 优势溢价因果链）</h3>
+    <p>头部媒体一级代理资质（准入稀缺）→ 获得媒体返点与采购资格 → 支撑「代理+平台」混合结构 → 毛利率高于纯代理同业（14.33% vs 蓝标 2.63%）；zMaticoo 平台（网络效应雏形：日均 1799 亿次请求、50+ SDK、20 亿设备）→ 若持续放量可复制汇量 Mintegral 模式（21.2%）。<span class="strong">壁垒可持续年限：资质型脆弱（取决于媒体关系）；平台型需 3-5 年验证（当前 -6.20pp 反向）；溢价部分（+11.7pp vs 蓝标）正在收窄（三年 -10pp）。</span></p>
+    <div class="callout red">
+      <span class="strong">B6 优势敏感性：毛利率每降 1pp ≈ 0.38 亿毛利，占 2025 扣非净利（0.78 亿）的 49%</span>——即毛利率每收窄 1pp，扣非净利缩水近一半；若再降 4pp 至 10% 附近，扣非净利趋零（对照蓝标出海 1.56% 的通道结局）。603x PE 的全部合理性建立在毛利率企稳 + 利润 V 型反转假设上，敏感性极高。
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 15. 跟踪指标 ==================== -->
+<section id="tracking">
+  <h2 class="section-title">跟踪指标</h2>
+  <div class="card">
+    <ol>
+      <li><span class="strong">2026 中报（2026-08-21 披露）分季度毛利率与扣非趋势</span>——多空最大分歧点的裁决支点；阈值：毛利率连续两季回升 + 扣非恢复正增长 = 多方翻盘信号。</li>
+      <li><span class="strong">广告平台业务（zMaticoo）收入占比与毛利率</span>（2025：47.99% / 20.31%/-6.20pp）；阈值：占比持续 &gt;50% 且毛利率企稳 = 转型兑现。</li>
+      <li><span class="strong">证券投资公允价值与处置进展</span>（APPLOVIN/MOBVISTA/UNITY，2025 +0.81 亿 → 2026Q1 -1.28 亿）；阈值：单季亏损 &gt;1 亿且无止损 = 利润持续污染。</li>
+      <li><span class="strong">信用减值与应收质量</span>（2025 减值 0.88 亿占归母 56%；应收+代收 27.76 亿 / 42.56%）；阈值：年度减值 &gt;1 亿或 3 年以上账龄扩大 = 坏账确认。</li>
+      <li><span class="strong">客户/供应商集中度与媒体返点政策</span>（2025：客户 29.88%/第一大 12.45%；供应商 82.31%）；阈值：第一大客户 &gt;15% 或返点率下调 = 通道利润压缩。</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ==================== 16. 风险提示 ==================== -->
+<section id="risk">
+  <h2 class="section-title">风险提示（分级）</h2>
+  <div class="card">
+    <table>
+      <tr><th>级别</th><th>风险</th><th>核心证据</th></tr>
+      <tr><td class="up strong">高</td><td>估值失锚风险</td><td>PE-TTM 603.69x vs 行业 26.80x；Forward PE 67.6-299x 各口径极高，隐含 CAGR≈80% 假设与基本面不匹配；任何低于预期中报（参照中邮 2025 预测偏差 -43%）触发暴力杀估值</td></tr>
+      <tr><td class="up strong">高</td><td>利润率结构性下行风险</td><td>毛利率三年连降、各分部全面下滑；汇量逆势 +0.2pp 表明非行业共性；2026 中报为裁决点</td></tr>
+      <tr><td class="up strong">高</td><td>利润质量与金融投资风险</td><td>非经常损益占归母 50.6%；2026Q1 归母 -0.64 亿（公允价值 -1.28 亿）；扣非 0.78 亿才是主业真实水平</td></tr>
+      <tr><td class="up strong">高</td><td>通道命脉与集中度风险</td><td>供应商 82.31%（返点由媒体决定，直客化可归零代理利润）；第一大客户（SHEIN 系）12.45%，关税/合规冲击即断崖</td></tr>
+      <tr><td>中-高</td><td>应收与减值风险</td><td>应收+代收 27.76 亿占总资产 42.56%（毕马威关键审计事项）；信用减值 0.88 亿占归母 56% 且 Q4 集中计提</td></tr>
+      <tr><td>中</td><td>营运资金占用风险</td><td>经营性应收 +7.77 亿吞噬 OCF（-65.87%）；OCF/净利≈1.02 为巧合而非造血实力</td></tr>
+      <tr><td>中</td><td>媒体政策与地缘风险</td><td>账号封禁/取消资格（年报自认）、ATT/GDPR 合规成本上升、美国关税与小包免税取消</td></tr>
+      <tr><td>中</td><td>治理透明度风险</td><td>🟡 连续两年剔除口径选择性披露、2023 激励作废、证券投资纪律存疑、2025Q4 亏损无专项解释</td></tr>
+      <tr><td>低-中</td><td>H 股发行摊薄风险</td><td>拟 A+H 募资投向 AI/并购，发行价与摊薄幅度待定</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ==================== 17. 多空论证 ==================== -->
+<section id="bullbear">
+  <h2 class="section-title">多空论证摘要（Bull Case vs Bear Case）</h2>
+  <div class="card">
+    <div class="chart-container" id="chart-bullbear"></div>
+    <p class="chart-source">多空五维度证据强度对照（0-10），摘自 deep-read 第十章 10.1-10.3。Bear 在护城河（8 vs 6）、估值（9 vs 5）维度显著占优；Bull 仅在财务质量（现金底盘）维度占优。</p>
+    <table style="margin-top:var(--sp-4);">
+      <tr><th>维度</th><th>🟢 多方论点（证据强度）</th><th>🔴 空方论点（证据强度）</th><th>综合裁决（结合外围因素）</th></tr>
+      <tr><td>增长</td><td>营收 +50.39%、电商 +122.80%，出海景气有外部数据支撑（<span class="strong">强</span>，置信度 8）</td><td>增长靠低毛利放量：毛利率 -4.25pp 同步恶化；电商依赖 SHEIN 单一生态（<span class="strong">中-强</span>，置信度 7-8）</td><td>增长真实但质量低：周期性成分大于结构性成分；空方在增长质量上占优</td></tr>
+      <tr><td>护城河</td><td>一级代理资质、IAB 认证、SHEIN 十年粘性、zMaticoo 网络效应雏形（<span class="strong">中</span>，置信度 6）</td><td>通道生意无定价权：供应商 82.31%、返点由媒体决定、毛利率连降、直客化侵蚀（<span class="strong">强</span>，置信度 8）</td><td class="up"><span class="strong">空方胜</span>：毛利率三年连降为最硬证据，护城河正在变窄</td></tr>
+      <tr><td>财务质量</td><td>现金 24.89 亿 + 交易性金融资产 7.88 亿、审计三年无保留（<span class="strong">强</span>，置信度 9）</td><td>归母 vs 扣非背离（占 50.6%）、2026Q1 转亏、减值 0.88 亿、应收 27.76 亿/42.56%（<span class="strong">强</span>，置信度 8）</td><td>账面稳健、盈利质量恶化：多方现金底盘论点不能对冲盈利恶化</td></tr>
+      <tr><td>估值</td><td>PS 5.91x/PB 6.38x 处价格历史低位区；AI 兑现存在重估期权（<span class="strong">弱</span>，置信度 5）</td><td>PE-TTM 603x vs 行业 26.8x；Forward PE 67.6-299x；高估值无锚（<span class="strong">强</span>，置信度 9）</td><td class="up"><span class="strong">空方胜（决定性）</span>：三情景目标市值全部低于现市值，无安全边际</td></tr>
+      <tr><td>周期/政策/国际</td><td>出海渗透率提升、AI 营销市场 850 亿/+127%、一带一路（<span class="strong">中</span>，置信度 7）</td><td>关税、数据隐私监管（ATT 拒绝率 85%）、媒体直客化（<span class="strong">强</span>，置信度 7-8）</td><td>高景气+高风险叠加：国际形势放大空方「电商高增不可持续」论点</td></tr>
+    </table>
+    <div class="callout">
+      <span class="strong">双方最强论点</span>：空方「估值失锚」（置信度 9）；多方「营收真实性 + 现金底盘」（置信度 9）。<br>
+      <span class="strong">双方最脆弱论点</span>：多方「AI 期权支撑估值」（AI 收入零披露，置信度 5）；空方「毛利率崩了」（若 2026 分季度毛利率企稳即失效，可证伪）。<br>
+      <span class="strong up">最大分歧点：2025-2026 利润率下行是「结构性恶化」（Bear）还是「周期性/结构性过渡成本」（Bull）</span>——决定 603x PE 是泡沫还是买点；裁决支点 = <span class="strong">2026-08-21 中报</span>（分季度毛利率 + 扣非趋势），属可证伪分歧。
+    </div>
+    <h3>综合裁决（产业理解 / 行业周期 / 国际形势 / 政策形势 / 技术节奏）</h3>
+    <ol>
+      <li><span class="strong">产业理解</span>：上游媒体平台掌握定价权与返点政策，代理商两头受挤；历史类比蓝色光标（通道结局：出海毛利率 1.56%、三年累计亏 23 亿）vs 汇量科技（平台：毛利率 21.2%）——公司毛利率高于蓝标、低于汇量且趋势向下（汇量逆势提升），<span class="up">下滑非行业共性，支持空方「利润率结构性恶化」论点</span>。</li>
+      <li><span class="strong">行业周期</span>：2021-2023 洗牌期 → 2024-2025 出海景气回升；行业 2024-2029 CAGR 18.4% 结构性上行成立，但当前处于「收入高景气顶点的利润率下行段」——多方「赛道景气」论点部分成立，周期性成分更大。</li>
+      <li><span class="strong">国际形势</span>：中美关税博弈（美国小额豁免反复）冲击低价跨境电商（公司 29.83% 收入来自电商客户）；TikTok 美国政策风险；全球数据合规——<span class="up">国际形势放大空方「电商高增不可持续」论点</span>。</li>
+      <li><span class="strong">政策形势</span>：公司筹备 H 股发行（摊薄与募资用途待验证）；A 股监管引导分红而公司分红率反降至 10.4%；媒体直客化趋势——政策/监管层面无正向催化。</li>
+      <li><span class="strong">技术节奏</span>：AI Agent 营销与程序化渗透是真实代际趋势，但公司 AI 收入零披露、无量化里程碑；媒体平台自建 AI 广告工具对代理商构成替代威胁——多方「AI 期权」论点无量化证据，仅可作观察条件。</li>
+    </ol>
+    <div class="callout red">
+      <span class="strong">裁决结论</span>：鉴于当前估值 603x 远超行业 26.8x 且盈利质量恶化（扣非 -63.97%、2026Q1 转亏、非经常损益占 50.6%），<span class="strong up">短期以空方框架为主</span>——估值失锚 + 利润率结构性下行构成「戴维斯双杀」风险组合；多方论点（AI/平台期权、现金底盘）仅作为「估值回落后的观察条件」——当估值回到中性情景目标市值 55 亿（约 8.9 元）以下、且 2026 中报确认毛利率企稳 + 扣非回升 + 证券投资止损时，多方框架才可重新评估。<span class="strong">裁决支点 = 2026-08-21 中报。</span>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 18. 质量筛查结论 ==================== -->
+<section id="quality">
+  <h2 class="section-title">质量筛查结论</h2>
+  <div class="card">
+    <div class="kpi-row">
+      <div class="kpi"><div class="label">质量评分</div><div class="value up">0.0 / 10</div><div class="note">quality-screen 自动评分（扣非口径）</div></div>
+      <div class="kpi"><div class="label">结论</div><div class="value up">🔴 RED</div><div class="note">不得标注「值得跟踪」等级</div></div>
+      <div class="kpi"><div class="label">红牌</div><div class="value up">3 项</div><div class="note">ROE 2.1% / 扣非 -64.0% / 一次性损益占 50.6%</div></div>
+      <div class="kpi"><div class="label">黄牌</div><div class="value">3 项</div><div class="note">毛利率 14.3% / 净利率 2.0% / PE 603.7x</div></div>
+    </div>
+    <table>
+      <tr><th>类型</th><th>指标</th><th>数值</th><th>说明</th></tr>
+      <tr><td class="up strong">🔴 红牌</td><td>ROE</td><td class="num">2.1%（扣非口径 0.78/37.08）</td><td>低于 5% 资本回报红线（归母口径 4.34% 同样触发）</td></tr>
+      <tr><td class="up strong">🔴 红牌</td><td>扣非净利同比</td><td class="num">-64.0%</td><td>严重恶化（归母 -31.80% 亦为负）</td></tr>
+      <tr><td class="up strong">🔴 红牌</td><td>一次性损益</td><td class="num">占归母 50.6%</td><td>公允价值变动 +0.81 亿，自动化评分失真，须用正常化盈利判断</td></tr>
+      <tr><td>🟡 黄牌</td><td>毛利率</td><td class="num">14.3%</td><td>低于 20%（弱护城河风险），三年连降</td></tr>
+      <tr><td>🟡 黄牌</td><td>净利率（扣非）</td><td class="num">2.0%</td><td>低于 5%，价格敏感度高</td></tr>
+      <tr><td>🟡 黄牌</td><td>PE-TTM</td><td class="num">603.7x</td><td>远超 40 且无高增长支撑（公司自曝行业均值 26.8x）</td></tr>
+    </table>
+    <p class="chart-source">来源：quality-screen.ts（taskId：deep-dive-易点天下-20260819-7f3a）；8 项核心指标中 6 项亮牌（3 红 3 黄）。</p>
+  </div>
+</section>
+
+<!-- ==================== 附录 ==================== -->
+<section id="appendix">
+  <h2 class="section-title">附录</h2>
+
+  <div class="card">
+    <h3>附录 A · document-reader 精读笔记摘要（含多空论证摘要）</h3>
+    <p class="section-sub">精读覆盖：2023 年报（258 页）/ 2024 年报（199 页）/ 2025 年报（209 页）/ 2026Q1 季报（11 页），parse_confidence=1、无 OCR 问题；精读置信度自评 8/10。</p>
+    <ul>
+      <li><span class="strong">增长飞轮</span>：收入高增（+50.39%）但无复利效应——代理业务是「返点差价」生意，规模扩张依赖媒体投放量而非资产沉淀；复利仅在 zMaticoo 与数据资产层面初步显现，未在报表兑现。</li>
+      <li><span class="strong">财务状况</span>：杜邦拆解 ROE 恶化 = 净利率塌陷主导；扣非归因——非经常损益 +0.80 亿占归母 50.6%；8 项逻辑勾稽 2 处高严重度断裂（营收 +50.39% vs OCF -65.87%；归母 -31.80% vs 扣非 -63.97%）均已追因。</li>
+      <li><span class="strong">三年趋势</span>：收入端加速向好、利润端逐年恶化——「增收不增利」剪刀差 2025 年剧烈放大；三年年报基本连贯；管理层诚实度 🟢（审计无保留、期初衔接一致、重大不利如实披露）但 🟡 存疑（连续两年剔除口径选择性披露）。</li>
+      <li><span class="strong">多空论证摘要对照表（Bull vs Bear 核心论点，摘自 deep-read 第十章）</span>：多方 Top5（赛道高景气/强、zMaticoo 第二曲线/中、AI 卡位/中、现金底盘/强、H 股国际化/弱）；空方 Top5（估值失锚/强、利润率塌陷/强、非经常项依赖/强、通道天花板/中-强、营运资金与坏账/中）。双方最强论点：空方「估值失锚」vs 多方「营收真实性+现金底盘」；双方最脆弱论点：多方「AI 期权」vs 空方「毛利率崩了」。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>附录 B · 50 项投资决策清单 AUTO 扫描块</h3>
+    <table>
+      <tr><th>#</th><th>级别</th><th>检查项</th><th>结果</th><th>说明</th></tr>
+      <tr><td>4</td><td>🟠 IMPORTANT</td><td>三层结构覆盖</td><td>✅</td><td>检测到三层结构（行业+细分+公司）</td></tr>
+      <tr><td>8</td><td>⚪️ NORMAL</td><td>财报PDF下载</td><td>✅</td><td>pdf-texts / 三年年报覆盖</td></tr>
+      <tr><td>11</td><td>🟠 IMPORTANT</td><td>毛利率/ROE 护城河信号</td><td class="up">❌</td><td>毛利率 14.3%、ROE 4.3% 偏低（无周期性解释）</td></tr>
+      <tr><td>14</td><td>⚪️ NORMAL</td><td>重/轻资产</td><td>🟡</td><td>需人工确认（实际：固定资产极轻、营运资本重）</td></tr>
+      <tr><td>15</td><td>⚪️ NORMAL</td><td>商誉占比</td><td>✅</td><td>商誉占比 0.96%（&lt;30%）</td></tr>
+      <tr><td>25</td><td>🔴 CRITICAL</td><td>经营现金流/净利润 ≥0.8</td><td>✅</td><td>OCF/NI=1.02（表面，实为巧合）</td></tr>
+      <tr><td>26</td><td>🟠 IMPORTANT</td><td>ROE ≥12%</td><td class="up">❌</td><td>ROE 4.3%（扣非 2.1%）</td></tr>
+      <tr><td>27</td><td>🟠 IMPORTANT</td><td>资产负债率 ≤60%</td><td>✅</td><td>42.9%</td></tr>
+      <tr><td>28</td><td>🔴 CRITICAL</td><td>有息负债 / OCF 流动性红线</td><td>🟡 → ✅</td><td>人工核验：有息负债 5.96 亿 ÷ OCF 1.61 亿 ≈ 3.7 &lt;5，未触发红线</td></tr>
+      <tr><td>29</td><td>🟠 IMPORTANT</td><td>营收+净利双负增长</td><td>✅</td><td>营收 +50.4%、净利 -31.8%</td></tr>
+      <tr><td>30</td><td>🟠 IMPORTANT</td><td>大额减值 &gt;30% 净利</td><td class="up">❌（人工修正）</td><td>脚本漏报；信用减值 0.88 亿占归母 56%（deep-read 事实）</td></tr>
+      <tr><td>31</td><td>🟠 IMPORTANT</td><td>PE&gt;40 无高增长</td><td class="up">❌</td><td>PE-TTM 603.7 &gt;40 且净利增长 -31.8% 🚩</td></tr>
+    </table>
+    <div class="callout">
+      <span class="strong">AUTO 统计：CRITICAL 0/2 未通过 ✅；IMPORTANT 3/7 未通过（人工修正后 4/7）；NORMAL 0/3 未通过 ✅；综合结论：✅ 放行</span>（人工复核注记：第 28 项人工核验比值 ≈3.7 未触发红线；第 30 项因脚本未解析「信用减值损失」科目漏报，按 deep-read 事实修正为 ❌——修正后 IMPORTANT 未通过 4 项全部在「风险提示（高）」与「质量筛查结论（RED）」中显式覆盖）。
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>附录 C · 财报精读 10 项检查清单（evaluate.ts + deep-read 补充）</h3>
+    <table>
+      <tr><th>#</th><th>检查项</th><th>结果</th><th>详情/说明</th></tr>
+      <tr><td>1</td><td>ROE ≥ 12%（资本回报达标）</td><td class="up">❌</td><td>2025 加权 ROE 4.34%、扣非约 2.11%，杜邦拆解为净利率塌陷主导</td></tr>
+      <tr><td>2</td><td>经营现金流 ≥ 净利润 × 0.8</td><td>✅（⚠️ 表面）</td><td>OCF/NI=1.02-1.04；但非经常收益无现金支撑 + 应收 -7.77 亿，OCF 同比 -65.87%</td></tr>
+      <tr><td>3</td><td>资产负债率 ≤ 60%</td><td>✅</td><td>42.88%（有息负债仅短借 5.71 亿，现金覆盖充足）</td></tr>
+      <tr><td>4</td><td>归母净利润为正</td><td>⚠️</td><td>2025 年 1.58 亿为正；但 2026Q1 已转亏 -0.64 亿，2025 下半年扣非转负</td></tr>
+      <tr><td>5</td><td>毛利率 ≥ 25%</td><td>⚠️</td><td>14.33%，三年连降（24.36%→18.58%→14.33%）</td></tr>
+      <tr><td>6</td><td>营收趋势 ≥ 2 年连续稳健</td><td>✅</td><td>21.43→25.47→38.30 亿连续两年回升，但剪刀差显著</td></tr>
+      <tr><td>7</td><td>商誉 / 净资产 &lt; 30%</td><td>✅</td><td>0.36 亿 / 37.08 亿 = 0.96%，上海世全未减值</td></tr>
+      <tr><td>8</td><td>无大额资产减值损失（≥净利 30%）</td><td class="up">❌</td><td>信用减值 0.88 亿占归母 56%，Q4 集中计提（毕马威关键审计事项）</td></tr>
+      <tr><td>9</td><td>审计意见标准无保留</td><td>✅</td><td>毕马威三年标准无保留，无强调事项段</td></tr>
+      <tr><td>10</td><td>MD&A 未来展望无重大风险隐瞒</td><td>🟡 存疑</td><td>风险章节较坦诚；但剔除口径选择性披露、Q4 亏损无专项解释、证券投资风险未在风险章节提示</td></tr>
+    </table>
+    <p class="chart-source">结论：❌ ≥3 项（ROE 不达标、信用减值占净利 56%、2026Q1 盈利转亏为 ⚠️ 边界触发）——已在风险提示章节列为高优先级风险。</p>
+  </div>
+
+  <div class="card">
+    <h3>相关研究（双链）</h3>
+    <p class="muted">[[易点天下-公司研究]] ｜ [[2026-08-19-易点天下-deep-read]]（主验证源） ｜ [[2026-08-19-易点天下-processed]] ｜ [[传媒-MOC]] ｜ [[蓝色光标]] ｜ [[汇量科技]] ｜ [[互联网广告]] ｜ [[传媒]]</p>
+    <p class="section-sub" style="margin-top:var(--sp-3);">研报共识参考（标注主体与时点，不替代财报）：中航证券 2026-06-01（买入）2026-2028E 归母 2.47/3.45/4.50 亿；中邮证券 2025-10-09（买入）2025/2026/2027E 归母 2.78/3.44/4.19 亿——<span class="up">中邮 2025 预测 vs 实际 1.58 亿偏差 -43%，券商预测系统性偏乐观，引用须打折</span>。</p>
+  </div>
+</section>
+
+<!-- ==================== 页脚 ==================== -->
+<footer>
+  <p><strong>免责声明</strong>：本报告由投研智能体系统基于公开信息自动生成（taskId：deep-dive-易点天下-20260819-7f3a），仅供内部研究参考，不构成任何投资建议。报告数据来源于易点天下 2023/2024/2025 年度报告、2026Q1 季报、上市公司公告、券商研报及公开行业数据，数据时点 2026-08-19；研报预测值与实际可能大幅偏差（如中邮证券 2025 年预测偏差 -43%），引用须谨慎。投资有风险，决策需独立判断。</p>
+  <p style="margin-top:var(--sp-2);">置信度说明：本报告关键结论均标注置信度（高/中/低）；置信度低于 7 的内容（如 AI 期权、H 股发行、三情景乐观假设）显式标注「存疑」或低置信度。数据口径：归母 vs 扣非并列呈现，2025 非经常性损益占归母 50.6%，扣非口径更能反映主业。</p>
+</footer>
+
+</div>
+
+<!-- ==================== ECharts 脚本 ==================== -->
+<script>
+/* DARK_THEME_BASE — 黑金暗色主题（design.md） */
+var DARK_THEME_BASE = {
+  backgroundColor: 'transparent',
+  textStyle: { color: '#a1a1a1', fontFamily: 'Geist, Inter, "PingFang SC", "Microsoft YaHei", sans-serif' },
+  legend: { textStyle: { color: '#a1a1a1' }, inactiveColor: '#666666', itemWidth: 14, itemHeight: 8, top: 0 },
+  tooltip: {
+    backgroundColor: '#111111', borderColor: '#1a1a1a', textStyle: { color: '#ffffff', fontSize: 13 },
+    axisPointer: { lineStyle: { color: '#666666' } }
+  },
+  grid: { left: 48, right: 48, top: 44, bottom: 36 },
+  xAxis: { axisLine: { lineStyle: { color: '#1a1a1a' } }, axisLabel: { color: '#a1a1a1' }, axisTick: { show: false }, splitLine: { show: false } },
+  yAxis: { axisLine: { show: false }, axisLabel: { color: '#666666' }, splitLine: { lineStyle: { color: '#1a1a1a' } } },
+  title: { textStyle: { color: '#ffffff', fontSize: 15, fontWeight: 600 } }
+};
+/* REPORT_PALETTE — 报告调色板（金色主色 + A股红涨绿跌） */
+var REPORT_PALETTE = ['#d4af37', '#e5484d', '#46a758', '#a1a1a1', '#e6c25c', '#666666'];
+var FIN_UP = '#e5484d';   /* 红涨 */
+var FIN_DOWN = '#46a758'; /* 绿跌 */
+
+function mergeTheme(opt) {
+  return Object.assign({}, DARK_THEME_BASE, opt,
+    { xAxis: Object.assign({}, DARK_THEME_BASE.xAxis, opt.xAxis),
+      yAxis: Array.isArray(opt.yAxis) ? opt.yAxis.map(function(y){ return Object.assign({}, DARK_THEME_BASE.yAxis, y); })
+                                      : Object.assign({}, DARK_THEME_BASE.yAxis, opt.yAxis),
+      tooltip: Object.assign({}, DARK_THEME_BASE.tooltip, opt.tooltip),
+      legend: Object.assign({}, DARK_THEME_BASE.legend, opt.legend),
+      grid: Object.assign({}, DARK_THEME_BASE.grid, opt.grid) });
+}
+
+var charts = [];
+
+/* ---------- chart-1 三年财务趋势 ---------- */
+charts.push({ id: 'chart-financials', init: function(el) {
+  var opt = {
+    legend: { data: ['营收', '归母净利', '扣非净利', '毛利率'], top: 0 },
+    tooltip: { trigger: 'axis' },
+    grid: { left: 52, right: 52, top: 40, bottom: 36 },
+    xAxis: { type: 'category', data: ['2023', '2024', '2025'] },
+    yAxis: [
+      { type: 'value', name: '亿元', nameTextStyle: { color: '#666666' } },
+      { type: 'value', name: '%', nameTextStyle: { color: '#666666' }, min: 0, max: 30 }
+    ],
+    series: [
+      { name: '营收', type: 'bar', data: [21.43, 25.47, 38.30], barWidth: 26, itemStyle: { color: '#d4af37' } },
+      { name: '归母净利', type: 'bar', data: [2.17, 2.32, 1.58], barWidth: 16, itemStyle: { color: '#e5484d' } },
+      { name: '扣非净利', type: 'bar', data: [1.67, 2.17, 0.78], barWidth: 16, itemStyle: { color: '#8a6d1f' } },
+      { name: '毛利率', type: 'line', yAxisIndex: 1, data: [24.36, 18.58, 14.33], symbol: 'circle', symbolSize: 8, lineStyle: { width: 2, color: '#46a758' }, itemStyle: { color: '#46a758' } }
+    ]
+  };
+  el.setOption(mergeTheme(opt));
+}});
+
+/* ---------- chart-2 2025 分季度 ---------- */
+charts.push({ id: 'chart-quarterly', init: function(el) {
+  var opt = {
+    legend: { data: ['营收', '归母净利', '扣非净利'], top: 0 },
+    tooltip: { trigger: 'axis' },
+    grid: { left: 52, right: 52, top: 40, bottom: 36 },
+    xAxis: { type: 'category', data: ['2025Q1', '2025Q2', '2025Q3', '2025Q4'] },
+    yAxis: [
+      { type: 'value', name: '亿元', nameTextStyle: { color: '#666666' } },
+      { type: 'value', name: '亿元', nameTextStyle: { color: '#666666' } }
+    ],
+    series: [
+      { name: '营收', type: 'bar', data: [9.29, 8.08, 9.80, 11.13], barWidth: 30, itemStyle: { color: '#d4af37' } },
+      { name: '归母净利', type: 'line', yAxisIndex: 1, data: [0.56, 0.88, 0.60, -0.45], symbol: 'circle', symbolSize: 8, lineStyle: { width: 2, color: '#e5484d' }, itemStyle: { color: '#e5484d' } },
+      { name: '扣非净利', type: 'line', yAxisIndex: 1, data: [0.61, 0.55, -0.04, -0.34], symbol: 'diamond', symbolSize: 9, lineStyle: { width: 2, color: '#e6c25c', type: 'dashed' }, itemStyle: { color: '#e6c25c' } }
+    ]
+  };
+  el.setOption(mergeTheme(opt));
+}});
+
+/* ---------- chart-3 估值情景对比 ---------- */
+charts.push({ id: 'chart-valuation', init: function(el) {
+  var opt = {
+    legend: { data: ['目标市值', '现市值'], top: 0 },
+    tooltip: { trigger: 'axis' },
+    grid: { left: 52, right: 40, top: 40, bottom: 36 },
+    xAxis: { type: 'category', data: ['悲观情景', '中性情景', '乐观情景'] },
+    yAxis: { type: 'value', name: '亿元', nameTextStyle: { color: '#666666' } },
+    series: [
+      { name: '目标市值', type: 'bar', data: [30, 55, 100], barWidth: 40, label: { show: true, position: 'top', color: '#a1a1a1' }, itemStyle: { color: '#d4af37' } },
+      { name: '现市值', type: 'bar', data: [233.2, 233.2, 233.2], barWidth: 12, itemStyle: { color: '#e5484d' } }
+    ]
+  };
+  el.setOption(mergeTheme(opt));
+}});
+
+/* ---------- chart-4 多空五维度雷达 ---------- */
+charts.push({ id: 'chart-bullbear', init: function(el) {
+  var opt = {
+    legend: { data: ['🟢 多方证据强度', '🔴 空方证据强度'], bottom: 0, itemWidth: 14, itemHeight: 8 },
+    tooltip: {},
+    radar: {
+      indicator: [
+        { name: '增长', max: 10 }, { name: '护城河', max: 10 }, { name: '财务质量', max: 10 },
+        { name: '估值', max: 10 }, { name: '周期/政策/国际', max: 10 }
+      ],
+      radius: '62%',
+      center: ['50%', '48%'],
+      axisName: { color: '#a1a1a1' },
+      splitLine: { lineStyle: { color: '#1a1a1a' } },
+      splitArea: { areaStyle: { color: ['#0a0a0a', '#0f0f0f'] } },
+      axisLine: { lineStyle: { color: '#1a1a1a' } }
+    },
+    series: [{
+      type: 'radar',
+      data: [
+        { name: '🟢 多方证据强度', value: [8, 6, 9, 5, 7], areaStyle: { color: 'rgba(212,175,55,0.18)' }, lineStyle: { color: '#d4af37', width: 2 }, itemStyle: { color: '#d4af37' } },
+        { name: '🔴 空方证据强度', value: [7.5, 8, 8, 9, 7.5], areaStyle: { color: 'rgba(229,72,77,0.15)' }, lineStyle: { color: '#e5484d', width: 2 }, itemStyle: { color: '#e5484d' } }
+      ]
+    }]
+  };
+  el.setOption(mergeTheme(opt));
+}});
+
+/* ---------- 初始化 + 降级 ---------- */
+function renderCharts() {
+  charts.forEach(function(c) {
+    var dom = document.getElementById(c.id);
+    if (!dom) return;
+    if (typeof echarts === 'undefined') { degrade(dom, c.id); return; }
+    try { c.init(echarts.init(dom)); }
+    catch (e) { degrade(dom, c.id); }
+  });
+}
+function degrade(dom, id) {
+  /* CDN 失败降级：显示数据表格 */
+  dom.innerHTML = '<div class="chart-fallback" style="display:block;padding:12px 0;">⚠️ ECharts CDN 加载失败，以下为数据替代表（来源时点：2026-08-19）：</div>';
+  var tables = {
+    'chart-financials': '<table><tr><th>年份</th><th class="num">营收(亿)</th><th class="num">归母(亿)</th><th class="num">扣非(亿)</th><th class="num">毛利率</th></tr><tr><td>2023</td><td class="num">21.43</td><td class="num">2.17</td><td class="num">1.67</td><td class="num">24.36%</td></tr><tr><td>2024</td><td class="num">25.47</td><td class="num">2.32</td><td class="num">2.17</td><td class="num">18.58%</td></tr><tr><td>2025</td><td class="num">38.30</td><td class="num">1.58</td><td class="num">0.78</td><td class="num">14.33%</td></tr></table>',
+    'chart-quarterly': '<table><tr><th>2025</th><th class="num">Q1</th><th class="num">Q2</th><th class="num">Q3</th><th class="num">Q4</th></tr><tr><td>营收(亿)</td><td class="num">9.29</td><td class="num">8.08</td><td class="num">9.80</td><td class="num">11.13</td></tr><tr><td>归母(亿)</td><td class="num">0.56</td><td class="num">0.88</td><td class="num">0.60</td><td class="num">-0.45</td></tr><tr><td>扣非(亿)</td><td class="num">0.61</td><td class="num">0.55</td><td class="num">-0.04</td><td class="num">-0.34</td></tr></table>',
+    'chart-valuation': '<table><tr><th>情景</th><th class="num">目标市值(亿)</th><th class="num">现市值(亿)</th></tr><tr><td>悲观</td><td class="num">30</td><td class="num">233.2</td></tr><tr><td>中性</td><td class="num">55</td><td class="num">233.2</td></tr><tr><td>乐观</td><td class="num">100</td><td class="num">233.2</td></tr></table>',
+    'chart-bullbear': '<table><tr><th>维度</th><th class="num">🟢 多方</th><th class="num">🔴 空方</th></tr><tr><td>增长</td><td class="num">8</td><td class="num">7.5</td></tr><tr><td>护城河</td><td class="num">6</td><td class="num">8</td></tr><tr><td>财务质量</td><td class="num">9</td><td class="num">8</td></tr><tr><td>估值</td><td class="num">5</td><td class="num">9</td></tr><tr><td>周期/政策/国际</td><td class="num">7</td><td class="num">7.5</td></tr></table>'
+  };
+  dom.insertAdjacentHTML('beforeend', tables[id] || '');
+}
+window.addEventListener('error', function(e) {
+  if (e.target && (e.target.src || '').indexOf('echarts') !== -1) { renderCharts(); }
+}, true);
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', renderCharts);
+else renderCharts();
+</script>
+</body>
+</html>
