@@ -302,7 +302,7 @@ function MessageItem({
 
       {msg.reply !== null && (
         <div className="mt-3 border-l-2 border-[var(--accent-primary)] bg-[var(--bg-elevated)] px-3 py-2">
-          <div className="text-[11px] font-semibold text-[var(--accent-primary)]">我的回复</div>
+          <div className="text-[11px] font-semibold text-[var(--accent-primary)]">回复</div>
           <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-[var(--text-secondary)]">{msg.reply}</p>
         </div>
       )}
