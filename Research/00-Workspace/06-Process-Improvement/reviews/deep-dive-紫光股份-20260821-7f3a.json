@@ -1,0 +1,90 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "deep-dive-紫光股份-20260821-7f3a",
+  "origin": "process-improvement",
+  "command": "deep-dive 紫光股份",
+  "status": "success",
+  "summary": "全流程 succeeded：全新公司研究（无旧笔记），数据采集（4 份财报 PDF + 定增预案 + 2 公告 + 10 篇研报 + 6 篇空方观点 + 估值快照）→ document-reader 精读（9 大目标 + 三年年报 + 归因核查 + 第十章多空论证，置信度 8/10，红线🟡存疑非 No-Go）→ info-alchemist（44 条事实，自检 9/10）→ quality-screen（RED 0.0）→ knowledge-architect（公司笔记 + MOC，自检 10/10）→ report-writer（简版报告 + 附录 5 项，自检 10/10）。关键产物：紫光股份-公司研究.md（quality_verdict=RED/score=0.0）、2026-08-21-紫光股份-deep-read.md/processed.md、2026-08-21-紫光股份-deep-dive-report.md。本次 review 聚焦 quality-screen frontmatter 解析缺陷（成长性高估）与质量脚本正则误报两处脚本级问题，以及研报空方覆盖/自检脚本缺失的跨任务复现。",
+  "issues": [
+    {
+      "problemCode": "quality-screen-yaml-flatten-override",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "frontmatter 嵌套键被扁平化覆盖：financials.half_year_2026.net_profit_yoy（2026H1 预告口径 +103%）覆盖顶层 financials.net_profit_yoy（2025 财年 +7.19%），quality-screen report 模式将成长性按 +103% 计算，净利增速维度从 7.19% 被高估为 +103%，掩盖 2025 财年真实增速；knowledge-architect 人工删除 half_year_2026.net_profit_yoy 键后筛查才恢复保守口径（7.19%）",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-21 knowledge-architect 执行记录：『frontmatter half_year_2026.net_profit_yoy 因脚本扁平化覆盖顶层 2025 财年 net_profit_yoy（7.19%），导致成长性按 2026H1 预告口径 +103% 高估——已删除该键，筛查净利增速回落至 7.19%（更保守、剔除水分）』；质量筛查 verdict/score 在不同运行间随该键存在与否变化，属于产物与契约的直接差异（同一笔记前后两次筛查结果不一致）" }
+      ],
+      "rootCauseHypothesis": "quality-screen.ts report 模式解析 frontmatter 时未区分嵌套键（financials.half_year_2026.*）与顶层键（financials.*），YAML 扁平化时后者被前者覆盖；frontmatter 同时存在全年与半年两套 growth 字段时脚本取错口径",
+      "goal": "quality-screen.ts report 模式解析 financials 块时按键路径精确取值（financials.net_profit_yoy 顶层优先），嵌套 half_year_* 键不得覆盖顶层年度键；对『存在 half_year 键与年度键并存』的情形输出口径警告",
+      "severity": "high",
+      "confidence": 0.85,
+      "benefit": "消除质量筛查成长性维度口径错配风险——否则高增预告口径（含一次性收益）会系统性高估成长评分，RED 判定可能被误放行为 YELLOW",
+      "risk": "修改解析逻辑需回归测试现有 20+ 家公司笔记；half_year 键在部分笔记中为 backfill 半年度口径，需确认删除语义",
+      "acceptance": "对紫光股份笔记重新运行 quality-screen report 模式，net_profit_yoy 正确取 2025 财年 7.19%（不随 half_year_2026 键存在而变化）；且历史已入库笔记（含 half_year_2026 键者）筛查结果不受污染"
+    },
+    {
+      "problemCode": "quality-screen-regex-sanction-false-positive",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "quality-screen report 模式正则将正文『薪酬信披矛盾』等治理描述误判为『监管处罚』红牌：紫光股份无任何监管处罚记录，但筛查报告出现处罚类红牌，knowledge-architect 改写笔记措辞（去掉『处罚』相关表述）才消除误报——正文措辞影响筛查结论，存在被误报红牌拖累 verdict 的风险",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-21 knowledge-architect 执行记录：『quality-screen 正则把正文「薪酬信披矛盾升级为监管处罚」误报为处罚红牌（紫光无处罚记录），已改写措辞消除』；紫光股份 2026-08-21 检索无证监会/交易所处罚公告，处罚红牌为误报" }
+      ],
+      "rootCauseHypothesis": "quality-screen 处罚类检测采用关键词正则（如『处罚』『立案』），未结合上下文（『信披矛盾』属治理观察项而非处罚事实），正文中出现负面治理描述即触发处罚红牌",
+      "goal": "处罚类红牌检测改为结构化字段（如审计意见/立案公告/监管函）触发，或增加上下文排除规则（『未处罚』『无处罚』『信披矛盾』等非处罚语境不得触发）；误报时输出中标注『正则触发，需人工核验』",
+      "severity": "medium",
+      "confidence": 0.7,
+      "benefit": "避免治理描述类正文污染筛查 verdict，RED/YELLOW 判定更准确",
+      "risk": "正则上下文规则可能过严漏报真实处罚；需维护排除词表",
+      "acceptance": "含『薪酬信披矛盾』表述的笔记运行 quality-screen 不触发处罚红牌（本次单例，跨任务复现 2 次后升级 candidate）"
+    },
+    {
+      "problemCode": "checklist-auto-percent-misparse",
+      "targetKind": "script",
+      "targetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "symptom": "investment-checklist-auto.ts 商誉/净资产占比正则把『139.92 亿』绝对值解析为 13992.0%，真实占比 94.9% 被放大 147 倍触发商誉红牌误报（report-writer 人工备注纠正）——金额带『亿』单位的字段被当作百分比数，清单准确性受影响",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-21 report-writer 附录备注：『商誉占比 13992.0%→实为 94.9%』；紫光股份 frontmatter 商誉 139.92 亿元、归母净资产约 147.5 亿，真实占比 94.9% 已触发商誉红牌，误报数值 13992.0% 不影响红牌判定但污染清单输出与人工核查成本" }
+      ],
+      "rootCauseHypothesis": "投资清单脚本对『商誉/净资产』类指标从正文/笔记提取时未剔除『亿』单位直接作百分比处理，或正则匹配到绝对值字段",
+      "goal": "investment-checklist-auto.ts 指标提取统一口径：『亿』单位数值须换算占比而非直接作百分比；对>100% 的异常占比输出警示并标注来源",
+      "severity": "medium",
+      "confidence": 0.65,
+      "benefit": "投资清单输出数值可信度提升，减少人工纠错与误读",
+      "risk": "换算逻辑需与各指标口径（占比/绝对值）匹配，改动需回归 checklist-auto 全量运行",
+      "acceptance": "紫光股份清单扫描商誉占比输出 94.9%（而非 13992.0%）（本次单例，跨任务复现 2 次后升级 candidate）"
+    },
+    {
+      "problemCode": "deep-dive-bear-report-coverage-gap",
+      "targetKind": "process",
+      "targetPath": "deep-dive 流程·步骤 2.4（研报采集）",
+      "symptom": "紫光股份近 365 天研报 10 篇（stock.ts --reports）全部为买入/增持评级，无看空/谨慎研报；多空论证 Bear Case 主要依赖 document-reader 自建（毛利率五连降/高杠杆高商誉/2026 利润含金量）+ 编排器 WebSearch 外部媒体（贝果财经/子弹财经/众问/东财社区），缺少卖方谨慎视角外部佐证——跨任务第 3 例（中石科技、易点天下后）",
+      "evidence": [
+        { "grade": "C", "detail": "2026-08-21 stock.ts --code 000938 --reports 返回 10 篇研报均为买入/增持（开源/国金/国信/华鑫）；document-reader 空方论点全部由财报原文与外部媒体构建；与 deep-dive-易点天下-20260819-7f3a 同码（C 级证据，已跨 2 taskId）复现第 3 例——满足『medium + ≥2 taskId + C 级证据』升级 candidate 条件" }
+      ],
+      "rootCauseHypothesis": "A 股卖方研报系统性偏多（鲜少看空），stock.ts 仅取东财研报源，无中性/谨慎评级定向筛选或负面观点补充源",
+      "goal": "研报采集在卖方看空稀缺时，补充检索中性/谨慎评级研报或权威媒体负面观点作为空方外部证据源；多空论证标注『空方外部佐证来源』",
+      "severity": "medium",
+      "confidence": 0.75,
+      "benefit": "多空论证外部证据链更完整，减少单边依赖",
+      "risk": "增加采集步骤耗时；负面观点信源质量参差需甄别",
+      "acceptance": "多空论证空方至少 1 条外部佐证或显式标注缺失原因（本问题已跨 3 taskId 复现，升级 candidate 供批次治理）"
+    },
+    {
+      "problemCode": "document-reader-selfcheck-missing",
+      "targetKind": "agent",
+      "targetPath": ".trae/agents/document-reader.md",
+      "symptom": "document-reader 角色无同名 .self-check.ts 自检脚本（info-alchemist/cross-validator/knowledge-architect/report-writer 均有），deep-read 产出（9 大精读目标 + 三年年报 + 多空论证第十章）缺乏自动化校验，本次仅靠编排器人工核对 deep-read 内容完整性——跨任务第 3 例（中石科技、易点天下后）",
+      "evidence": [
+        { "grade": "C", "detail": "2026-08-21 .trae/agents/ 下无 document-reader.md.self-check.ts（Glob 确认仅本体）；document-reader 汇报靠人工自检（17 项全过）；与 deep-dive-易点天下-20260819-7f3a 同码复现第 3 例——满足『low + ≥2 taskId + C 级证据』升级 candidate 条件" }
+      ],
+      "rootCauseHypothesis": "document-reader 角色先于自检脚本体系建立，deep-read 九大目标/多空论证覆盖率无脚本化验收",
+      "goal": "为 document-reader 补建 document-reader.md.self-check.ts（校验 9 大精读目标覆盖率、三年年报覆盖、No-Go 红线标注、多空论证第十章完整性），纳入 Phase 1.5 验收",
+      "severity": "low",
+      "confidence": 0.75,
+      "benefit": "deep-read 产出质量验收自动化，与其余角色自检体系对齐",
+      "risk": "新增脚本需测试；多空论证为自由文本，校验规则需谨慎设计避免误判",
+      "acceptance": ".trae/agents/document-reader.md.self-check.ts 存在且能对紫光股份 deep-read 返回通过结论（跨 3 taskId 复现，升级 candidate）"
+    }
+  ]
+}

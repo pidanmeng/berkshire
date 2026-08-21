@@ -1,6 +1,6 @@
 # 流程改进 Backlog
 
-> 状态真源：improvement-backlog.json · 最后更新：2026-08-19T01:41:55.696Z
+> 状态真源：improvement-backlog.json · 最后更新：2026-08-21T11:41:33.224Z
 
 | 状态 | 严重度 | 问题描述 | 目标文件 | 任务数 | 问题码 |
 |---|---|---|---|---:|---|
@@ -39,8 +39,8 @@
 | 观察 | 低 | deep-dive 命令与 AGENTS.md 对报告形态要求不一致：命令步骤 7 仅要求『单公司简版 md 报告』，而… | .trae/commands/deep-dive.md | 1 | deep-dive-report-html-omission |
 | 已验证 | 高 | evaluate.ts 输出净利同比 18771.65% 且营收同比『存疑（接口异常）』（实际 2025 年报：营收 +… | .trae/scripts/evaluation/evaluate.ts | 7 | evaluate-yoy-metric-misparse |
 | 已验证 | 中 | investment-checklist-auto 扫描太极实业报告与笔记出现两处关键词误读：①商誉/净资产被误读为 3… | .trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts | 3 | checklist-auto-threshold-text-misread |
-| 已验证 | 中 | 易点天下近 365 天研报仅 2 篇且均为买入（中航 2026-06-01、中邮 2025-10-09），无看空/谨慎研… | deep-dive 流程·步骤 2.4（研报采集） | 9 | deep-dive-bear-report-coverage-gap |
-| 候选 | 低 | document-reader 角色无同名 .self-check.ts 自检脚本（info-alchemist/cro… | .trae/agents/document-reader.md | 2 | document-reader-selfcheck-missing |
+| 已验证 | 中 | 紫光股份近 365 天研报 10 篇（stock.ts --reports）全部为买入/增持评级，无看空/谨慎研报；多空… | deep-dive 流程·步骤 2.4（研报采集） | 10 | deep-dive-bear-report-coverage-gap |
+| 候选 | 低 | document-reader 角色无同名 .self-check.ts 自检脚本（info-alchemist/cro… | .trae/agents/document-reader.md | 3 | document-reader-selfcheck-missing |
 | 观察 | 低 | evaluate.ts 输出『利息覆盖倍数 N/A』（未从财报附注提取利息支出），quality-screen repo… | .trae/scripts/evaluation/evaluate.ts | 1 | quality-screen-interest-coverage-missing |
 | 观察 | 中 | quality-screen.ts --mode auto 的 growth 类参数按倍数解析（--revenue-gr… | .trae/scripts/quality-gate/quality-screen.ts | 1 | quality-screen-growth-param-scale |
 | 观察 | 中 | quality-screen --mode auto 的 growth 参数单位与负值格式易误用：`--earnings… | .trae/scripts/quality-gate/quality-screen.ts | 1 | quality-screen-auto-growth-param-unit |
@@ -66,3 +66,6 @@
 | 观察 | 低 | 编排器在 document-reader 任务上下文中把 2026Q1 归母亏损 -0.64 亿归因于『H 股筹备相关衍… | deep-dive 流程·步骤 3（编排器传参 document-reader） | 1 | orchestrator-preset-attribution-bias |
 | 观察 | 中 | quality-screen report 模式从 frontmatter financials 块读归母口径指标（RO… | .trae/scripts/quality-gate/quality-screen.ts | 1 | quality-screen-nonrecurring-caliber-inconsistency |
 | 观察 | 低 | evaluate.ts 估值快照『最新成交额』为 0.00、『当前股价历史分位』为 0.0%，当前股价无法直接读取，需由… | .trae/scripts/evaluation/evaluate.ts | 1 | evaluate-quote-field-missing |
+| 候选 | 高 | frontmatter 嵌套键被扁平化覆盖：financials.half_year_2026.net_profit_y… | .trae/scripts/quality-gate/quality-screen.ts | 1 | quality-screen-yaml-flatten-override |
+| 观察 | 中 | quality-screen report 模式正则将正文『薪酬信披矛盾』等治理描述误判为『监管处罚』红牌：紫光股份无任… | .trae/scripts/quality-gate/quality-screen.ts | 1 | quality-screen-regex-sanction-false-positive |
+| 观察 | 中 | investment-checklist-auto.ts 商誉/净资产占比正则把『139.92 亿』绝对值解析为 139… | .trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts | 1 | checklist-auto-percent-misparse |
