@@ -1,0 +1,73 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "deep-dive-update-澜起科技-20260828-lqkj",
+  "origin": "process-improvement",
+  "command": "deep-dive-update 澜起科技（2026 半年报）",
+  "status": "success",
+  "issues": [
+    {
+      "problemCode": "quality-screen-growth-unit-confusion",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "quality-screen --mode auto 的 --revenue-growth/--earnings-growth 参数须传小数（0.2666），编排器按百分比整数（26.66/72.33）传参后输出营收同比 2666.00%、净利同比 7233.00%，误触发『净利含大额一次性损益』警告且综合分失真（3.7 RED）；参数单位约定未在脚本提示/文档中显式说明（仅运行时警告『growth/倍数类参数不做折算』，但实际输出仍×100）",
+      "evidence": [
+        { "grade": "A", "detail": "2026-08-28 quality-screen.ts --mode auto --revenue-growth 26.66 --earnings-growth 72.33 输出『营收同比 2666.00%』『净利同比 7233.00%』与警告，综合 3.7 RED；改传小数（0.2666/0.2117）后输出正确（26.66%/21.17%），综合 3.0 RED；脚本警告文案『growth/倍数类参数不做折算』与实际 ×100 行为矛盾" }
+      ],
+      "rootCauseHypothesis": "quality-screen auto 模式的 growth 参数单位约定不清（百分比整数 vs 小数），脚本内部对 growth 也做 ×100 展示但警告文案声称『不折算』，导致编排器按百分比整数传参时数据放大 100 倍并误触发一次性损益判定",
+      "goal": "统一 quality-screen growth 参数单位约定（明确传小数或自动识别整数百分比并换算），修正警告文案；对 |growth|>500% 的输入显式拦截提示参数单位",
+      "severity": "medium",
+      "confidence": 0.85,
+      "benefit": "避免编排器/Agent 传参错误导致的质量筛查失真与一次性损益误判",
+      "risk": "参数兼容性改动需回归其他命令调用点",
+      "acceptance": "quality-screen 对传 26.66（整数百分比）自动换算为 26.66%，不再输出 2666%"
+    },
+    {
+      "problemCode": "quality-screen-credit-nonrecurring-gap",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "澜起 2026H1 归母 +72.3% 但扣非仅 +21.2%（非经常性 6.75 亿占归母 33.8%），quality-screen 用扣非增速 21.2% 判定『无 20%+ 高增长支撑』给估值 0 分、用归母口径又会误判高增长——脚本无『归母 vs 扣非增速背离』的显式识别与口径选择指引，估值/成长维度对利润含金量下降的公司机械低分且无法自动区分；与既有 issue quality-screen-growth-valuation-bias（新易盛 20260817）同型复现",
+      "evidence": [
+        { "grade": "B", "detail": "2026-08-28 quality-screen --mode auto（澜起 2026H1，扣非增速 21.2%，PE 84.6）估值维度 0/10、综合 3.0 RED，核心扣分『PE>40 且无 20%+ 高增长/合理 PEG(<1.5) 支撑』；同期归母增速 72.3%（含一次性 XConn 4.56 亿），两口径结果迥异，脚本无法自动裁决；编排器需人工在报告中说明扣非口径 PEG≈4.0 vs 归母口径 1.6-1.74 的分歧" }
+      ],
+      "rootCauseHypothesis": "quality-screen 仅支持单一增速口径（frontmatter net_profit_yoy 或 auto 参数），未建模『归母-扣非背离』（利润含金量）与估值联动的场景；当公司含大额非经常性损益时，单口径评分必然失真",
+      "goal": "quality-screen 支持双口径增速输入（归母+扣非），当背离 >20pct 时显式标注利润含金量风险并给出估值评分区间而非单点，或在 nonrecurring 参数触发时自动切换到扣非口径并提示",
+      "severity": "medium",
+      "confidence": 0.75,
+      "benefit": "对利润含金量下降公司的质量筛查结论更贴近实质，减少人工口径裁决",
+      "risk": "双口径参数增加 CLI 复杂度，需与 evaluate.ts/backfill 对齐",
+      "acceptance": "quality-screen 对归母/扣非背离公司输出口径说明或评分区间，不再单口径机械低分"
+    },
+    {
+      "problemCode": "checklist-auto-goodwill-misparse",
+      "targetKind": "script",
+      "targetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "symptom": "checklist-auto #15『商誉占比』输出『🚩 商誉/净资产=30.0% ≥30%（商誉减值风险）』，但实际商誉 1.05 亿/归母净资产 215.16 亿 = 0.45%（2026H1）；脚本从公司笔记 frontmatter 错误取数（疑读到 history 早期数据或比率口径错误），对无商誉风险公司产生误导性红牌",
+      "evidence": [
+        { "grade": "B", "detail": "2026-08-28 investment-checklist-auto.ts 扫描澜起报告+公司笔记输出 #15 商誉/净资产=30.0% ≥30% 红牌；公司笔记 frontmatter financials.history 含多期数据、商誉 1.05 亿（2026H1 半年报 p.92-94），实际占比 0.45%；编排器人工修正后方放行" }
+      ],
+      "rootCauseHypothesis": "investment-checklist-auto.ts #15 的商誉/净资产取数逻辑对多期 financials.history 数据选择错误（取了非最新期或净额口径不一致），未优先取最新 report_period 主块",
+      "goal": "checklist-auto #15 优先取最新 report_period 的商誉与净资产计算占比，商誉/净资产 <5% 直接绿牌；修正 frontmatter 解析优先级",
+      "severity": "low",
+      "confidence": 0.6,
+      "benefit": "消除无商誉风险公司的误报红牌，减少人工核验",
+      "risk": "解析优先级改动需覆盖单期/多期 frontmatter 场景",
+      "acceptance": "checklist-auto 对商誉/净资产 <5% 公司不再触发 #15 红牌"
+    },
+    {
+      "problemCode": "stock-financial-h1-lag",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/stock-data/stock.ts",
+      "symptom": "stock.ts --financial 无法获取 2026 年半年度报告 PDF（同花顺/巨潮数据源在 8 月底披露期滞后），deep-dive-update 需依赖用户提供的第三方 PDF 链接（10jqka）完成采集；evaluate.ts 财务数据同样滞后至 2025FY（PE-TTM 101.65 基于旧 TTM），须 document-reader 从半年报原文人工修正",
+      "evidence": [
+        { "grade": "B", "detail": "2026-08-28 deep-dive-update 澜起执行中：stock.ts --financial 未返回 2026 半年报 PDF（用户明示『脚本无法获取最新半年报』并提供 notice.10jqka.com.cn 链接）；evaluate.ts --code 688008 财务仍为 2025FY（营收 54.56 亿、净利 22.36 亿），PE-TTM 101.65 为滞后口径，编排器手工按 TTM 30.74 亿修正为 84.6x" }
+      ],
+      "rootCauseHypothesis": "同花顺/巨潮定期报告 PDF 索引与 evaluate 财务接口在报告披露初期（8 月底半年报密集期）更新滞后，脚本无披露期兜底通道（如东财 PDF 源或用户链接接入）",
+      "goal": "stock.ts --financial 在披露期补充东财/同花顺 notice 源作为兜底（或输出『数据源滞后，建议提供 PDF 链接』提示），evaluate.ts 对滞后财务数据标注 data_as_of 口径",
+      "severity": "low",
+      "confidence": 0.7,
+      "benefit": "减少披露期更新的数据滞后与人工取数成本",
+      "risk": "多数据源接入增加脚本复杂度",
+      "acceptance": "stock.ts --financial 对披露期新报告提供兜底源或明确滞后提示"
+    }
+  ]
+}
