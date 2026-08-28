@@ -1,6 +1,6 @@
 # 流程改进 Backlog
 
-> 状态真源：improvement-backlog.json · 最后更新：2026-08-21T11:41:33.224Z
+> 状态真源：improvement-backlog.json · 最后更新：2026-08-28T12:08:15.481Z
 
 | 状态 | 严重度 | 问题描述 | 目标文件 | 任务数 | 问题码 |
 |---|---|---|---|---:|---|
@@ -69,3 +69,6 @@
 | 候选 | 高 | frontmatter 嵌套键被扁平化覆盖：financials.half_year_2026.net_profit_y… | .trae/scripts/quality-gate/quality-screen.ts | 1 | quality-screen-yaml-flatten-override |
 | 观察 | 中 | quality-screen report 模式正则将正文『薪酬信披矛盾』等治理描述误判为『监管处罚』红牌：紫光股份无任… | .trae/scripts/quality-gate/quality-screen.ts | 1 | quality-screen-regex-sanction-false-positive |
 | 观察 | 中 | investment-checklist-auto.ts 商誉/净资产占比正则把『139.92 亿』绝对值解析为 139… | .trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts | 1 | checklist-auto-percent-misparse |
+| 观察 | 中 | quality-screen --mode report 在 frontmatter financials 块显式提供 … | .trae/scripts/quality-gate/quality-screen.ts | 1 | quality-screen-nonrecurring-field-mistrigger |
+| 观察 | 中 | leverageSafety 仅由资产负债率单变量反向评分（score(debtRatio, 0.25, 0.55, t… | .trae/scripts/quality-gate/quality-screen.ts | 1 | quality-screen-leverage-score-bias |
+| 观察 | 低 | stock.ts --reports 输出的研报详情页为东财 jshtml 动态页，fetch-file.ts 因 Co… | .trae/scripts/stock-data/stock.ts | 1 | research-report-pdf-link-format |

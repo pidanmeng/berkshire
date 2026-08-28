@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0",
-  "updatedAt": "2026-08-21T11:41:33.224Z",
+  "updatedAt": "2026-08-28T12:08:15.481Z",
   "items": [
     {
       "problemCode": "qs-report-regex-range-misparse",
@@ -2410,6 +2410,99 @@
       "highestSeverity": "medium",
       "firstSeenAt": "2026-08-21T11:41:33.224Z",
       "lastSeenAt": "2026-08-21T11:41:33.224Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "quality-screen-nonrecurring-field-mistrigger",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "quality-screen --mode report 在 frontmatter financials 块显式提供 nonrecurring_net_profit（剔除一次性后净利，用于口径修正）时，脚本判定条件 oneshotConfirmed = nonrecurringNetProfit != null && >= 0『显式提供即触发』，无条件输出『净利含大额一次性损益』红牌并给估值/成长维度各 -3，导致阳光电源（非经常性损益 6.32 亿仅占归母 4.7%，属正常水平）误判为 RED 3.5 分；移除该字段后重跑正确输出 YELLOW 6.2 分",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "2026-08-28 quality-screen.ts --mode report（阳光电源-公司研究.md，financials.nonrecurring_net_profit=128.29 + note）输出 RED 3.5『净利含大额一次性损益（2025 年非经常性损益 6.32 亿（占归母 4.7%）…）』且估值/成长被 -3；删除 financials.nonrecurring_net_profit/note 两字段重跑 → YELLOW 6.2、估值 9/成长 8、无红牌；同一份财务数据仅因字段是否存在产生 RED↔YELLOW 反转",
+          "taskId": "deep-dive-阳光电源-20260828-7f3a"
+        }
+      ],
+      "rootCauseHypothesis": "quality-screen 对 nonrecurring_net_profit 的触发条件为『显式提供即视为确认失真』，未校验非经常性损益占归母净利的实际比例；当占比很小（<10%）时提供该字段本意是澄清口径，却反被当作失真信号，缺少占比阈值豁免",
+      "goal": "nonrecurring 触发条件增加占比阈值豁免：当可识别非经常性损益/归母 ≤10%（或提供 nonrecurring_net_profit 且与归母净利差距 <10%）时不触发失真红牌、不扣估值/成长分，仅作为口径说明",
+      "severity": "medium",
+      "confidence": 0.85,
+      "benefit": "消除小比例非经常性损益公司的质量筛查误判（RED↔YELLOW 反转），避免编排器因字段使用习惯不同产生不一致结论",
+      "risk": "阈值口径需与 evaluate.ts 一次性损益判定对齐，避免漏报真实大额一次性损益",
+      "acceptance": "quality-screen 对非经常性损益占比 <10% 的公司不再触发失真红牌与维度扣分",
+      "fingerprint": "de0a2fac6976d2fef494",
+      "canonicalTargetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-阳光电源-20260828-7f3a"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "medium",
+      "firstSeenAt": "2026-08-28T12:08:15.481Z",
+      "lastSeenAt": "2026-08-28T12:08:15.481Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "quality-screen-leverage-score-bias",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "leverageSafety 仅由资产负债率单变量反向评分（score(debtRatio, 0.25, 0.55, true)），58.06% 资产负债率得 1/10；对经营负债主导、净现金充裕的制造业龙头（阳光电源净现金 261 亿、有息负债仅 77 亿）系统性低估杠杆安全，14% 权重显著拉低综合分",
+      "evidence": [
+        {
+          "grade": "B",
+          "detail": "2026-08-28 quality-screen（阳光电源）：debtRatio 58.06% → leverageSafety 1/10，综合分由 6.95（若杠杆 5 分）降至 5.45 后再扣黄牌 0.5 → 最终 6.2 YELLOW；黄牌『资产负债率 58.1% 超过 50%』与公司实际净现金状态背离；同型制造业（宁德时代等）资产负债率 60-70% 亦将受同样机械低分",
+          "taskId": "deep-dive-阳光电源-20260828-7f3a"
+        }
+      ],
+      "rootCauseHypothesis": "杠杆安全评分模型只接受 debtRatio 单一输入，未建模有息负债/净现金结构；对高经营杠杆（合同负债/应付）而低有息负债的制造业企业，资产负债率不能反映真实偿债风险",
+      "goal": "quality-screen 支持有息负债率（或净现金）输入，杠杆评分优先采用有息负债口径，或对 debtRatio>0.55 但净现金为正（货币资金>有息负债）的公司豁免低分并标注『经营负债主导』",
+      "severity": "medium",
+      "confidence": 0.7,
+      "benefit": "使制造业龙头（高经营杠杆、低财务杠杆）的杠杆评分贴近实质，减少人工修正",
+      "risk": "有息负债数据需从财报提取，report 模式解析复杂度上升；需与 evaluate.ts 排雷字段对齐",
+      "acceptance": "quality-screen 对净现金为正的制造业公司杠杆维度得分 ≥5 或明确标注经营负债主导豁免",
+      "fingerprint": "497e9177e9d05638c0e4",
+      "canonicalTargetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-阳光电源-20260828-7f3a"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "medium",
+      "firstSeenAt": "2026-08-28T12:08:15.481Z",
+      "lastSeenAt": "2026-08-28T12:08:15.481Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "research-report-pdf-link-format",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/stock-data/stock.ts",
+      "symptom": "stock.ts --reports 输出的研报详情页为东财 jshtml 动态页，fetch-file.ts 因 Content-Type 非 PDF 拒绝处理；研报 PDF 直链前缀应为 H3_（如 https://pdf.dfcfw.com/pdf/H3_AP202604081821064995_1.pdf）而非猜测的 H2_，脚本未输出该直链，本次研报正文靠编排器逐篇 WebFetch 详情页抓取",
+      "evidence": [
+        {
+          "grade": "B",
+          "detail": "2026-08-28 deep-dive 阳光电源：fetch-file.ts 抓 jshtml 报『响应 Content-Type 不是 PDF』、抓 H2_ 直链报『输入不符合 PDF 魔数校验』；H3_ 前缀直链可下载（东财研报页『查看PDF原文』链接实际为 H3_）；研报集 4 篇正文均经 WebFetch data.eastmoney.com 详情页抓取；此前华工科技研报集亦为标题速览+正文汇总模式，存在同类缺口",
+          "taskId": "deep-dive-阳光电源-20260828-7f3a"
+        }
+      ],
+      "rootCauseHypothesis": "stock.ts --reports 仅输出东财详情页 jshtml URL，未输出可下载的 PDF 直链（H3_ 前缀）；脚本/文档未记载研报 PDF 直链格式，导致研报正文采集依赖 WebFetch 逐篇人工抓取",
+      "goal": "stock.ts --reports 增加研报 PDF 直链输出（H3_ 前缀拼接 infocode），或在共享脚本用法表中补充研报正文抓取的标准通道（WebFetch 详情页模板）",
+      "severity": "low",
+      "confidence": 0.75,
+      "benefit": "研报正文采集标准化，减少编排器逐篇 WebFetch 的成本与漏采",
+      "risk": "东财 PDF 直链可用性依赖外部站点，需保留详情页兜底",
+      "acceptance": "stock.ts --reports 输出可直接 fetch-file 的研报 PDF 直链，或共享用法文档给出研报正文抓取标准步骤",
+      "fingerprint": "c5175165e605f40efa62",
+      "canonicalTargetPath": ".trae/scripts/stock-data/stock.ts",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-阳光电源-20260828-7f3a"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "low",
+      "firstSeenAt": "2026-08-28T12:08:15.481Z",
+      "lastSeenAt": "2026-08-28T12:08:15.481Z",
       "batchIds": []
     }
   ],
