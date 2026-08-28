@@ -76,6 +76,9 @@ Research/10-Knowledge/XX-一级行业/
   - 最新股价 / 总市值 / **PE-TTM / PB-MRQ / PS-TTM / PCF-TTM** / 股息率 / 52周高低
   - 数据来源：共享脚本 `evaluate.ts` 输出的估值快照（自动包含历史分位与同业对比）
   - 估值判断（称重机视角）：当前价格相对于内在价值处于什么位置？安全边际条件？
+- **估值模型与参数明细（必填，紧跟估值快照，模板见 company-template.md）**：
+  - 正文章节含三部分：① 估值模型选择（品种→主估值模型，依据 evaluate.ts 品种路由 + 选择理由 + 辅助校验模型）② 关键参数明细（三情景 预测期净利/估值倍数/目标市值/目标价，每格写取值依据，倍数须写明锚定方法如 PEG + 同业前瞻 PE + 历史分位三重锚定，禁止无依据主观给定）③ 参数敏感性分析（政策/原材料/竞争/汇率/技术代际，证据取 deep-read 9.4，标注置信度，证据不足标「存疑」）
+  - 同步回填 frontmatter `valuation_model`（`model`/`base_period`/`method_note`/`parameters` 三情景），与 `target_market_cap_yi` / `forward_pe` / `peg` 交叉校验一致
 - **公司简介**：主营业务、商业模式、规模（营收/产能/市占率）
 - **经营数据**：最新财务指标（营收/净利/毛利率/ROE/负债率）+ 时点
 - **竞争优势与护城河**（巴菲特框架）：成本领先/规模效应/技术/渠道/品牌/牌照/网络效应，用数据支撑
@@ -121,6 +124,7 @@ Research/10-Knowledge/XX-一级行业/
 - [ ] properties 完整（type 必填）
 - [ ] 每家公司体现优势与劣势、周期位置、护城河评估
 - [ ] **估值追踪结构化字段齐全**：`scores`（六维）/`target_market_cap_yi`/`forward_pe`/`research_cutoff`/`quality_verdict`/`quality_score`；**不填写综合分**（由系统加权计算）
+- [ ] **估值模型与参数明细已写入**：正文含「估值模型与参数明细」章节（模型选择 + 三情景参数取值依据 + 参数敏感性），frontmatter `valuation_model` 已回填且与 `target_market_cap_yi` / `forward_pe` / `peg` 一致
 - [ ] **质量筛查字段已回填**：frontmatter `quality_verdict`（GREEN/YELLOW/RED）+ `quality_score`（0-10 一位小数）与正文《质量筛查报告》同一轮筛查同源，非文本解析所得
 - [ ] **一句话判断齐全**：`earns_from`/`earns_type`/`why_invest`/`why_not_invest` 四字段均有内容，且与正文「一句话判断」章节一致
 - [ ] 双链双向成立

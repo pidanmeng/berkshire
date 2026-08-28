@@ -65,6 +65,13 @@ function checkCompanyNote(content: string, fileName: string): string[] {
   const hasForwardPe = /^forward_pe:/m.test(content)
     && /value:/.test(content) && /base_net_profit_yi:/.test(content) && /base_period:/.test(content);
   if (!hasForwardPe) issues.push(`${fileName}: 缺少 forward_pe 字段（value/base_net_profit_yi/base_period）`);
+  // 检查估值模型与参数明细（正文章节 + frontmatter valuation_model）
+  const hasVmSection = /估值模型与参数明细/.test(content);
+  if (!hasVmSection) issues.push(`${fileName}: 缺少「估值模型与参数明细」章节（模型选择/参数明细/敏感性）`);
+  const hasVmFm = /^valuation_model:/m.test(content)
+    && /model:/.test(content) && /base_period:/.test(content) && /parameters:/.test(content)
+    && /pessimistic:/.test(content) && /neutral:/.test(content) && /optimistic:/.test(content);
+  if (!hasVmFm) issues.push(`${fileName}: 缺少 valuation_model 字段（model/base_period/parameters 三情景）`);
   const hasCutoff = /^research_cutoff:/m.test(content)
     && /report_period:/.test(content) && /report_date:/.test(content) && /announcement_date:/.test(content);
   if (!hasCutoff) issues.push(`${fileName}: 缺少 research_cutoff 字段（report_period/report_date/announcement_date）`);

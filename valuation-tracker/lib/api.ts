@@ -110,6 +110,24 @@ export interface PegSnapshot {
   basePeriod?: string;   // 盈利基准期，与 forwardPe.basePeriod 对齐
 }
 
+/** 估值模型三情景参数：预测期净利（亿元） + 估值倍数（x） */
+export interface ValuationModelParameters {
+  netProfitYi?: number;
+  multiple?: number;
+}
+
+/** 估值模型与参数明细：主估值模型 + 预测期 + 取值方法 + 三情景参数（与正文「估值模型与参数明细」章节及 targetMarketCapYi / forwardPe 同源） */
+export interface ValuationModel {
+  model?: string;        // 主估值模型（PE / PB / 正常化EPS / SOTP / PEG+Forward PE / PB+PS）
+  basePeriod?: string;   // 预测期（与 forwardPe.basePeriod 对齐）
+  methodNote?: string;   // 估值倍数取值方法（简短）
+  parameters?: {
+    pessimistic?: ValuationModelParameters;
+    neutral?: ValuationModelParameters;
+    optimistic?: ValuationModelParameters;
+  } | null;
+}
+
 export interface CompanyItem {
   thscode: string;
   name: string;
@@ -123,6 +141,7 @@ export interface CompanyItem {
   forwardPe: { value?: number; baseNetProfitYi?: number; basePeriod?: string; factors?: string[]; directions?: string[] } | null;
   valuationType: string | null;   // 品种：financial/cyclical/resource/conglomerate/growth/general/lossmaking
   peg: PegSnapshot | null;
+  valuationModel: ValuationModel | null;   // 估值模型与参数明细（主估值模型 + 三情景参数）
   researchCutoff: { reportPeriod?: string; reportDate?: string; announcementDate?: string } | null;
   qualityVerdict: string | null;
   qualityScore: number | null;
@@ -237,6 +256,7 @@ export interface CompanyDetail {
     forwardPe: CompanyItem["forwardPe"];
     valuationType: CompanyItem["valuationType"];
     peg: CompanyItem["peg"];
+    valuationModel: CompanyItem["valuationModel"];
     researchCutoff: CompanyItem["researchCutoff"];
     qualityVerdict: string | null;
     qualityScore: number | null;

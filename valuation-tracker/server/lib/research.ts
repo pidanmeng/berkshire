@@ -52,6 +52,7 @@ export interface CompanyNote {
   forwardPe: { value?: number; baseNetProfitYi?: number; basePeriod?: string; factors?: string[]; directions?: string[] } | null;
   valuationType: string | null;   // 品种：financial/cyclical/resource/conglomerate/growth/general/lossmaking
   peg: PegSnapshot | null;        // PEG 快照（PEG = PE ÷ 预测期增速%）
+  valuationModel: ValuationModel | null;  // 估值模型与参数明细（主估值模型 + 三情景参数）
   researchCutoff: { reportPeriod?: string; reportDate?: string; announcementDate?: string } | null;
   financials: Financials | null;   // backfill 从同花顺三表多期现算的结构化财务字段
   qualityVerdict: string | null;   // GREEN / YELLOW / RED
@@ -71,6 +72,24 @@ export interface PegSnapshot {
   value?: number;
   growthBasis?: string;
   basePeriod?: string;   // 盈利基准期，与 forwardPe.basePeriod 对齐
+}
+
+/** 估值模型三情景参数：预测期净利（亿元） + 估值倍数（x） */
+export interface ValuationModelParameters {
+  netProfitYi?: number;
+  multiple?: number;
+}
+
+/** 估值模型与参数明细：主估值模型 + 预测期 + 取值方法 + 三情景参数（与正文「估值模型与参数明细」章节及 target_market_cap_yi / forward_pe 同源） */
+export interface ValuationModel {
+  model?: string;        // 主估值模型（PE / PB / 正常化EPS / SOTP / PEG+Forward PE / PB+PS）
+  basePeriod?: string;   // 预测期（与 forwardPe.basePeriod 对齐）
+  methodNote?: string;   // 估值倍数取值方法（简短）
+  parameters?: {
+    pessimistic?: ValuationModelParameters;
+    neutral?: ValuationModelParameters;
+    optimistic?: ValuationModelParameters;
+  } | null;
 }
 
 /** frontmatter 中 [[X]] / [[X|Y]] → X */
@@ -120,6 +139,33 @@ function readQuality(data: Record<string, unknown>): { verdict: string | null; s
     score = Math.round(data.quality_score * 10) / 10;
   }
   return { verdict, score };
+}
+
+/** 解析 frontmatter valuation_model 块（snake_case → camelCase；缺失/空返回 null，兼容无该字段的存量笔记） */
+function parseValuationModel(raw: Record<string, unknown> | null): ValuationModel | null {
+  if (!raw) return null;
+  const parseParams = (p: unknown): ValuationModelParameters | undefined => {
+    if (!p || typeof p !== "object") return undefined;
+    const it = p as Record<string, unknown>;
+    const out: ValuationModelParameters = {};
+    if (typeof it.net_profit_yi === "number") out.netProfitYi = it.net_profit_yi;
+    if (typeof it.multiple === "number") out.multiple = it.multiple;
+    return Object.keys(out).length > 0 ? out : undefined;
+  };
+  const rawParams = raw.parameters && typeof raw.parameters === "object"
+    ? raw.parameters as Record<string, unknown> : null;
+  return {
+    model: typeof raw.model === "string" ? raw.model : undefined,
+    basePeriod: typeof raw.base_period === "string" ? raw.base_period : undefined,
+    methodNote: typeof raw.method_note === "string" ? raw.method_note : undefined,
+    parameters: rawParams
+      ? {
+          pessimistic: parseParams(rawParams.pessimistic),
+          neutral: parseParams(rawParams.neutral),
+          optimistic: parseParams(rawParams.optimistic),
+        }
+      : null,
+  };
 }
 
 /** 解析 frontmatter financials 块（snake_case → camelCase；YYYY 型日期已被 ymd 归一化） */
@@ -173,6 +219,8 @@ function parseNote(relPath: string, content: string): CompanyNote | null {
     ? data.forward_pe as Record<string, unknown> : null;
   const rawPeg = data.peg && typeof data.peg === "object"
     ? data.peg as Record<string, unknown> : null;
+  const rawVm = data.valuation_model && typeof data.valuation_model === "object"
+    ? data.valuation_model as Record<string, unknown> : null;
   const rawCutoff = data.research_cutoff && typeof data.research_cutoff === "object"
     ? data.research_cutoff as Record<string, string> : null;
   const rawFin = data.financials && typeof data.financials === "object"
@@ -216,6 +264,7 @@ function parseNote(relPath: string, content: string): CompanyNote | null {
           basePeriod: typeof rawPeg.base_period === "string" ? rawPeg.base_period : undefined,
         }
       : null,
+    valuationModel: parseValuationModel(rawVm),
     researchCutoff: rawCutoff
       ? {
           reportPeriod: rawCutoff.report_period || undefined,

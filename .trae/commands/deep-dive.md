@@ -77,12 +77,14 @@ Research/00-Workspace/02-Processing/pdf-texts/<公司名>/
 ### 6. 写入知识库
 - **若已有笔记**：追加到新段落，更新 frontmatter 的 `updated` 字段，追加 `deep_dive_at: YYYY-MM-DD`
 - **若新笔记**：按 `company-template.md` 或 `company-deep-dive-template.md` 全新创建
+- **估值模型与参数明细（强制，模板见 company-template.md）**：公司笔记必含「估值模型与参数明细」章节（① 模型选择：品种→主估值模型，引用 evaluate.ts 品种路由 ② 三情景参数取值依据：预测期净利/估值倍数/目标市值/目标价 ③ 参数敏感性：政策/原材料/竞争/汇率/技术代际）**并回填 frontmatter `valuation_model`**（主估值模型/预测期/method_note/三情景 预测期净利×估值倍数），三情景参数必须与 frontmatter `target_market_cap_yi` / `forward_pe.base_net_profit_yi` 严格一致，禁止无依据主观给定倍数
 - 路径：`Research/10-Knowledge/XX-行业/02-公司研究/<公司名>-公司研究.md`
 
 ### 7. 生成单公司简版报告
 - 路径：`Research/20-Reports/YYYY-MM-DD-<公司名>-deep-dive-report.md`
 - 模板：`company-deep-dive-template.md`
 - 特点：不含行业全景，聚焦单一公司；包含目标买入/卖出价区间
+- **报告「估值与安全边际」章节必须包含「估值模型与参数明细」子节（模板见 company-deep-dive-template.md）**：主估值模型选择（引用 evaluate.ts 品种路由 + 选择理由）+ 三情景参数取值依据（预测期净利/估值倍数，写明锚定方法如 PEG/同业/历史分位三重锚定）+ 参数敏感性（政策/原材料/竞争/汇率/技术代际，附置信度与出处，证据不足标「存疑」），并与公司笔记 frontmatter `valuation_model` 保持一致
 - **报告撰写必须读取 deep-read 多空论证并综合外围因素**：
   - 读取 `Research/00-Workspace/02-Processing/YYYY-MM-DD-<公司名>-deep-read.md`（**第十章多空论证**：多方/空方 Top 论点、五维度对照、预判回应与脆弱点）
   - 报告「核心结论」「护城河评估」「风险提示」章节必须呈现多空双方的核心论点及其证据强度，不得只呈现单边观点

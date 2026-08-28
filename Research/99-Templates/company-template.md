@@ -69,6 +69,20 @@ peg:                          # PEG = 当前价对应 PE ÷ 预测期增速(%)
   value: 0.0                 # PEG 值（1 位小数）
   growth_basis: ""           # 增速口径：forward（预测期）/ yoy（单年同比）
   base_period: "2027E"       # 盈利基准期（与 forward_pe.base_period 对齐）
+valuation_model:              # 估值模型与参数明细（供 valuation-tracker 消费；与正文「估值模型与参数明细」章节同源，调研流程人工填写，backfill 不回填）
+  model: ""                  # 主估值模型（与 evaluate.ts 品种路由对应：PE / PB / 正常化EPS / SOTP / PEG+Forward PE / PB+PS）
+  base_period: "2027E"       # 预测期（与 forward_pe.base_period 对齐）
+  method_note: ""            # 估值倍数取值方法（简短，如「PEG + 同业前瞻 PE + 历史分位 三重锚定法」）
+  parameters:                # 三情景参数（与 target_market_cap_yi / forward_pe 交叉校验）
+    pessimistic:
+      net_profit_yi: 0       # 预测期净利（亿元）
+      multiple: 0            # 估值倍数（x）
+    neutral:
+      net_profit_yi: 0
+      multiple: 0
+    optimistic:
+      net_profit_yi: 0
+      multiple: 0
 research_cutoff:             # 调研截止（基本面更新检测锚点）
   report_period: "2025FY"    # 已精读的最新财报期（FY/Q1/Q2/Q3）
   report_date: "YYYY-MM-DD"  # 该财报披露日期（巨潮公告日期）
@@ -151,6 +165,34 @@ quality_score: 0.0         # 0-10 一位小数
 | 悲观 | __ | __ | __ | 低估 / 合理 / 高估 |
 | 中性 | __ | __ | __ | — |
 | 乐观 | __ | __ | __ | — |
+
+## 估值模型与参数明细（数据时点: YYYY-MM-DD）
+<!-- 估值不是拍脑袋给倍数：必须回答 用哪个模型？每个参数给多少？为什么？受什么影响？与 frontmatter valuation_type / valuation_model / target_market_cap_yi / forward_pe / peg 同源 -->
+
+### 1. 估值模型选择（依据 evaluate.ts 品种路由）
+| 品种 | 主估值模型 | 选择理由（数据信号） | 辅助校验模型 |
+|------|-----------|---------------------|-------------|
+| __（growth/general/cyclical/...） | __ | __（增速/盈利/行业特征信号） | __ |
+
+### 2. 关键参数明细（三情景，与「目标市值」表及 frontmatter valuation_model 同源）
+| 参数 | 悲观 | 中性 | 乐观 | 取值依据（为什么给这个数） |
+|------|:----:|:----:|:----:|--------------------------|
+| 预测期净利（亿元，__E） | | | | __ |
+| 估值倍数（x，PE/PB/正常化EPS...） | | | | __ |
+| 目标市值（亿元） | | | | 净利 × 倍数（交叉校验） |
+| 目标价（元） | | | | 目标市值 ÷ 总股本 |
+
+> 倍数取值必须写明锚定方法（如 PEG + 同业前瞻 PE + 历史分位三重锚定法，列出各锚定的具体数值与区间），禁止无依据主观给定；区间宽度反映可预测性。
+
+### 3. 参数敏感性分析（参数受什么影响）
+| 影响因素 | 影响参数 | 影响方向与幅度 | 发生概率 | 触发信号/跟踪指标 |
+|---------|---------|--------------|:-------:|------------------|
+| 政策（补贴/管制/贸易壁垒/产业规划） | | | | |
+| 原材料/成本（价格、供给、汇率传导） | | | | |
+| 竞争（价格战/产能过剩/新进入者） | | | | |
+| 汇率/利率 | | | | |
+| 技术代际/需求（渗透率、客户 capex、订单） | | | | |
+| 治理/诉讼/地缘（其他） | | | | |
 
 ## Forward PE 快照
 <!-- 与 frontmatter forward_pe 保持一致 -->

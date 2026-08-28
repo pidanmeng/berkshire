@@ -494,6 +494,70 @@ export default function CompanyDashboard({
                   )}
                 </div>
               )}
+              {note.valuationModel && (
+                <div style={{ marginTop: 10, marginBottom: 4 }}>
+                  <div
+                    style={{
+                      fontSize: 13,
+                      color: 'var(--text-secondary)',
+                      marginBottom: 4,
+                    }}
+                  >
+                    估值模型：
+                    <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>
+                      {note.valuationModel.model ?? '—'}
+                    </span>
+                    {note.valuationModel.basePeriod && (
+                      <span className="text-[var(--text-muted)]">
+                        （{note.valuationModel.basePeriod}）
+                      </span>
+                    )}
+                  </div>
+                  {note.valuationModel.methodNote && (
+                    <div
+                      style={{
+                        fontSize: 12,
+                        color: 'var(--text-muted)',
+                        marginBottom: 6,
+                      }}
+                    >
+                      {note.valuationModel.methodNote}
+                    </div>
+                  )}
+                  {note.valuationModel.parameters && (
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr style={{ color: 'var(--text-muted)' }}>
+                          <th style={{ textAlign: 'left', padding: '2px 8px 2px 0', fontWeight: 500 }}>情景</th>
+                          <th style={{ textAlign: 'right', padding: '2px 8px', fontWeight: 500 }}>预测期净利（亿）</th>
+                          <th style={{ textAlign: 'right', padding: '2px 0 2px 8px', fontWeight: 500 }}>倍数（x）</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(
+                          [
+                            ['悲观', note.valuationModel.parameters.pessimistic],
+                            ['中性', note.valuationModel.parameters.neutral],
+                            ['乐观', note.valuationModel.parameters.optimistic],
+                          ] as [string, { netProfitYi?: number; multiple?: number } | undefined][]
+                        ).map(([label, p]) => (
+                          <tr key={label} style={{ borderTop: '1px solid var(--border-subtle)' }}>
+                            <td style={{ padding: '4px 8px 4px 0', color: 'var(--text-secondary)' }}>
+                              {label}
+                            </td>
+                            <td style={{ padding: '4px 8px', textAlign: 'right', color: 'var(--text-primary)' }}>
+                              {p?.netProfitYi != null ? fmtYi(p.netProfitYi) : '—'}
+                            </td>
+                            <td style={{ padding: '4px 0 4px 8px', textAlign: 'right', color: 'var(--text-primary)' }}>
+                              {p?.multiple != null ? p.multiple : '—'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              )}
               {note.forwardPe.factors && note.forwardPe.factors.length > 0 && (
                 <>
                   <div

@@ -20,6 +20,7 @@ description: 对已有研究笔记的公司进行基本面增量更新（重大�
 ### 1. 读取已有研究基线
 
 - 读取 `<公司名>-公司研究.md`：提取上次结论、四大师评分、估值快照、`research_cutoff`、`update_history`
+- **读取估值参数基线（强制）**：读取公司笔记的「估值模型与参数明细」章节 + frontmatter `valuation_model`（主估值模型/预测期/method_note/三情景参数），作为本次估值参数修订的基线（若无则标注「基线缺失」，按 company-template.md 全新建立）
 - 读取最近一次 deep-read / processed 文件（如有）：作为精读基线
 - 若已存在 `<公司名>-基本面更新.md`：读取最近一次更新，作为增量基线（避免重复覆盖）
 
@@ -65,7 +66,8 @@ description: 对已有研究笔记的公司进行基本面增量更新（重大�
 在更新产物中对比「本次更新 vs 上次研究」：
 
 - **业绩变化**：营收/净利增速、毛利率、ROE、经营现金流/净利润、负债率
-- **估值变化**：PE/PB/市值、目标价区间是否调整、安全边际是否变化
+- **估值变化（估值参数明细修订）**：PE/PB/市值、目标价区间是否调整、安全边际是否变化；**列出上次 vs 本次的估值模型选择与三情景参数（预测期净利/估值倍数/目标市值/目标价）变更及理由**，与 frontmatter `valuation_model` / `target_market_cap_yi` 一致
+- **本期财报 vs 市场预期（超预期/低于预期，强制，结合股价）**：业绩 vs 预期（业绩预告区间中值/市场一致预期/去年同期）+ 股价反应（披露前后相对大盘/板块超额、涨跌幅）+ 综合判定（超预期 / 符合预期 / 低于预期，业绩+股价+质量三维），详见「本期财报 vs 市场预期」章节模板
 - **护城河变化**：市占率、竞争格局、技术进展、产能利用率
 - **管理层变化**：重大人事、承诺兑现、回购/减持
 - **跟踪指标调整**：待验证问题清单逐条结论（验证 / 证伪 / 需调整，附证据）；本次新增或移除的跟踪指标
@@ -73,7 +75,8 @@ description: 对已有研究笔记的公司进行基本面增量更新（重大�
 
 ### 6. 写入知识库
 
-- 公司文件夹新增 `<公司名>-基本面更新.md`（**frontmatter 元数据与公司笔记同构**：`type: "deep-dive-update"`，含 `name/stock_code/industry/sub_industry/related_notes/tags/created/updated/deep_dive_at/data_as_of/valuation_as_of/valuation_status/quality_status/research_conclusion/update_history/scores/target_market_cap_yi/forward_pe/research_cutoff/quality_verdict/quality_score` 等字段，触发字段 `trigger`、基线字段 `based_on`）
+- 公司文件夹新增 `<公司名>-基本面更新.md`（**frontmatter 元数据与公司笔记同构**：`type: "deep-dive-update"`，含 `name/stock_code/industry/sub_industry/related_notes/tags/created/updated/deep_dive_at/data_as_of/valuation_as_of/valuation_status/quality_status/research_conclusion/update_history/scores/target_market_cap_yi/forward_pe/valuation_model/research_cutoff/quality_verdict/quality_score` 等字段，触发字段 `trigger`、基线字段 `based_on`）
+- **frontmatter `valuation_model`（必填，供 valuation-tracker 消费）**：与公司笔记同构（`model` 主估值模型 / `base_period` 预测期 / `method_note` 取值方法 / `parameters` 三情景 预测期净利×估值倍数），本次修订后回填，与 `target_market_cap_yi` / `forward_pe` 交叉校验；若本次修订了估值，同步更新原公司笔记的 `valuation_model`（并在正文「估值模型与参数明细」章节保留修订依据）
 - **`financials` 结构化字段（必填）**：与公司笔记的 `financials` 块同构（`report_period/revenue_yi/net_profit_yi/roe/gross_margin/net_margin/asset_liability_ratio/ocf_yi/ocf_to_ni/revenue_yoy/net_profit_yoy`），供看板「基本面对比（上次研究 vs 本次更新）」图表消费；口径与上次研究保持一致，无法可靠取数的指标置 `null`
 - **命名规范（多份产物并存时）**：`<公司名>-基本面更新-<变更简写|报告时间>.md`
   - 变更简写：重大变更的简短描述，如 `2026中报`、`股东减持`、`回购进展`、`重大合同`、`定增获批`
@@ -91,10 +94,11 @@ description: 对已有研究笔记的公司进行基本面增量更新（重大�
   1. 触发事件
   2. 核心变化（增量对比表：本次 vs 上次）
   3. 四大师评分（如调整则标注变化）
-  4. 估值与安全边际（目标价调整或维持的理由）
-  5. 质量筛查结论
-  6. 更新后的跟踪指标
-  7. 附录：增量精读摘要、质量筛查结论、财报精读 10 项检查清单、50 项投资决策清单 AUTO 扫描结果
+  4. 估值与安全边际（目标价调整或维持的理由；**含「估值模型与参数明细」子节**：本次修订后的模型选择 + 三情景参数取值依据（预测期净利/估值倍数，写明锚定方法）+ 参数敏感性，与 frontmatter `valuation_model` 一致）
+  5. **本期财报 vs 市场预期（超预期/低于预期综合评估，结合股价）**：业绩 vs 预期（预告区间中值/一致预期/去年同期）+ 股价反应（披露前后相对大盘/板块超额）+ 综合判定（超预期/符合/低于预期）及对估值参数的含义
+  6. 质量筛查结论
+  7. 更新后的跟踪指标
+  8. 附录：增量精读摘要、质量筛查结论、财报精读 10 项检查清单、50 项投资决策清单 AUTO 扫描结果
 
 ## 输出要求
 
