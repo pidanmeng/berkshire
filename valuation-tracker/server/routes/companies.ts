@@ -1,7 +1,9 @@
 /**
- * 公司列表与详情路由
+ * 公司列表与详情路由 —【维护态】前端已切走（SSG 静态 JSON + 客户端直连），
+ * 保留作兼容/降级：第三方或历史客户端仍可调用，不再被本站前端使用。
  * GET /api/companies            → 全量公司 + 实时行情 + 安全边际分档 + 基本面检测缓存
  * GET /api/companies/:thscode   → 单公司详情（含笔记正文段落）
+ * GET /api/companies/:thscode/doc → 单公司文档正文（deep-read / annual-report）
  */
 import { Elysia, t } from "elysia";
 import { loadCompanies, findCompany, readNoteBody, loadCompanyUpdates, loadCompanyDocs, readCompanyDoc, type CompanyNote } from "../lib/research.ts";

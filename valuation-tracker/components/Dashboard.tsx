@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
-import type { CompanyItem } from '@/lib/api';
-import { getCompanies } from '@/lib/api';
+import type { CompanyItem, CompanyStaticItem, CompanyStaticDetail, StaticCompaniesData } from '@/lib/api';
+import { fetchQuotesThrottled } from '@/lib/market-data';
+import { classifyCapZone } from '@/server/lib/safety';
 import type { Layout } from 'react-resizable-panels';
 import {
   ResizablePanelGroup,
@@ -38,15 +39,42 @@ const DEFAULT_LAYOUT: Layout = { companies: 14, main: 86 };
 /** 移动端（<768px）上下堆叠：公司列表在上 / 主内容在下 */
 const MOBILE_LAYOUT: Layout = { companies: 38, main: 62 };
 
+/** 静态条目 → 完整 CompanyItem（quote/zone 等实时字段先置空，等待客户端行情合并） */
+function toCompanyItem(it: CompanyStaticItem): CompanyItem {
+  return {
+    ...it,
+    quote: {
+      price: null,
+      changePct: null,
+      marketCap: null,
+      peTtm: null,
+      pbMrq: null,
+      psTtm: null,
+      pcfTtm: null,
+    },
+    zone: classifyCapZone(null, it.targetMarketCapYi),
+    marketCapYi: null,
+    needsUpdate: null,
+    latestReportDate: null,
+    fundamentalItems: undefined,
+  };
+}
+
 export default function Dashboard({
   initial,
 }: {
-  initial: { list: CompanyItem[]; fetchedAt: number };
+  initial: {
+    list: CompanyStaticItem[];
+    docsIndex?: StaticCompaniesData["docsIndex"];
+    fetchedAt: number;
+  };
 }) {
-  const [items, setItems] = useState<CompanyItem[]>(initial.list);
+  const [items, setItems] = useState<CompanyItem[]>(() => initial.list.map(toCompanyItem));
   const [lastUpdated, setLastUpdated] = useState<number>(initial.fetchedAt);
   const [error, setError] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // 静态 thscode 列表（构建期固定；轮询合并实时行情用）
+  const codesRef = useRef<string[]>(initial.list.map((it) => it.thscode));
 
   // 移动端：<768px 时左侧 Sidebar 渲染为抽屉，右侧公司列表/主内容改为上下堆叠
   const isMobile = useIsMobile();
@@ -94,19 +122,45 @@ export default function Dashboard({
     [],
   );
 
-  // 60s 轮询刷新行情
+  // 60s 轮询刷新行情（浏览器直连东财/同花顺，节流在 market-data 内 ≥60s；页面隐藏时暂停）
   useEffect(() => {
-    timerRef.current = setInterval(async () => {
+    let cancelled = false;
+    const poll = async () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
       try {
-        const data = await getCompanies();
-        setItems(data.list);
-        setLastUpdated(data.fetchedAt);
+        const quotes = await fetchQuotesThrottled(codesRef.current);
+        if (cancelled) return;
+        setItems((prev) =>
+          prev.map((it) => {
+            const q = quotes.get(it.thscode);
+            const marketCap = q?.marketCap ?? null;
+            const marketCapYi = marketCap != null ? marketCap / 1e8 : null;
+            return {
+              ...it,
+              quote: {
+                price: q?.price ?? null,
+                changePct: q?.changePct ?? null,
+                marketCap,
+                peTtm: q?.peTtm ?? null,
+                pbMrq: q?.pbMrq ?? null,
+                psTtm: q?.psTtm ?? null,
+                pcfTtm: q?.pcfTtm ?? null,
+              },
+              zone: classifyCapZone(marketCapYi, it.targetMarketCapYi),
+              marketCapYi,
+            };
+          }),
+        );
+        setLastUpdated(Date.now());
         setError(null);
       } catch {
-        setError('实时行情刷新失败（Elysia 后端不可达）');
+        setError('实时行情刷新失败（东财直连不可用）');
       }
-    }, 60_000);
+    };
+    poll();
+    timerRef.current = setInterval(poll, 60_000);
     return () => {
+      cancelled = true;
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, []);
@@ -151,6 +205,22 @@ export default function Dashboard({
         ? 'single'
         : 'compare';
   const activeCode = selectedCompanies[0] ?? null;
+
+  // 内嵌看板静态详情：直接复用构建期注入的 list + docsIndex（SSG），不请求 companies.json
+  const activeDetail = useMemo<CompanyStaticDetail | undefined>(() => {
+    if (!activeCode) return undefined;
+    const note = initial.list.find((it) => it.thscode === activeCode);
+    if (!note) return undefined;
+    const idx = initial.docsIndex?.[activeCode];
+    return {
+      note,
+      docs: {
+        deepReads: idx?.deepReads ?? [],
+        annualReports: idx?.annualReports ?? [],
+      },
+      updates: idx?.updates ?? [],
+    };
+  }, [activeCode, initial]);
 
   // 主表格行点击：跟随当前单选/多选模式
   const handleTableSelect = (code: string) =>
@@ -292,7 +362,9 @@ export default function Dashboard({
                 <div className="ml-auto flex items-center gap-4 text-xs text-muted-foreground">
                   <span>
                     <span className="dot ok" />
-                    {new Date(lastUpdated).toLocaleTimeString('zh-CN')}
+                    {lastUpdated > 0
+                      ? new Date(lastUpdated).toLocaleTimeString('zh-CN')
+                      : '—'}
                   </span>
                   <span>每 60s 刷新</span>
                 </div>
@@ -355,7 +427,12 @@ export default function Dashboard({
               )}
 
               {mode === 'single' && activeCode && (
-                <CompanyDashboard thscode={activeCode} onClose={clearCompanies} />
+                <CompanyDashboard
+                  key={activeCode}
+                  thscode={activeCode}
+                  onClose={clearCompanies}
+                  initial={activeDetail}
+                />
               )}
 
               {mode === 'compare' && <CompareTable items={selectedItems} />}

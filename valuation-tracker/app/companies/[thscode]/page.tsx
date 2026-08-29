@@ -1,29 +1,28 @@
 /**
- * 公司详情页（独立页）— 服务端取初始数据，渲染复用组件 CompanyDashboard
- * 数据由后端 /api/companies/:thscode 提供；K 线与详情刷新在客户端完成。
+ * 公司详情页（独立页）— SSG：generateStaticParams 由静态 JSON 生成，
+ * 初始详情注入 CompanyDashboard；笔记正文/文档正文/K线/实时行情在客户端按需加载。
  */
 import { notFound } from "next/navigation";
-import { getCompanyDetail, type CompanyDetail } from "@/lib/api";
+import type { CompanyStaticDetail } from "@/lib/api";
+import { getStaticNote, getStaticDocs, listStaticCodes } from "@/lib/static-data";
 import CompanyDashboard from "@/components/CompanyDashboard";
 
-export const dynamic = "force-dynamic";
+export function generateStaticParams() {
+  return listStaticCodes().map((thscode) => ({ thscode }));
+}
 
 export default async function CompanyPage({ params }: { params: Promise<{ thscode: string }> }) {
   const { thscode } = await params;
   const code = thscode.toUpperCase();
 
-  let detail: CompanyDetail | null = null;
-  let apiError: string | null = null;
-  try {
-    detail = await getCompanyDetail(code);
-  } catch {
-    apiError = "Elysia 后端不可达（请先启动 bun run dev）";
-  }
-  // notFound 必须在 try/catch 之外抛出，否则会被当作 API 错误吞掉
-  if (detail && "error" in (detail as unknown as Record<string, unknown>)) {
-    notFound();
-  }
-  if (!detail && !apiError) notFound();
+  const note = getStaticNote(code);
+  if (!note) notFound();
+  const docs = getStaticDocs(code);
+  const initial: CompanyStaticDetail = {
+    note,
+    docs: { deepReads: docs?.deepReads ?? [], annualReports: docs?.annualReports ?? [] },
+    updates: docs?.updates ?? [],
+  };
 
   return (
     <div className="page-wrapper">
@@ -34,11 +33,7 @@ export default async function CompanyPage({ params }: { params: Promise<{ thscod
         </div>
         <a href="http://localhost:3001/api/health" target="_blank" rel="noreferrer">API 状态 ↗</a>
       </header>
-      {apiError ? (
-        <div className="status-bar"><span className="dot err" /><span style={{ color: "var(--accent-danger)" }}>{apiError}</span></div>
-      ) : detail ? (
-        <CompanyDashboard thscode={code} initial={detail} />
-      ) : null}
+      <CompanyDashboard thscode={code} initial={initial} />
       <footer style={{ marginTop: 40, paddingTop: 16, borderTop: "1px solid var(--border-subtle)", color: "var(--text-muted)", fontSize: 12 }}>
         数据仅供研究参考，不构成投资建议。
       </footer>

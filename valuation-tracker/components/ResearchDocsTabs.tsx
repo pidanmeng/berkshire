@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CompanyDocMeta } from "@/lib/api";
-import { getCompanyDoc } from "@/lib/api";
+import { staticDocUrl } from "@/lib/api";
 import Markdown from "./Markdown";
 
 const fmtSize = (bytes: number) => (bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`);
@@ -11,7 +11,8 @@ type Kind = "deep-read" | "annual-report";
 
 /**
  * 公司原始文档浏览 — Tab 切换「年报精读 / 年报原文」，
- * 正文按需（选择文件时）从后端拉取，长文档在限定高度内滚动。
+ * 正文按需从构建期静态文件拉取（public/data/docs/<code>/<kind>/），长文档在限定高度内滚动。
+ * 竞态防护：请求序号（切换 Tab/文件时丢弃过期响应）+ 加载前校验文件名属于当前 Tab 列表。
  */
 export default function ResearchDocsTabs({
   thscode,
@@ -27,34 +28,47 @@ export default function ResearchDocsTabs({
   const [content, setContent] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // 请求序号：每次发起加载递增；响应返回时序号不匹配则丢弃（防止旧 Tab 慢请求覆盖新 Tab 内容）
+  const requestRef = useRef(0);
 
-  const list = tab === "deep-read" ? deepReads : annualReports;
+  // list 引用稳定化（避免三元表达式每次渲染生成新引用导致加载 effect 反复触发）
+  const list = useMemo(
+    () => (tab === "deep-read" ? deepReads : annualReports),
+    [tab, deepReads, annualReports],
+  );
 
   // 切换 Tab 后自动选中第一份文档
   useEffect(() => {
-    const first = list[0]?.fileName ?? null;
-    setFile(first);
+    setFile(list[0]?.fileName ?? null);
     setContent(null);
     setError(null);
   }, [tab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const load = useCallback(async (fileName: string) => {
+    const reqId = ++requestRef.current;
     setLoading(true);
     setError(null);
     try {
-      const doc = await getCompanyDoc(thscode, tab, fileName);
-      setContent(doc.content);
+      // 文档正文走构建期静态文件 public/data/docs/<code>/<kind>/<fileName>（按需 fetch）
+      const res = await fetch(
+        staticDocUrl(thscode, tab === "deep-read" ? "deep-reads" : "annual-reports", fileName),
+      );
+      if (reqId !== requestRef.current) return;
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setContent(await res.text());
     } catch {
-      setError("文档读取失败（Elysia 后端不可达或文件不存在）");
+      if (reqId !== requestRef.current) return;
+      setError("文档读取失败（静态文档不存在或构建期未生成）");
       setContent(null);
     }
-    setLoading(false);
+    if (reqId === requestRef.current) setLoading(false);
   }, [thscode, tab]);
 
+  // 选中文件时加载；文件名不属于当前 Tab 列表时跳过（避免 Tab 切换瞬间用旧文件名请求错误目录）
   useEffect(() => {
-    if (file) load(file);
+    if (file && list.some((d) => d.fileName === file)) load(file);
     else setContent(null);
-  }, [file, load]);
+  }, [file, load, list]);
 
   const total = deepReads.length + annualReports.length;
   if (total === 0) return null;

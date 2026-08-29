@@ -200,7 +200,11 @@ function parseFinancials(rawFin: Record<string, unknown> | null): Financials | n
   };
 }
 
-function parseNote(relPath: string, content: string): CompanyNote | null {
+/**
+ * 解析公司笔记 frontmatter → CompanyNote（纯函数，构建期 generate-static-data 复用）
+ * relPath：POSIX 相对路径（相对 Research 根），供 notePath/fileName 使用。
+ */
+export function parseNote(relPath: string, content: string): CompanyNote | null {
   const { data } = matter(content);
   // 公司文件夹内可能存在 deep-dive-update 等非公司类型产物，跳过以免被当成独立公司
   if (typeof data.type === "string" && data.type !== "company") return null;
@@ -354,8 +358,8 @@ function ymd(v: unknown): string | null {
   return typeof v === "string" ? v : null;
 }
 
-/** 解析公司文件夹内的基本面更新产物（与公司笔记同目录，frontmatter type 为 deep-dive-update） */
-function parseUpdate(relPath: string, content: string): CompanyUpdate | null {
+/** 解析公司文件夹内的基本面更新产物（与公司笔记同目录，frontmatter type 为 deep-dive-update）；构建期 generate-static-data 复用 */
+export function parseUpdate(relPath: string, content: string): CompanyUpdate | null {
   const { data, content: body } = matter(content);
   if (typeof data.type !== "string" || !UPDATE_TYPES.has(data.type)) return null;
   const sc = (data.stock_code ?? data.stockCode) as string | undefined;

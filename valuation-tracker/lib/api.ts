@@ -293,6 +293,58 @@ export function getCompanyDetail(thscode: string): Promise<CompanyDetail> {
   return get(`/api/companies/${encodeURIComponent(thscode)}`);
 }
 
+// ===== 构建期静态数据（SSG，public/data/companies.json + docs/<code>/）=====
+// 类型拆分（坑 #8）：quote/zone/marketCapYi 等实时字段不在静态 JSON 中，
+// 由客户端（lib/market-data.ts）拉实时行情后合并 + classifyCapZone 重算。
+
+/** 静态公司条目（public/data/companies.json 的 list 项；quote/zone/needsUpdate 等实时字段需客户端合并） */
+export type CompanyStaticItem = Omit<
+  CompanyItem,
+  "quote" | "zone" | "marketCapYi" | "needsUpdate" | "latestReportDate" | "fundamentalItems"
+> & {
+  financials: Financials | null;
+  created: string | null;
+  updated: string | null;
+};
+
+/** 基本面更新元数据（正文走 public/data/docs/<code>/updates/<fileName>，按需 fetch） */
+export type CompanyUpdateMeta = Omit<CompanyUpdate, "markdown">;
+
+/** 静态公司详情（SSG 页面注入；markdown/文档正文由客户端按需 fetch） */
+export interface CompanyStaticDetail {
+  note: CompanyStaticItem;
+  docs: CompanyDocs;
+  updates: CompanyUpdateMeta[];
+}
+
+/** public/data/companies.json 结构（scripts/generate-static-data.ts 构建期产出） */
+export interface StaticCompaniesData {
+  generatedAt: string;
+  list: CompanyStaticItem[];
+  docsIndex: Record<
+    string,
+    { deepReads: CompanyDocMeta[]; annualReports: CompanyDocMeta[]; updates: CompanyUpdateMeta[] }
+  >;
+}
+
+/** 拉取构建期静态数据（无实时字段；浏览器端 fallback，页面默认经 SSR 注入） */
+export async function fetchStaticCompanies(): Promise<StaticCompaniesData> {
+  const res = await fetch("/data/companies.json", { cache: "no-store" });
+  if (!res.ok) throw new Error(`静态数据 HTTP ${res.status}: /data/companies.json`);
+  return res.json() as Promise<StaticCompaniesData>;
+}
+
+/** 静态文档 URL（public/data/docs/<code>/...，构建期由 generate-static-data 产出） */
+export function staticDocUrl(
+  code: string,
+  kind: "note" | "updates" | "deep-reads" | "annual-reports",
+  fileName?: string,
+): string {
+  const c = encodeURIComponent(code);
+  if (kind === "note") return `/data/docs/${c}/note.md`;
+  return `/data/docs/${c}/${kind}/${encodeURIComponent(fileName ?? "")}`;
+}
+
 export function getKline(thscode: string, days = 250, signal?: AbortSignal): Promise<KlineResponse> {
   return get(`/api/kline/${encodeURIComponent(thscode)}?days=${days}`, signal);
 }

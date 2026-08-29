@@ -29,7 +29,7 @@ import { mkdirSync, existsSync, readFileSync, writeFileSync, appendFileSync } fr
 import { join, resolve } from "node:path";
 import {
   getAllAShareTickers,
-  getMarketCapFromEastmoney,
+  getMarketCapWithFallback,
   getValuations,
   getIndicatorsRaw,
 } from "../hithink/hithink.ts";
@@ -350,11 +350,11 @@ async function runStageA(opts: { minMcapYi: number; excludeSt: boolean; smoke: n
     if (missing.length > 0) console.warn(`  ⚠️ 未匹配到代码：${missing.join(", ")}`);
   }
 
-  console.log(`[Stage A] 批量获取市值/行业（东财）与估值（同花顺，chunk=${CHUNK}）...`);
+  console.log(`[Stage A] 批量获取市值/行业（同花顺 10jqka + 东财兜底）与估值（同花顺，chunk=${CHUNK}）...`);
   const emChunks = chunk(rows.map((r) => r.thscode), CHUNK);
   const valChunks = chunk(rows.map((r) => r.thscode), CHUNK);
   const [emResults, valResults] = await Promise.all([
-    mapWithConcurrency(emChunks, 4, (codes) => getMarketCapFromEastmoney(codes), 1),
+    mapWithConcurrency(emChunks, 4, (codes) => getMarketCapWithFallback(codes), 1),
     mapWithConcurrency(valChunks, 4, (codes) => getValuations(codes.join(",")), 1),
   ]);
 

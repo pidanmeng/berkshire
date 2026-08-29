@@ -1,9 +1,18 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
-import type { CompanyDetail } from '@/lib/api';
-import { getCompanyDetail, getKline, getApiBase } from '@/lib/api';
+import type {
+  CompanyDocs,
+  CompanyDocMeta,
+  CompanyStaticDetail,
+  CompanyStaticItem,
+  CompanyUpdateMeta,
+  FundamentalResponse,
+} from '@/lib/api';
+import { getFundamentals, fetchStaticCompanies, staticDocUrl, getApiBase } from '@/lib/api';
+import { fetchQuotesThrottled, fetchKline, type MarketQuote } from '@/lib/market-data';
+import { classifyCapZone } from '@/server/lib/safety';
 import {
   Tooltip,
   TooltipContent,
@@ -72,86 +81,144 @@ function extractSection(md: string, heading: string): string | null {
   return body.length > 0 ? body : null;
 }
 
+/** K 线柱（与 lib/api.ts KlineResponse.bars 结构一致） */
+interface KlineBar {
+  date: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
 export default function CompanyDashboard({
   thscode,
   initial,
   onClose,
 }: {
   thscode: string;
-  initial?: CompanyDetail;
+  initial?: CompanyStaticDetail;
   /** 内嵌看板模式：传入后头部显示 X 按钮，点击取消单选回到列表 */
   onClose?: () => void;
 }) {
-  const [detail, setDetail] = useState<CompanyDetail | null>(initial ?? null);
-  const [bars, setBars] = useState<
-    {
-      date: string;
-      open: number;
-      high: number;
-      low: number;
-      close: number;
-      volume: number;
-    }[]
-  >([]);
+  // 静态详情（SSR 注入或客户端从 companies.json 拉取）；实时字段（quote/K线/fundamental）客户端加载
+  const [note, setNote] = useState<CompanyStaticItem | null>(initial?.note ?? null);
+  const [docs, setDocs] = useState<CompanyDocs>(
+    initial?.docs ?? { deepReads: [], annualReports: [] },
+  );
+  const [updates, setUpdates] = useState<CompanyUpdateMeta[]>(initial?.updates ?? []);
+  const [markdown, setMarkdown] = useState<string | null>(null);
+  const [updateBodies, setUpdateBodies] = useState<Record<string, string>>({});
+  const [bars, setBars] = useState<KlineBar[]>([]);
+  const [quote, setQuote] = useState<MarketQuote | null>(null);
+  const [fundamental, setFundamental] = useState<FundamentalResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(!initial);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const d = await getCompanyDetail(thscode);
-      setDetail(d);
-    } catch {
-      setError('详情获取失败（Elysia 后端不可达）');
-    }
-    try {
-      const k = await getKline(thscode, 250);
-      setBars(k.bars);
-    } catch {
-      // K 线失败不阻塞
-    }
-    setLoading(false);
-  }, [thscode]);
 
   useEffect(() => {
-    setDetail(initial ?? null);
+    let cancelled = false;
+    const code = thscode.toUpperCase();
+
+    // 重置状态（切换公司时清空旧数据）
+    setNote(null);
+    setDocs({ deepReads: [], annualReports: [] });
+    setUpdates([]);
+    setMarkdown(null);
+    setUpdateBodies({});
     setBars([]);
-    if (!initial) load();
-    else {
-      load(); // 仍拉 K 线并刷新详情
-    }
+    setQuote(null);
+    setFundamental(null);
+    setError(null);
+
+    (async () => {
+      // 1. 静态详情：SSR 注入优先；内嵌看板（无 initial）客户端拉取 companies.json
+      let item = initial?.note ?? null;
+      let updatesMeta: CompanyUpdateMeta[] = initial?.updates ?? [];
+      let docsMeta: CompanyDocs =
+        initial?.docs ?? { deepReads: [], annualReports: [] };
+      if (!item) {
+        try {
+          const data = await fetchStaticCompanies();
+          if (cancelled) return;
+          item =
+            data.list.find((n) => n.thscode.toUpperCase() === code) ?? null;
+          const idx = data.docsIndex[code];
+          updatesMeta = idx?.updates ?? [];
+          docsMeta = {
+            deepReads: idx?.deepReads ?? [],
+            annualReports: idx?.annualReports ?? [],
+          };
+        } catch {
+          if (!cancelled) {
+            setError('静态数据加载失败（请先运行 bun run generate-data）');
+          }
+        }
+      }
+      if (cancelled) return;
+      if (!item) {
+        setError('未找到公司');
+        return;
+      }
+      setNote(item);
+      setUpdates(updatesMeta);
+      setDocs(docsMeta);
+
+      // 2. 笔记正文 + 各 update 正文（并行按需 fetch public/data/docs/）
+      const readText = (url: string) =>
+        fetch(url)
+          .then((r) => (r.ok ? r.text() : ''))
+          .catch(() => '');
+      const noteBodyP = readText(staticDocUrl(code, 'note')).then((t) => {
+        if (!cancelled) setMarkdown(t || null);
+      });
+      const updatePs = updatesMeta.map((u) =>
+        readText(staticDocUrl(code, 'updates', u.fileName)).then((t) => {
+          if (!cancelled && t) {
+            setUpdateBodies((prev) => ({ ...prev, [u.fileName]: t }));
+          }
+        }),
+      );
+
+      // 3. K线（同花顺优先→东财降级）+ 实时行情 + 基本面检测（并行，任一失败不阻塞）
+      fetchKline(code)
+        .then(({ bars }) => {
+          if (!cancelled) setBars(bars);
+        })
+        .catch(() => {});
+      fetchQuotesThrottled([code])
+        .then((m) => {
+          if (!cancelled) setQuote(m.get(code) ?? null);
+        })
+        .catch(() => {});
+      getFundamentals(code)
+        .then((fd) => {
+          if (!cancelled) setFundamental(fd);
+        })
+        .catch(() => {});
+
+      await Promise.all([noteBodyP, ...updatePs]);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [thscode]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (loading && !detail) {
+  if (!note) {
     return (
       <div className="status-bar">
         <span className="dot wait" />
-        加载中…
-      </div>
-    );
-  }
-  if (!detail) {
-    return (
-      <div className="status-bar">
-        <span className="dot err" />
-        {error ?? '未找到公司'}
+        {error ?? '加载中…'}
       </div>
     );
   }
 
-  const {
-    note,
-    quote,
-    zone,
-    marketCapYi,
-    markdown,
-    fundamental,
-    updates = [],
-    docs,
-  } = detail;
+  const marketCapYi =
+    quote?.marketCap != null && quote.marketCap > 0
+      ? quote.marketCap / 1e8
+      : null;
+  const zone = classifyCapZone(marketCapYi, note.targetMarketCapYi);
   const totalSharesYi =
-    quote.price && quote.price > 0 && marketCapYi != null && marketCapYi > 0
+    quote?.price && quote.price > 0 && marketCapYi != null && marketCapYi > 0
       ? +(marketCapYi / quote.price).toFixed(2)
       : null;
 
@@ -797,7 +864,10 @@ export default function CompanyDashboard({
                   研究结论：{u.researchConclusion}
                 </div>
               )}
-              <Markdown source={u.markdown} className="note-body" />
+              <Markdown
+                source={updateBodies[u.fileName] ?? ''}
+                className="note-body"
+              />
             </div>
           ))}
         </div>
@@ -824,13 +894,11 @@ export default function CompanyDashboard({
       )}
 
       {/* 研究报告原文：年报精读 / 年报原文（按公司名自动匹配，Tab 切换） */}
-      {docs && (
-        <ResearchDocsTabs
-          thscode={thscode}
-          deepReads={docs.deepReads ?? []}
-          annualReports={docs.annualReports ?? []}
-        />
-      )}
+      <ResearchDocsTabs
+        thscode={thscode}
+        deepReads={docs.deepReads ?? []}
+        annualReports={docs.annualReports ?? []}
+      />
 
       {md && (
         <div className="card">

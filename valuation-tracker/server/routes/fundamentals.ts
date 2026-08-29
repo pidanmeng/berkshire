@@ -2,9 +2,11 @@
  * 基本面更新检测路由
  * GET /api/fundamentals/:thscode → 巨潮检测（6h TTL 缓存到 store）
  * 逻辑：调研截止日之后是否出现新的定期报告（年报/半年报/业绩报表/业绩预告）。
+ * 公司信息（名称 / research_cutoff）读构建期静态产物 public/data/companies.json
+ * （不再依赖 doc-store / research.db / Turso，与前端 SSG 同一数据源）。
  */
 import { Elysia, t } from "elysia";
-import { findCompany } from "../lib/research.ts";
+import { getStaticNote } from "../../lib/static-data.ts";
 import { checkFundamentalUpdate } from "../lib/cninfo.ts";
 import { getDb } from "../lib/db.ts";
 
@@ -13,7 +15,7 @@ const CHECK_TTL_MS = 6 * 3600_000;
 export const fundamentalsRoutes = new Elysia({ prefix: "/api" })
   .get("/fundamentals/:thscode", async ({ params, query }) => {
     const code = params.thscode.toUpperCase();
-    const note = await findCompany(code);
+    const note = getStaticNote(code);
     if (!note) return { error: "not_found", message: `未找到 ${code} 的调研笔记` };
 
     // 6h 缓存（?refresh=1 强制刷新，供人工手动触发）

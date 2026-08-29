@@ -13,7 +13,10 @@
  *   getCashFlows(...)            现金流量表
  *   getIndicators(thscode, report) 财务指标
  *   getValuations(thscodes)      估值快照
- *   getMarketCapFromEastmoney(thscodes) 总市值（东财 push2，同花顺无市值字段时补充）
+ *   to10jqkaKey(thscode)         thscode → 10jqka 参数（market/code：SH→17/SZ→33/BJ→151）
+ *   getMarketCapFrom10jqka(thscodes) 市值/价格/涨跌幅（同花顺 10jqka 免鉴权接口，主数据源）
+ *   getMarketCapWithFallback(thscodes) 市值主数据源（10jqka 优先，失败/缺数降级东财）
+ *   getMarketCapFromEastmoney(thscodes) 总市值（东财 push2 兜底，含行业/名称）
  *   getKlineFromEastmoney(thscode, days) 历史日 K（东财 push2his 前复权，同花顺 K 线超时降级用）
  */
 
@@ -535,6 +538,167 @@ export async function getMarketCapFromEastmoney(
       industry,
     };
   });
+}
+
+// ==================== 同花顺 10jqka 市值/行情主数据源（免鉴权）====================
+
+const JQKA_QUOTE_URL =
+  'https://quota-h.10jqka.com.cn/fuyao/common_hq_aggr/quote/v1/multi_last_snapshot';
+
+/** 10jqka market 编码：.SH→17（含科创板）、.SZ→33（含创业板）、.BJ→151（920 新代码段） */
+export function to10jqkaKey(
+  thscode: string,
+): { market: string; code: string } | null {
+  const [ticker, ex] = thscode.split('.');
+  if (!ticker || !ex) return null;
+  const m = ex.toUpperCase();
+  const market = m === 'SH' ? '17' : m === 'SZ' ? '33' : m === 'BJ' ? '151' : null;
+  if (!market) return null;
+  return { market, code: ticker };
+}
+
+/**
+ * 批量获取 A 股实时价格/涨跌幅/总市值（同花顺 10jqka fuyao 快照，免鉴权，一次请求多只）
+ * - 支持 SH(17)/SZ(33)/BJ(151)，北交所须为 920 新代码段（当前全部北交所已切换）
+ * - POST body 的 code_list 按 market 分组，data_fields 请求 3541450 总市值 / 24 最新价 / 264648 涨跌幅
+ * - 响应字段值与回显 data_fields 数组一一对应（服务端会重排字段顺序），须按回显顺序解析，勿按请求顺序硬编码
+ * - 接口不含股票名称与行业字段 → name 置空字符串、industry 置 null
+ * 返回结构与 getMarketCapFromEastmoney 的 MarketCapItem 完全一致，便于上层无差别消费。
+ */
+export async function getMarketCapFrom10jqka(
+  thscodes: string[],
+): Promise<MarketCapItem[]> {
+  if (thscodes.length === 0) return [];
+  // 按 market 分组去重，单条目可带 80+ 只
+  const groups = new Map<string, string[]>();
+  for (const ts of thscodes) {
+    const key = to10jqkaKey(ts);
+    if (key) {
+      const list = groups.get(key.market) ?? [];
+      list.push(key.code);
+      groups.set(key.market, list);
+    }
+  }
+  if (groups.size === 0) return [];
+  const codeList = [...groups.entries()].map(([market, codes]) => ({
+    codes: [...new Set(codes)],
+    market,
+  }));
+  const res = await fetch(JQKA_QUOTE_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      code_list: codeList,
+      trade_class: 'post_market',
+      data_fields: ['3541450', '24', '264648'],
+      lang: 'zh_hans',
+      gpid: 1,
+    }),
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!res.ok) throw new Error(`10jqka 行情 HTTP ${res.status}`);
+  const json = (await res.json()) as {
+    status_code?: number;
+    status_msg?: string;
+    data?: {
+      quote_data?: {
+        market: string;
+        code: string;
+        data_fields: string[];
+        value: (number | null)[][];
+      }[];
+    };
+  };
+  if (json.status_code !== 0) {
+    throw new Error(
+      `10jqka 行情 API error: status_code=${String(json.status_code)} ${json.status_msg ?? ''}`,
+    );
+  }
+  const items: MarketCapItem[] = [];
+  for (const q of json.data?.quote_data ?? []) {
+    // 取最后一行快照（multi_last_snapshot 语义）；行内值按回显 data_fields 顺序定位
+    const row = q.value[q.value.length - 1];
+    if (!row) continue;
+    const get = (id: string): number | null => {
+      const i = q.data_fields.indexOf(id);
+      if (i < 0 || i >= row.length) return null;
+      const v = row[i];
+      return v === null || v === undefined || !Number.isFinite(Number(v))
+        ? null
+        : Number(v);
+    };
+    const suffix = q.market === '17' ? '.SH' : q.market === '33' ? '.SZ' : '.BJ';
+    const thscode = `${q.code}${suffix}`;
+    items.push({
+      thscode,
+      ticker: q.code,
+      name: '', // 10jqka 接口不含名称
+      price: get('24'),
+      change_pct: get('264648'),
+      market_cap: get('3541450'),
+      industry: null, // 10jqka 接口不含行业
+    });
+  }
+  return items;
+}
+
+/**
+ * 市值/价格/涨跌幅主数据源（同花顺 10jqka 优先，东财兜底）— 各调用点统一入口
+ * - SH/SZ/BJ 均走 10jqka（market 17/33/151，北交所为 920 新代码段）
+ * - 10jqka 失败/缺数/无效代码 → 降级东财 push2；东财请求失败静默忽略（catch 返回空），绝不让东财阻塞主流程
+ * - 合并去重：10jqka 条目优先，东财仅补缺（含行业/名称）
+ */
+export async function getMarketCapWithFallback(
+  thscodes: string[],
+): Promise<MarketCapItem[]> {
+  if (thscodes.length === 0) return [];
+  const unique = [...new Set(thscodes)];
+  const jqkaCandidates = unique.filter((t) => to10jqkaKey(t) !== null);
+  const emOnly = unique.filter((t) => to10jqkaKey(t) === null); // 无效格式代码等
+
+  let jqkaItems: MarketCapItem[] = [];
+  if (jqkaCandidates.length > 0) {
+    try {
+      jqkaItems = await getMarketCapFrom10jqka(jqkaCandidates);
+    } catch (err) {
+      // 10jqka 失败降级东财，不阻塞主流程
+      console.warn(
+        `[hithink] 10jqka 行情失败，降级东财: ${(err as Error).message}`,
+      );
+      jqkaItems = [];
+    }
+  }
+
+  // 10jqka 缺数（未返回该 thscode 或市值缺失）→ 也交给东财补齐
+  const got = new Set(jqkaItems.map((i) => i.thscode));
+  const missing = jqkaCandidates.filter(
+    (t) => !got.has(t) || jqkaItems.find((i) => i.thscode === t)?.market_cap == null,
+  );
+  const needEm = [...new Set([...emOnly, ...missing])];
+
+  let emItems: MarketCapItem[] = [];
+  if (needEm.length > 0) {
+    try {
+      emItems = await getMarketCapFromEastmoney(needEm);
+    } catch {
+      // 东财失败静默忽略（主流程不受影响，字段保持 null）
+      emItems = [];
+    }
+    // 东财将北交所(f13=0)一律映射为 .SZ，与输入 .BJ 不一致 → 按输入 thscode 修正后缀
+    const emThscodeFix = new Map<string, string>(
+      needEm.map((t) => [t.split('.')[0] ?? t, t]),
+    );
+    for (const it of emItems) {
+      const fixed = emThscodeFix.get(it.ticker);
+      if (fixed && it.thscode !== fixed) it.thscode = fixed;
+    }
+  }
+
+  // 合并去重：10jqka 优先，东财补缺
+  const byCode = new Map<string, MarketCapItem>();
+  for (const it of jqkaItems) byCode.set(it.thscode, it);
+  for (const it of emItems) if (!byCode.has(it.thscode)) byCode.set(it.thscode, it);
+  return [...byCode.values()];
 }
 
 /**

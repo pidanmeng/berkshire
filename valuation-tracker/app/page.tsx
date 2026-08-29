@@ -1,26 +1,14 @@
 import Dashboard from "@/components/Dashboard";
-import { getCompanies } from "@/lib/api";
+import { readStaticCompanies } from "@/lib/static-data";
 
-export const dynamic = "force-dynamic";
-
-export default async function HomePage() {
-  let initial: { list: never[]; fetchedAt: number } | Awaited<ReturnType<typeof getCompanies>>;
-  let apiError: string | null = null;
-  try {
-    initial = await getCompanies();
-  } catch {
-    initial = { list: [], fetchedAt: 0 };
-    apiError = "Elysia 后端不可达（请先启动 bun run dev）";
-  }
+export default function HomePage() {
+  // SSG：构建期读取静态 JSON（generate-static-data 产物），不再依赖后端 /api/companies
+  // list + docsIndex 一次性注入 Dashboard：内嵌看板点击公司时直接复用，零客户端全量请求
+  const data = readStaticCompanies();
+  const initial = { list: data?.list ?? [], docsIndex: data?.docsIndex ?? {}, fetchedAt: 0 };
 
   return (
     <div className="page-wrapper page-wrapper-wide">
-      {apiError && (
-        <div className="status-bar" style={{ padding: "12px 24px" }}>
-          <span className="dot err" />
-          <span style={{ color: "var(--accent-danger)" }}>{apiError}</span>
-        </div>
-      )}
       <Dashboard initial={initial} />
     </div>
   );

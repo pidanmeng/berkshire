@@ -13,11 +13,11 @@ Next.js 15（纯 UI/SSR，端口 3000）   ←→   Elysia 后端（Bun，端口
 ```
 
 **数据流**：Markdown 公司笔记（`../Research/10-Knowledge/**/02-公司研究/`）是唯一事实源。
-后端读取统一经 `server/lib/doc-store.ts`：dev / 自托管直读仓库（改笔记即时生效）；Vercel 部署走构建期产物
-`research-data/research.db`（`bun run build` 自动执行 sync-data 把调研文档 gzip 压缩入库，单文件、体积约为原始 28%；
-Git 集成部署时构建环境有 `../Research`，云端现场重建，本地无需预生成）。
-配置 `TURSO_URL` 时 build 同时同步同一批数据到 Turso（云上无打包库时自动降级读取）。
-请求时解析 frontmatter（60s 缓存），数据库只存动态状态（价格快照、基本面检测缓存）。
+构建期由 `scripts/generate-static-data.ts` 编译为 SSG 静态产物 `public/data/companies.json` +
+`public/data/docs/<code>/`（`bun run build` / `bun run dev` 启动时自动执行；改笔记后需重跑
+`bun run generate-data`）。页面 SSG 渲染；实时行情/市值/K线由前端浏览器直连东财
+（push2/push2his）+ 同花顺代理（可选 key），不再依赖服务端聚合。后端保留精简路由：
+暗盘、留言板、基本面检测、quotes 快照采集（`companies/kline` 为维护态兼容）。
 
 **综合评分**：不人工给定，由六维评分（能力圈/护城河/生意模式/管理层/反向清单/历史类比）按
 `../.trae/scripts/valuation/composite.ts` 的 `COMPOSITE_WEIGHTS` 加权现算。
@@ -69,9 +69,10 @@ bun run dev        # 并行启动 Elysia(3001) + Next(3000)
 ## 维护
 
 ```bash
-bun run sync-data           # 仅生成 research-data/research.db（不联网）
-bun run sync-data:remote    # 生成本地库 + 同步同一批数据到 Turso（复用 TURSO_URL，云上无打包库时兜底）
-bun run build               # 生产构建：自动执行 sync-data:remote（含 Turso 同步，如配置 TURSO_URL）+ next build
+bun run sync-data           # 仅生成 research-data/research.db（维护用，不联网）
+bun run sync-data:remote    # 生成本地库 + 同步同一批数据到 Turso（维护用）
+bun run generate-data       # 生成 SSG 静态数据 public/data/（build/dev 启动自动执行；改笔记后重跑）
+bun run build               # 生产构建：generate-data + next build（构建期零外部请求，不再同步 Turso）
 bun run snapshot            # 批量拉取行情写入快照（可配置收盘后定时执行）
 bun run server              # 仅启动 Elysia 后端
 ```

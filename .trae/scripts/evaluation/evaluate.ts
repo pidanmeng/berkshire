@@ -17,7 +17,7 @@ import {
   getBalanceSheets,
   getCashFlows,
   getIndicators,
-  getMarketCapFromEastmoney,
+  getMarketCapWithFallback,
 } from "../hithink/hithink.ts";
 import { computeComposite } from "../valuation/composite.ts";
 
@@ -177,7 +177,7 @@ export async function generateFramework(
     getIncomeStatements(thscode, "annual", 4),
     getBalanceSheets(thscode, "annual", 4),
     getCashFlows(thscode, "annual", 4),
-    getMarketCapFromEastmoney([thscode]).catch(() => []),
+    getMarketCapWithFallback([thscode]).catch(() => []),
   ]);
 
   // 获取财务指标

@@ -49,5 +49,9 @@ valuation-tracker/.source
 valuation-tracker/research-data
 Code/投研/valuation-tracker/research-data
 
+# SSG 静态数据（构建期由 generate-static-data.ts 生成；Vercel Git 集成构建时云端重建）
+valuation-tracker/public/data
+Code/投研/valuation-tracker/public/data
+
 # 投研笔记
 鸩的投资笔记

@@ -64,8 +64,8 @@ const mockHithink = {
       yoy_net_profit: 0.2,
     },
   ]),
-  getMarketCapFromEastmoney: spyOn(hithink, 'getMarketCapFromEastmoney').mockImplementation(
-    async () => [{ market_cap: 1200_0000_0000 }],
+  getMarketCapWithFallback: spyOn(hithink, 'getMarketCapWithFallback').mockImplementation(
+    async () => [{ thscode: '600519.SH', ticker: '600519', name: '', price: null, change_pct: null, market_cap: 1200_0000_0000, industry: null }],
   ),
 };
 

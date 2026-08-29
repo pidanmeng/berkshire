@@ -1,6 +1,6 @@
 # Vercel CLI 上传忽略规则（仅 CLI 上传时生效，不影响 .gitignore / git 跟踪）
 # research-data/ 保留上传，仅对「CLI 从本目录上传、构建环境无 ../Research」的场景生效；
-# Git 集成部署会 clone 整个仓库（Research/ 在 git 中），build 的 sync-data 会在云端现场重建 research.db
+# Git 集成部署会 clone 整个仓库（Research/ 在 git 中），build 的 generate-data 会在云端现场生成 public/data
 .next
 node_modules
 data

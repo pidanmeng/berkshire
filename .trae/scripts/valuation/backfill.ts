@@ -22,7 +22,7 @@
 import { readFileSync, writeFileSync, readdirSync, existsSync, statSync } from "node:fs";
 import { join, basename } from "node:path";
 import {
-  getMarketCapFromEastmoney,
+  getMarketCapWithFallback,
   getIncomeStatements,
   getBalanceSheets,
   getCashFlows,
@@ -485,16 +485,16 @@ async function main() {
   const needShares = [...new Set(toFill.filter((t) => Object.keys(t.targets).length > 0).map((t) => t.stockCode))];
   const sharesMap = new Map<string, number>();
   if (needShares.length > 0) {
-    console.log(`获取 ${needShares.length} 只股票总股本（东财）...`);
+    console.log(`获取 ${needShares.length} 只股票总股本（同花顺 10jqka + 东财兜底）...`);
     try {
-      const mcap = await getMarketCapFromEastmoney(needShares);
+      const mcap = await getMarketCapWithFallback(needShares);
       for (const it of mcap) {
         if (it.market_cap != null && it.price != null && it.price > 0) {
           sharesMap.set(it.thscode, it.market_cap / it.price / 1e8); // 亿股
         }
       }
     } catch (err) {
-      console.warn(`⚠️ 东财市值获取失败（${(err as Error).message}），含目标价表的笔记将仅写 scores`); 
+      console.warn(`⚠️ 市值获取失败（${(err as Error).message}），含目标价表的笔记将仅写 scores`); 
     }
   }
 

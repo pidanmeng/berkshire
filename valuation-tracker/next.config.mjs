@@ -11,10 +11,11 @@ const nextConfig = {
   // 会导致 standalone 目录路径计算错误而静默失败（不生成 .next/standalone）。
   outputFileTracingRoot: fileURLToPath(new URL("..", import.meta.url)),
   // 运行时动态读取的调研数据（scripts/build-research-db.ts 构建期生成）打包进函数包；
+  // public/data（generate-static-data.ts 构建期产物）供 /api/fundamentals 与静态页读取；
   // ws 由 @libsql/client 的 Node 传输层静态依赖，但会被 Next 外部化剔除（standalone 不带），
   // 显式包含以确保 Turso 兜底（懒加载 @libsql）在云上可用。
   outputFileTracingIncludes: {
-    "/*": ["./research-data/**/*", "./node_modules/ws/**/*"],
+    "/*": ["./research-data/**/*", "./public/data/**/*", "./node_modules/ws/**/*"],
   },
   // bun:sqlite 仅 Bun 运行时存在；Node（Vercel）下由 db.ts 降级到 Turso/内存
   serverExternalPackages: ["bun:sqlite"],

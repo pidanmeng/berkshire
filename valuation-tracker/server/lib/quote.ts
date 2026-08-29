@@ -11,7 +11,7 @@ import {
   getValuations,
   getKline,
   getKlineFromEastmoney,
-  getMarketCapFromEastmoney,
+  getMarketCapWithFallback,
 } from "../../../.trae/scripts/hithink/hithink.ts";
 import { shDate } from "./sh-date.ts";
 
@@ -50,13 +50,13 @@ export async function getQuotes(thscodes: string[]): Promise<Map<string, Quote>>
   for (const c of unique) map.set(c, base(c));
 
   const [em, snap, val] = await Promise.allSettled([
-    getMarketCapFromEastmoney(unique),
+    getMarketCapWithFallback(unique),
     getSnapshot(unique.join(",")),
     getValuations(unique.join(",")),
   ]);
 
   // 失败原因记录（含 cause 底层错误码），供 Vercel 等远端环境定位网络问题
-  if (em.status === "rejected") console.warn(`[quote] 东财市值/行情失败: ${describeError(em.reason)}`);
+  if (em.status === "rejected") console.warn(`[quote] 市值/行情主源失败: ${describeError(em.reason)}`);
   if (snap.status === "rejected") console.warn(`[quote] 同花顺行情快照失败: ${describeError(snap.reason)}`);
   if (val.status === "rejected") console.warn(`[quote] 同花顺估值失败: ${describeError(val.reason)}`);
 

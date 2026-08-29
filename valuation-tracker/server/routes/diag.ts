@@ -3,6 +3,7 @@
  * GET /api/diag/net → 从当前函数环境对多个目标做 DNS 解析 + HTTP 连通性测试
  * 对照组设计：
  *   - hithink  / fuyao.aicubes.cn   同花顺网关（国内）
+ *   - 10jqka   / quota-h.10jqka.com.cn 同花顺 10jqka 行情（市值/价格主数据源，POST 接口仅探测连通性）
  *   - eastmoney / push2.eastmoney.com 东财行情（国内）
  *   - baidu    / www.baidu.com        国内对照组
  *   - github   / api.github.com       海外对照组
@@ -15,6 +16,7 @@ const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
 
 const TARGETS = [
   { name: "hithink", url: "https://fuyao.aicubes.cn/" },
+  { name: "10jqka", url: "https://quota-h.10jqka.com.cn/fuyao/common_hq_aggr/quote/v1/multi_last_snapshot" },
   { name: "eastmoney", url: "https://push2.eastmoney.com/api/qt/ulist.np/get?secids=0.300750&fields=f2,f3,f12,f13,f14,f20,f100&fltt=2" },
   { name: "eastmoney-his", url: "https://push2his.eastmoney.com/" },
   { name: "baidu", url: "https://www.baidu.com/" },
