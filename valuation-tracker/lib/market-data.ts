@@ -241,6 +241,55 @@ export async function fetchEastmoneyKline(thscode: string, days = 250): Promise<
 }
 
 /**
+ * 历史日 K（东财 push2his，前复权，按日期区间）— 回测个股区间走势用
+ * 现有 fetchEastmoneyKline 仅支持「最近 N 根」（lmt 上限 1000 ≈ 4 年），
+ * 无法回溯 2020 年等早期区间；begin/end 参数直接指定起止日（YYYY-MM-DD）。
+ */
+export async function fetchEastmoneyKlineRange(
+  thscode: string,
+  begin: string,
+  end: string,
+): Promise<MarketKlineBar[]> {
+  const secid = toEastmoneySecid(thscode);
+  const fmt = (d: string) => d.replace(/-/g, "");
+  const url =
+    `https://push2his.eastmoney.com/api/qt/stock/kline/get` +
+    `?secid=${secid}&klt=101&fqt=1&lmt=2000&begin=${fmt(begin)}&end=${fmt(end)}` +
+    `&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55,f56`;
+  const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
+  if (!res.ok) throw new Error(`东财 K 线 HTTP ${res.status}`);
+  const json = (await res.json()) as { data?: { klines?: string[] } };
+  return (json.data?.klines ?? []).map((line) => {
+    const [date, open, close, high, low, volume] = line.split(",");
+    return {
+      date,
+      open: Number(open),
+      high: Number(high),
+      low: Number(low),
+      close: Number(close),
+      volume: Number(volume),
+    };
+  });
+}
+
+/**
+ * 个股区间 K 线（东财 push2his 前复权）— 按 begin/end 起止日拉取，回测持仓期定位用。
+ * 实测东财 push2his 的 begin 参数会被忽略（返回 end 之前的全历史，受 lmt 2000 限制），
+ * 因此这里按 [begin, end] 做一次客户端过滤，确保只返回目标区间。
+ */
+export async function fetchKlineRange(
+  thscode: string,
+  begin: string,
+  end: string,
+): Promise<{ bars: MarketKlineBar[]; source: "eastmoney" }> {
+  const bars = await fetchEastmoneyKlineRange(thscode, begin, end);
+  return {
+    bars: bars.filter((b) => b.date >= begin && b.date <= end),
+    source: "eastmoney",
+  };
+}
+
+/**
  * 同花顺历史日 K（优先数据源）— 无 key 返回空数组（自动回退东财）
  * URL/字段同步自 hithink.ts getKline（/api/a-share/prices/historical，date_ms 按北京时间格式化）
  */

@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as echarts from "echarts";
 import type { BacktestResponse } from "@/lib/api";
+import { fetchKlineRange, type MarketKlineBar } from "@/lib/market-data";
 import AppIconRail from "./AppIconRail";
 
 const REPORT_LABEL: Record<string, string> = { 1: "一季报", 2: "中报", 3: "三季报" };
@@ -19,22 +20,142 @@ const signColor = (v: number) =>
 const scoreColor = (s: number) =>
   s >= 7.5 ? "var(--accent-success)" : s >= 5.5 ? "var(--accent-warning)" : "var(--text-primary)";
 
-// ===== 净值曲线（组合 vs 基准） =====
-function NavChart({ nav }: { nav: BacktestResponse["nav"] }) {
+/** 调仓日 → 图表 x 轴上第一个 ≥ period 的交易日（真实建仓执行日，period 当天可能是周末） */
+function execDateFor(dates: string[], period: string): string {
+  return dates.find((d) => d >= period) ?? dates[dates.length - 1]!;
+}
+
+/** 由图表 x 轴日期 → 持仓期 index（execDates[k] ≤ date < execDates[k+1]，无归属返回 -1） */
+function periodIndexFor(execDates: string[], date: string): number {
+  let k = -1;
+  for (let j = 0; j < execDates.length; j++) if (execDates[j]! <= date) k = j;
+  return k;
+}
+
+/** 日期平移（用于个股 K 线拉取时扩边上下文） */
+function shiftDate(date: string, days: number): string {
+  const d = new Date(`${date}T00:00:00+08:00`);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+// ===== 图表公共：调仓 markLine + 选中期 markArea =====
+
+/** 调仓日 markLine 配置（金色虚线，x 轴为执行日） */
+function mkRebalanceMarkLine(execDates: string[], periods: string[]) {
+  return {
+    symbol: "none" as const,
+    label: {
+      show: true,
+      position: "insideEndTop" as const,
+      color: "#f2c14e",
+      fontSize: 10,
+      formatter: (p: { dataIndex?: number; value?: number | string }) => {
+        const i = typeof p.dataIndex === "number" ? p.dataIndex : -1;
+        return i >= 0 ? `调仓 ${periods[i] ?? ""}` : "调仓";
+      },
+    },
+    lineStyle: { color: "rgba(242,193,78,0.75)", type: "dashed" as const, width: 1 },
+    data: execDates.map((d, i) => ({ xAxis: d, name: `调仓 ${periods[i] ?? ""}` })),
+  };
+}
+
+/** 选中持仓期 markArea 配置（半透明金色背景）；activeIdx < 0 为空 */
+function mkPeriodMarkArea(execDates: string[], activeIdx: number) {
+  if (activeIdx < 0 || activeIdx >= execDates.length) return { data: [] as unknown[] };
+  const start = execDates[activeIdx]!;
+  const end = execDates[activeIdx + 1] ?? execDates[execDates.length - 1]!;
+  return {
+    data: [[{ xAxis: start }, { xAxis: end }]],
+    itemStyle: { color: "rgba(242,193,78,0.10)" },
+  };
+}
+
+/** tooltip 持仓明细 HTML：显示该日所属持仓期 + 持仓列表（代码/名称/权重） */
+function periodTooltipHtml(
+  date: string,
+  topLines: string[],
+  execDates: string[],
+  holdings: BacktestResponse["holdings"],
+): string {
+  const k = periodIndexFor(execDates, date);
+  const parts = [...topLines];
+  if (k >= 0 && holdings[k]) {
+    const h = holdings[k]!;
+    const meta = [
+      `调仓 ${h.period}`,
+      reportLabel(h.report),
+      h.trend ? `趋势 ${h.trend}` : null,
+      `换手 ${h.turnoverPct}%`,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+    parts.push(`<div style="margin-top:6px;color:#f2c14e;font-size:11px">持仓期 · ${meta}</div>`);
+    parts.push(
+      `<table style="width:100%;border-collapse:collapse;margin-top:4px;font-size:11px">` +
+        h.weights
+          .map(
+            (w) =>
+              `<tr><td style="padding:1px 8px 1px 0;color:#a1a1a1;font-family:JetBrains Mono,Consolas,monospace">${w.thscode}</td>` +
+              `<td style="padding:1px 8px 1px 0;color:#e5e5e5;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${w.name}</td>` +
+              `<td style="padding:1px 0;text-align:right;color:#f2c14e;font-family:JetBrains Mono,Consolas,monospace">${w.weight.toFixed(1)}%</td></tr>`,
+          )
+          .join("") +
+        `</table>`,
+    );
+  }
+  return parts.join("");
+}
+
+// ===== 净值曲线（组合 vs 基准 + 调仓标记 + 区间高亮 + 悬浮持仓） =====
+function NavChart({
+  nav,
+  holdings,
+  execDates,
+  activeIdx,
+  onSelectPeriod,
+}: {
+  nav: BacktestResponse["nav"];
+  holdings: BacktestResponse["holdings"];
+  execDates: string[];
+  activeIdx: number;
+  onSelectPeriod: (idx: number) => void;
+}) {
   const ref = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<echarts.ECharts | null>(null);
 
   useEffect(() => {
     if (!ref.current) return;
     const chart = echarts.init(ref.current);
+    chartRef.current = chart;
     chart.setOption({
       backgroundColor: "transparent",
       animation: false,
       tooltip: {
         trigger: "axis",
-        valueFormatter: (v: unknown) => (typeof v === "number" ? v.toFixed(4) : String(v)),
-        backgroundColor: "rgba(17,17,17,0.96)",
+        backgroundColor: "rgba(17,17,17,0.97)",
         borderColor: "#333333",
         textStyle: { color: "#f5f5f5" },
+        extraCssText: "max-width:360px;box-shadow:none;",
+        formatter: (params: unknown) => {
+          const p = (Array.isArray(params) ? params[0] : params) as { axisValue?: string; dataIndex?: number };
+          const date = p.axisValue ?? nav.dates[p.dataIndex ?? 0] ?? "";
+          const i = p.dataIndex ?? 0;
+          const pv = nav.portfolio[i];
+          const bv = nav.benchmark[i];
+          return periodTooltipHtml(
+            date,
+            [
+              `<div style="font-weight:600">${date}</div>`,
+              `<div style="margin-top:2px;color:#f2c14e">组合 <b>${pv?.toFixed(4) ?? "—"}</b>` +
+                `<span style="color:#8a8a8a">（${i > 0 ? fmtPct(pv / nav.portfolio[i - 1]! - 1) : "—"}）</span></div>`,
+              `<div style="color:#94a3b8">基准 <b>${bv?.toFixed(4) ?? "—"}</b>` +
+                `<span style="color:#8a8a8a">（${i > 0 ? fmtPct(bv / nav.benchmark[i - 1]! - 1) : "—"}）</span></div>`,
+            ],
+            execDates,
+            holdings,
+          );
+        },
       },
       legend: {
         data: ["组合净值", "沪深300"],
@@ -67,6 +188,8 @@ function NavChart({ nav }: { nav: BacktestResponse["nav"] }) {
           lineStyle: { color: "#f2c14e", width: 2 },
           itemStyle: { color: "#f2c14e" },
           areaStyle: { color: "rgba(242,193,78,0.08)" },
+          markLine: mkRebalanceMarkLine(execDates, holdings.map((h) => h.period)),
+          markArea: mkPeriodMarkArea(execDates, activeIdx),
         },
         {
           name: "沪深300",
@@ -78,24 +201,60 @@ function NavChart({ nav }: { nav: BacktestResponse["nav"] }) {
         },
       ],
     });
+    chart.on("click", (params) => {
+      const p = params as { componentType?: string; dataIndex?: number; data?: { xAxis?: string } };
+      let date: string | undefined;
+      if (p.componentType === "markLine") {
+        date = p.data?.xAxis;
+      } else if (typeof p.dataIndex === "number") {
+        date = nav.dates[p.dataIndex];
+      }
+      if (date) {
+        const k = periodIndexFor(execDates, date);
+        if (k >= 0) onSelectPeriod(k);
+      }
+    });
     const ro = new ResizeObserver(() => chart.resize());
     ro.observe(ref.current);
     return () => {
       ro.disconnect();
       chart.dispose();
+      chartRef.current = null;
     };
-  }, [nav]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nav, execDates]);
+
+  // 选中期变化 → 仅更新 markArea（不重建图表）
+  useEffect(() => {
+    chartRef.current?.setOption({
+      series: [{ name: "组合净值", markArea: mkPeriodMarkArea(execDates, activeIdx) }],
+    });
+  }, [activeIdx, execDates]);
 
   return <div ref={ref} className="chart-container" />;
 }
 
-// ===== 模拟指数日K（蜡烛图 + 成交量） =====
-function IndexKlineChart({ bars }: { bars: BacktestResponse["kline"] }) {
+// ===== 模拟指数日K（蜡烛图 + 成交量 + 调仓标记 + 区间高亮 + 悬浮持仓） =====
+function IndexKlineChart({
+  bars,
+  holdings,
+  execDates,
+  activeIdx,
+  onSelectPeriod,
+}: {
+  bars: BacktestResponse["kline"];
+  holdings: BacktestResponse["holdings"];
+  execDates: string[];
+  activeIdx: number;
+  onSelectPeriod: (idx: number) => void;
+}) {
   const ref = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<echarts.ECharts | null>(null);
 
   useEffect(() => {
     if (!ref.current) return;
     const chart = echarts.init(ref.current);
+    chartRef.current = chart;
     const dates = bars.map((b) => b.date);
     const kline = bars.map((b) => [b.open, b.close, b.low, b.high]);
     const volumes = bars.map((b) => b.volume);
@@ -105,9 +264,25 @@ function IndexKlineChart({ bars }: { bars: BacktestResponse["kline"] }) {
       tooltip: {
         trigger: "axis",
         axisPointer: { type: "cross" },
-        backgroundColor: "rgba(17,17,17,0.96)",
+        backgroundColor: "rgba(17,17,17,0.97)",
         borderColor: "#333333",
         textStyle: { color: "#f5f5f5" },
+        extraCssText: "max-width:360px;box-shadow:none;",
+        formatter: (params: unknown) => {
+          const p = (Array.isArray(params) ? params[0] : params) as { axisValue?: string; dataIndex?: number };
+          const date = p.axisValue ?? dates[p.dataIndex ?? 0] ?? "";
+          const i = p.dataIndex ?? 0;
+          const b = bars[i];
+          return periodTooltipHtml(
+            date,
+            [
+              `<div style="font-weight:600">${date}</div>`,
+              `<div style="margin-top:2px;color:#f2c14e">点位 <b>${b ? b.close.toFixed(2) : "—"}</b></div>`,
+            ],
+            execDates,
+            holdings,
+          );
+        },
       },
       legend: {
         data: ["指数K线", "成交量"],
@@ -140,6 +315,142 @@ function IndexKlineChart({ bars }: { bars: BacktestResponse["kline"] }) {
           type: "candlestick",
           data: kline,
           itemStyle: { color: "#ef4444", color0: "#22c55e", borderColor: "#ef4444", borderColor0: "#22c55e" },
+          markLine: mkRebalanceMarkLine(execDates, holdings.map((h) => h.period)),
+          markArea: mkPeriodMarkArea(execDates, activeIdx),
+        },
+        {
+          name: "成交量",
+          type: "bar",
+          xAxisIndex: 1,
+          yAxisIndex: 1,
+          data: volumes,
+          itemStyle: { color: "rgba(242,193,78,0.5)" },
+        },
+      ],
+    });
+    chart.on("click", (params) => {
+      const p = params as { componentType?: string; dataIndex?: number; data?: { xAxis?: string } };
+      let date: string | undefined;
+      if (p.componentType === "markLine") {
+        date = p.data?.xAxis;
+      } else if (typeof p.dataIndex === "number") {
+        date = dates[p.dataIndex];
+      }
+      if (date) {
+        const k = periodIndexFor(execDates, date);
+        if (k >= 0) onSelectPeriod(k);
+      }
+    });
+    const ro = new ResizeObserver(() => chart.resize());
+    ro.observe(ref.current);
+    return () => {
+      ro.disconnect();
+      chart.dispose();
+      chartRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bars, execDates]);
+
+  // 选中期变化 → 仅更新 markArea
+  useEffect(() => {
+    chartRef.current?.setOption({
+      series: [{ name: "指数K线", markArea: mkPeriodMarkArea(execDates, activeIdx) }],
+    });
+  }, [activeIdx, execDates]);
+
+  return <div ref={ref} className="chart-container" />;
+}
+
+// ===== 个股区间 K 线卡片（点击持仓个股后展开） =====
+function StockKlineCard({
+  stock,
+  onClose,
+}: {
+  stock: { thscode: string; name: string; period: string; nextPeriod: string | null };
+  onClose: () => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [state, setState] = useState<{ bars: MarketKlineBar[]; error: string | null }>({ bars: [], error: null });
+
+  useEffect(() => {
+    let alive = true;
+    setState({ bars: [], error: null });
+    // 区间前后各扩 25 个自然日作上下文（调仓日/止盈日标记得以呈现）
+    const begin = shiftDate(stock.period, -25);
+    const end = stock.nextPeriod ? shiftDate(stock.nextPeriod, 25) : "2050-01-01";
+    fetchKlineRange(stock.thscode, begin, end)
+      .then(({ bars }) => {
+        if (alive) {
+          setState({
+            bars,
+            error: bars.length === 0 ? "该区间无 K 线数据（可能尚未上市 / 长期停牌 / 已退市）" : null,
+          });
+        }
+      })
+      .catch((e) => {
+        if (alive) setState({ bars: [], error: `K 线加载失败：${e?.message ?? String(e)}` });
+      });
+    return () => {
+      alive = false;
+    };
+  }, [stock.thscode, stock.period, stock.nextPeriod]);
+
+  useEffect(() => {
+    if (!ref.current || state.bars.length === 0) return;
+    const chart = echarts.init(ref.current);
+    const dates = state.bars.map((b) => b.date);
+    const kline = state.bars.map((b) => [b.open, b.close, b.low, b.high]);
+    const volumes = state.bars.map((b) => b.volume);
+    // 调仓日（period 当天或之后第一根 K 线）标记
+    const mkData = dates.find((d) => d >= stock.period);
+    chart.setOption({
+      backgroundColor: "transparent",
+      animation: false,
+      tooltip: {
+        trigger: "axis",
+        axisPointer: { type: "cross" },
+        backgroundColor: "rgba(17,17,17,0.97)",
+        borderColor: "#333333",
+        textStyle: { color: "#f5f5f5" },
+        valueFormatter: (v: unknown) => (typeof v === "number" ? v.toFixed(2) : String(v)),
+      },
+      legend: {
+        data: ["个股K线", "成交量"],
+        textStyle: { color: "#a1a1a1" },
+        top: 0,
+      },
+      grid: [
+        { left: 64, right: 30, top: 32, height: "56%" },
+        { left: 64, right: 30, top: "72%", height: "16%" },
+      ],
+      xAxis: [
+        { type: "category", data: dates, boundaryGap: true, axisLine: { lineStyle: { color: "#333333" } }, axisLabel: { color: "#666666" } },
+        { type: "category", gridIndex: 1, data: dates, axisLabel: { show: false }, axisLine: { lineStyle: { color: "#333333" } } },
+      ],
+      yAxis: [
+        {
+          scale: true,
+          axisLabel: { color: "#666666", fontFamily: "JetBrains Mono, Consolas, monospace" },
+          splitLine: { lineStyle: { color: "#262626", type: "dashed" } },
+        },
+        { gridIndex: 1, axisLabel: { show: false }, splitLine: { show: false } },
+      ],
+      dataZoom: [
+        { type: "inside", xAxisIndex: [0, 1], start: 0, end: 100 },
+        { type: "slider", xAxisIndex: [0, 1], bottom: 4, start: 0, end: 100, textStyle: { color: "#666666" } },
+      ],
+      series: [
+        {
+          name: "个股K线",
+          type: "candlestick",
+          data: kline,
+          itemStyle: { color: "#ef4444", color0: "#22c55e", borderColor: "#ef4444", borderColor0: "#22c55e" },
+          markLine: {
+            symbol: "none",
+            label: { show: true, position: "insideEndTop", color: "#f2c14e", fontSize: 10, formatter: `调仓 ${stock.period}` },
+            lineStyle: { color: "rgba(242,193,78,0.85)", type: "dashed", width: 1.5 },
+            data: mkData ? [{ xAxis: mkData }] : [],
+          },
         },
         {
           name: "成交量",
@@ -157,9 +468,51 @@ function IndexKlineChart({ bars }: { bars: BacktestResponse["kline"] }) {
       ro.disconnect();
       chart.dispose();
     };
-  }, [bars]);
+  }, [state.bars, stock]);
 
-  return <div ref={ref} className="chart-container" />;
+  const first = state.bars[0];
+  const last = state.bars[state.bars.length - 1];
+  const periodRet = first && last ? last.close / first.close - 1 : null;
+  const periodHigh = state.bars.length > 0 ? Math.max(...state.bars.map((b) => b.high)) : null;
+  const periodLow = state.bars.length > 0 ? Math.min(...state.bars.map((b) => b.low)) : null;
+
+  return (
+    <div className="mt-4 border border-[var(--border-default)] bg-[var(--bg-elevated)] p-3">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <div className="text-sm">
+          <span className="co-code">{stock.thscode}</span>{" "}
+          <span className="co-name">{stock.name}</span>
+          <span className="ml-2 text-xs text-[var(--text-secondary)]">
+            持仓期 {stock.period} → {stock.nextPeriod ?? "至今"}
+          </span>
+          {periodRet !== null && (
+            <span className="ml-2 text-xs font-mono" style={{ color: signColor(periodRet) }}>
+              区间 {fmtPct(periodRet)}
+            </span>
+          )}
+          {periodHigh != null && periodLow != null && (
+            <span className="ml-2 text-xs font-mono text-[var(--text-secondary)]">
+              高 {periodHigh.toFixed(2)} / 低 {periodLow.toFixed(2)}
+            </span>
+          )}
+        </div>
+        <button
+          onClick={onClose}
+          className="border border-[var(--border-default)] px-2 py-0.5 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+        >
+          关闭
+        </button>
+      </div>
+      {state.error ? (
+        <div className="py-6 text-center text-xs text-[var(--accent-warning)]">{state.error}</div>
+      ) : state.bars.length === 0 ? (
+        <div className="py-6 text-center text-xs text-[var(--text-muted)]">加载 K 线…</div>
+      ) : (
+        <div ref={ref} className="chart-container" />
+      )}
+      <div className="chart-source">前复权日K（东财）· 虚线为调仓日 · 区间已前后扩 25 个自然日作上下文</div>
+    </div>
+  );
 }
 
 // ===== 统计卡片 =====
@@ -178,8 +531,20 @@ function StatCard({ label, value, color, hint }: { label: string; value: string;
 // ===== 主看板 =====
 export default function BacktestDashboard({ initial }: { initial: BacktestResponse | null }) {
   const [activeIdx, setActiveIdx] = useState(0);
+  const [selectedStock, setSelectedStock] = useState<{
+    thscode: string;
+    name: string;
+    period: string;
+    nextPeriod: string | null;
+  } | null>(null);
   const data = initial;
   const isMock = data?.meta.dataSource === "mock";
+
+  // 调仓执行日（图表 x 轴上的实际建仓日）
+  const execDates = useMemo(
+    () => (data ? data.holdings.map((h) => execDateFor(data.nav.dates, h.period)) : []),
+    [data],
+  );
 
   return (
     <div className="flex h-dvh min-w-0 w-full overflow-hidden">
@@ -232,17 +597,29 @@ export default function BacktestDashboard({ initial }: { initial: BacktestRespon
               {/* ===== 净值曲线 ===== */}
               <div className="card">
                 <h3>净值曲线 · 组合 vs {data.meta.benchmark}</h3>
-                <NavChart nav={data.nav} />
+                <NavChart
+                  nav={data.nav}
+                  holdings={data.holdings}
+                  execDates={execDates}
+                  activeIdx={activeIdx}
+                  onSelectPeriod={setActiveIdx}
+                />
                 <div className="chart-source">
-                  以调仓日收盘价建仓、下一交易日收盘价执行 · 分红再投资 · 等权 Top10
+                  虚线 = 调仓执行日（点击图表任一点可选中对应持仓期）· 悬浮查看当日持仓 · 买入持有（份额×后复权价 + 现金）· 分红再投资
                 </div>
               </div>
 
               {/* ===== 模拟指数日K ===== */}
               <div className="card">
                 <h3>模拟指数日K（由组合收益构建点位）</h3>
-                <IndexKlineChart bars={data.kline} />
-                <div className="chart-source">模拟指数点位 = 1000 × 组合净值 · 成交量按当日波动放大（示意）</div>
+                <IndexKlineChart
+                  bars={data.kline}
+                  holdings={data.holdings}
+                  execDates={execDates}
+                  activeIdx={activeIdx}
+                  onSelectPeriod={setActiveIdx}
+                />
+                <div className="chart-source">模拟指数点位 = 1000 × 组合净值 · 成交量按当日波动放大（示意）· 点击图表选中持仓期后下方明细同步高亮</div>
               </div>
 
               {/* ===== 持仓与调仓明细 ===== */}
@@ -271,6 +648,9 @@ export default function BacktestDashboard({ initial }: { initial: BacktestRespon
                       调仓日 {data.holdings[activeIdx]!.period} · 依据报告期{" "}
                       <span className="font-mono">{data.holdings[activeIdx]!.report}</span>（
                       {reportLabel(data.holdings[activeIdx]!.report)}）
+                      {data.holdings[activeIdx]!.trend && (
+                        <> · 趋势 {data.holdings[activeIdx]!.trend}</>
+                      )}
                       {data.holdings[activeIdx]!.nextPeriod && (
                         <> · 持有至 {data.holdings[activeIdx]!.nextPeriod}</>
                       )}
@@ -289,14 +669,29 @@ export default function BacktestDashboard({ initial }: { initial: BacktestRespon
                         </thead>
                         <tbody>
                           {data.holdings[activeIdx]!.weights.map((w) => (
-                            <tr key={w.thscode} className="border-b border-[var(--border-subtle)]">
+                            <tr
+                              key={w.thscode}
+                              onClick={() =>
+                                setSelectedStock({
+                                  thscode: w.thscode,
+                                  name: w.name,
+                                  period: data.holdings[activeIdx]!.period,
+                                  nextPeriod: data.holdings[activeIdx]!.nextPeriod,
+                                })
+                              }
+                              className={`cursor-pointer border-b border-[var(--border-subtle)] transition-colors ${
+                                selectedStock?.thscode === w.thscode && selectedStock?.period === data.holdings[activeIdx]!.period
+                                  ? "bg-[rgba(242,193,78,0.12)]"
+                                  : "hover:bg-[rgba(242,193,78,0.06)]"
+                              }`}
+                            >
                               <td className="py-2 pr-4">
                                 <span className="co-code">{w.thscode}</span>
                               </td>
                               <td className="py-2 pr-4">
                                 <span className="co-name">{w.name}</span>
                               </td>
-                              <td className="py-2 pr-4 text-[var(--text-secondary)]">{w.industry}</td>
+                              <td className="py-2 pr-4 text-[var(--text-secondary)]">{w.industry ?? "—"}</td>
                               <td className="py-2 pr-4 text-right font-mono text-[var(--text-primary)]">
                                 {w.weight.toFixed(1)}%
                               </td>
@@ -313,6 +708,12 @@ export default function BacktestDashboard({ initial }: { initial: BacktestRespon
                         </tbody>
                       </table>
                     </div>
+                    <div className="mt-2 text-[10px] text-[var(--text-muted)]">点击持仓行展开该股在持仓期的 K 线走势</div>
+
+                    {/* ===== 个股区间 K 线 ===== */}
+                    {selectedStock && selectedStock.period === data.holdings[activeIdx]!.period && (
+                      <StockKlineCard stock={selectedStock} onClose={() => setSelectedStock(null)} />
+                    )}
                   </div>
                 )}
               </div>

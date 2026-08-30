@@ -247,21 +247,13 @@ async function computeReturns(
   // 每期执行日（asof 下一交易日）
   const execDates = holdings.map((h) => nextTradeDate(tradingDates, h.period));
 
-  // 止盈状态：每期一个 Map，记录每只股票的入场后复权价 + 是否已止盈 + 当前权重
-  //   触及 +50% 目标 → 减仓 50%（curWeight = origWeight / 2），剩余持有至下次调仓
+  // 真实买入持有状态：
+  //   periodShares[k] — 第 k 期各股票份额（份额固定，权重随价格自然漂移）
+  //   periodState[k]  — 第 k 期各股票入场后复权价 + 是否已止盈（触发止盈卖出 50% 份额转现金）
+  const periodShares = holdings.map(() => new Map<string, number>());
   const periodState = holdings.map((h) => {
-    const m = new Map<
-      string,
-      { entryAdj: number | null; stopped: boolean; origWeight: number; curWeight: number }
-    >();
-    for (const p of h.picks) {
-      m.set(p.thscode, {
-        entryAdj: null,
-        stopped: false,
-        origWeight: p.weight,
-        curWeight: p.weight,
-      });
-    }
+    const m = new Map<string, { entryAdj: number | null; stopped: boolean }>();
+    for (const p of h.picks) m.set(p.thscode, { entryAdj: null, stopped: false });
     return m;
   });
 
@@ -272,54 +264,84 @@ async function computeReturns(
   portfolio[0] = 1;
   benchmark[0] = 1;
 
+  let cash = 1.0; // 期初全部现金（首个调仓日前持有现金）
   let prevBench = benchMap.get(dates[0]) ?? null;
   for (let i = 1; i < n; i++) {
     const t = dates[i]!;
-    const tp = dates[i - 1]!;
 
     // 当前持仓期：execDates 中最后一个 ≤ t 的期
     let k = -1;
     for (let j = 0; j < execDates.length; j++) if (execDates[j] && execDates[j]! <= t) k = j;
 
-    // 组合日收益：按 curWeight 加权（分数加权 + 趋势过滤总仓位 + 止盈减仓）
-    //   停牌/缺失数据 → 该 weight 部分视为现金（收益0），不重分配
-    let r = 0;
     if (k >= 0) {
       const picks = holdings[k]!.picks;
+      const shares = periodShares[k]!;
       const state = periodState[k]!;
 
-      // 在 execDate 当天初始化入场后复权价（用于后续止盈判断）
+      // 调仓日：清仓上期持仓 → 全部现金 → 按权重买入本期（份额 = 分配资金 / 当日后复权价）
+      //   此后每只份额固定，权重随价格自然漂移（涨的股票权重自动变大，跌的自动变小）
       if (t === execDates[k]) {
+        if (k > 0) {
+          for (const [code, sh] of periodShares[k - 1]!) {
+            if (sh <= 0) continue;
+            const s = adjMap.get(code);
+            if (!s) continue;
+            const px = valueAt(s.dates, s.values, t);
+            if (px) cash += sh * px;
+          }
+        }
+        // 注意：分配基准必须是买入前总资金 totalCash（cash 在循环内递减，若直接用会
+        //   导致前几只股票超配、后几只资金不足、剩余资金滞留现金）
+        const totalCash = cash;
+        let allocated = 0;
         for (const p of picks) {
           const s = adjMap.get(p.thscode);
           if (!s) continue;
-          const entryAdj = valueAt(s.dates, s.values, t);
-          if (entryAdj) state.get(p.thscode)!.entryAdj = entryAdj;
+          const px = valueAt(s.dates, s.values, t);
+          if (!px || px <= 0) continue; // 停牌缺价 → 资金留现金
+          const alloc = totalCash * (p.weight / 100);
+          if (alloc <= 0) continue;
+          shares.set(p.thscode, alloc / px);
+          state.get(p.thscode)!.entryAdj = px;
+          allocated += alloc;
         }
+        cash = totalCash - allocated;
       }
 
-      // 日频止盈检查 + 收益计算
+      // 日频止盈检查：涨幅 ≥ TAKE_PROFIT_THRESHOLD → 卖出 50% 份额转现金（锁利部分不再参与收益）
       for (const p of picks) {
         const s = adjMap.get(p.thscode);
         if (!s) continue;
-        const a0 = valueAt(s.dates, s.values, tp);
-        const a1 = valueAt(s.dates, s.values, t);
-        if (!a0 || !a1 || a0 <= 0) continue;
-
+        const sh = shares.get(p.thscode);
+        if (!sh || sh <= 0) continue;
+        const px = valueAt(s.dates, s.values, t);
+        if (!px || px <= 0) continue;
         const st = state.get(p.thscode);
-        // 止盈：涨幅 >= TAKE_PROFIT_THRESHOLD（相对入场后复权价）且未止盈 → 减仓 50% 锁利
-        if (st && !st.stopped && st.entryAdj && a1 / st.entryAdj - 1 >= TAKE_PROFIT_THRESHOLD) {
+        if (st && !st.stopped && st.entryAdj && px / st.entryAdj - 1 >= TAKE_PROFIT_THRESHOLD) {
+          const sellSh = sh * 0.5;
+          cash += sellSh * px;
+          shares.set(p.thscode, sh * 0.5);
           st.stopped = true;
-          st.curWeight = st.origWeight / 2;
           console.log(
-            `  [止盈] ${p.thscode} @ ${t} 涨幅 ${((a1 / st.entryAdj - 1) * 100).toFixed(1)}% → 减仓至 ${st.curWeight.toFixed(2)}%`,
+            `  [止盈] ${p.thscode} @ ${t} 涨幅 ${((px / st.entryAdj - 1) * 100).toFixed(1)}% → 卖出 50% 份额`,
           );
         }
-        const w = st ? st.curWeight : p.weight;
-        r += (a1 / a0 - 1) * (w / 100);
       }
+
+      // 组合净值 = Σ 份额 × 当日后复权价 + 现金
+      let value = cash;
+      for (const p of picks) {
+        const s = adjMap.get(p.thscode);
+        if (!s) continue;
+        const sh = shares.get(p.thscode);
+        if (!sh || sh <= 0) continue;
+        const px = valueAt(s.dates, s.values, t);
+        if (px) value += sh * px;
+      }
+      portfolio[i] = value;
+    } else {
+      portfolio[i] = portfolio[i - 1]!; // 首个调仓日前：纯现金 1.0
     }
-    portfolio[i] = portfolio[i - 1]! * (1 + r);
 
     // 基准日收益
     const bv = benchMap.get(t) ?? prevBench;

@@ -457,10 +457,11 @@ export interface BacktestStats {
 export interface BacktestHoldingWeight {
   thscode: string;
   name: string;
-  industry: string;
+  industry: string | null;
   weight: number; // 权重（%）
   score: number; // 综合分
   pool: "明星池" | "观察池";
+  targetPrice?: number | null; // 止盈目标价（买入价 × 1.8）
 }
 
 export interface BacktestHoldingPeriod {
@@ -468,6 +469,7 @@ export interface BacktestHoldingPeriod {
   report: string; // 对应报告期 YYYY-N
   nextPeriod: string | null;
   turnoverPct: number;
+  trend?: string; // 趋势档位（引擎产出，如「多头→满仓」）
   weights: BacktestHoldingWeight[];
 }
 
