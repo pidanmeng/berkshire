@@ -36,6 +36,8 @@ import { parseIndicatorsYear, assignPool } from "../screener/screen.ts";
 const ROOT = process.cwd();
 const OUT_DIR = resolve(ROOT, "Research", "00-Workspace", "08-Backtest");
 const CACHE_DIR = join(OUT_DIR, "cache");
+const INDUSTRY_CACHE_FILE = join(CACHE_DIR, "industry-map.json");
+const INDUSTRY_CACHE_TTL = 7 * 86400000; // 行业分类相对稳定，缓存 7 天
 const CHUNK = 100;
 const RETRY = 3;
 const ST_RE = /ST|退/;
@@ -85,6 +87,34 @@ interface CacheRow {
   raw: Record<string, Record<string, string | null>>;
   prevRaw: Record<string, Record<string, string | null>> | null;
   ttmEps: number | null;
+}
+
+/** 行业映射缓存：避免每期回测都重新拉取全市场行业（5 市场 × 多页 × 3 重试）
+ *  命中且 < TTL → 直接用；否则重新拉取并写入 */
+async function getIndustryMapCached(): Promise<Map<string, string>> {
+  try {
+    if (existsSync(INDUSTRY_CACHE_FILE)) {
+      const st = (await import("node:fs")).statSync(INDUSTRY_CACHE_FILE);
+      if (Date.now() - st.mtimeMs < INDUSTRY_CACHE_TTL) {
+        const obj = JSON.parse(readFileSync(INDUSTRY_CACHE_FILE, "utf-8")) as Record<string, string>;
+        const m = new Map<string, string>();
+        for (const [k, v] of Object.entries(obj)) if (v) m.set(k, v);
+        console.log(`  行业映射缓存命中 ${m.size} 条（${new Date(st.mtimeMs).toLocaleDateString("zh-CN")}）`);
+        return m;
+      }
+    }
+  } catch {
+    /* 缓存损坏 → 重新拉取 */
+  }
+  const fresh = await getIndustryMapFromClist();
+  try {
+    const obj: Record<string, string> = {};
+    for (const [k, v] of fresh) obj[k] = v;
+    writeFileSync(INDUSTRY_CACHE_FILE, JSON.stringify(obj), "utf-8");
+  } catch {
+    /* 缓存写入失败 → 不影响主流程 */
+  }
+  return fresh;
 }
 
 function loadCache(file: string): Map<string, CacheRow> {
@@ -160,7 +190,7 @@ export async function runHistoricalScreen(opts: HistoricalScreenOpts): Promise<S
       //   进程内 getIndustryMapFromClist 带 3 次重试，能拿到部分行业（~2000-5000 条）。
       //   行业映射不完整时，buildPortfolio 降级：无行业不占配额 + 上限 3 只（确保能选出 10 只）。
       console.log(`  clist 拉全市场行业（f100，5 个市场分页，3 次重试）...`);
-      const industryMap = await getIndustryMapFromClist();
+      const industryMap = await getIndustryMapCached();
       console.log(`  行业映射 ${industryMap.size} 条${industryMap.size < 4000 ? '（不完整，buildPortfolio 将降级）' : ''}`);
       const emChunks: string[][] = [];
       for (let i = 0; i < tickers.length; i += CHUNK) emChunks.push(tickers.slice(i, i + CHUNK).map((t) => t.thscode));

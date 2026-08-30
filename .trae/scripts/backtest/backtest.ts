@@ -22,10 +22,10 @@
 import { parseArgs } from "util";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { getIndexKlineFromTencent } from "../hithink/hithink.ts";
+import { getIndexKlineFromTencent, getIndicatorsRaw } from "../hithink/hithink.ts";
 import { openMarketDb, type MarketDb } from "./market-db.ts";
 import { runHistoricalScreen } from "./screen-historical.ts";
-import type { ScreenRow } from "../screener/screen.ts";
+import { parseIndicatorsYear, type ScreenRow } from "../screener/screen.ts";
 
 const ROOT = process.cwd();
 const OUT_DIR = resolve(ROOT, "Research", "00-Workspace", "08-Backtest");
@@ -71,6 +71,7 @@ function buildPortfolio(
   maxPerIndustry: number,
   maxNoIndustry = 3,
 ): ScreenRow[] {
+  if (topN <= 0) return []; // 双空头空仓：直接返回空，不选股
   const cands = [...screener.pools.star, ...screener.pools.watch].sort(
     (a, b) => b.overallScore - a.overallScore,
   );
@@ -93,6 +94,47 @@ function buildPortfolio(
   }
   if (noIndustryCount > 0) console.log(`  [buildPortfolio] 无行业候选 ${noIndustryCount} 只（不占配额，上限 ${maxNoIndustry}）`);
   return picks;
+}
+
+/** 成长放缓检测：拉取同期前 2 年 indicators，比较 3 期营收/净利增速趋势
+ *  「纸面高增长」识别：当期增速好看，但连续 2 年下行 → 成长斜率放缓，降权处理
+ *  判定（以营收为主、净利为辅，任一满足即判定）：
+ *    放缓：连续 2 次下行（g0 < g1 < g2）
+ *    加速：连续 2 次上行（g0 > g1 > g2）
+ *    平稳：其他
+ *    数据不足：缺期或增速为 null
+ *  注意：同比比较需同期数据（Q1 vs Q1，年报 vs 年报） */
+async function detectGrowthSlowdown(
+  thscode: string,
+  currentReport: string,
+  currentRevenueYoy: number | null,
+  currentNetProfitYoy: number | null,
+): Promise<"加速" | "平稳" | "放缓" | "数据不足"> {
+  if (currentRevenueYoy === null && currentNetProfitYoy === null) return "数据不足";
+  const [y, q] = currentReport.split("-").map(Number);
+  const prevReports = [`${y - 1}-${q}`, `${y - 2}-${q}`];
+  const prevData = await Promise.all(
+    prevReports.map(async (r) => {
+      try {
+        const raw = await getIndicatorsRaw(thscode, r);
+        return parseIndicatorsYear(raw);
+      } catch {
+        return null;
+      }
+    }),
+  );
+  const trend = (g0: number | null, g1: number | null, g2: number | null): "加速" | "放缓" | "未知" => {
+    if (g0 === null || g1 === null || g2 === null) return "未知";
+    if (g0 < g1 && g1 < g2) return "放缓";
+    if (g0 > g1 && g1 > g2) return "加速";
+    return "未知";
+  };
+  const revTrend = trend(currentRevenueYoy, prevData[0]?.revenueYoy ?? null, prevData[1]?.revenueYoy ?? null);
+  const npTrend = trend(currentNetProfitYoy, prevData[0]?.netProfitYoy ?? null, prevData[1]?.netProfitYoy ?? null);
+  if (revTrend === "放缓" || npTrend === "放缓") return "放缓";
+  if (revTrend === "加速" || npTrend === "加速") return "加速";
+  if (revTrend === "未知" && npTrend === "未知") return "数据不足";
+  return "平稳";
 }
 
 // ==================== 收益计算 ====================
@@ -141,22 +183,38 @@ async function fetchBenchmarkMap(benchmarkCode: string, startDate: string, endDa
   return new Map();
 }
 
-/** 趋势过滤：收盘价 vs MA200（A股经典风控指标）
- *  多头（close > MA200）→ 正常持仓；空头（close < MA200）→ 半仓规避大跌
- *  数据不足（< maDays）默认多头（不阻断早期建仓） */
-function isBullTrend(benchMap: Map<string, number>, date: string, maDays = 200): boolean {
+/** 趋势过滤：收盘价 vs MA200（长周期）+ MA20（短周期）四档风控
+ *  A股经典风控：长周期判多空，短周期判加速/反弹
+ *    多头   close > MA200 且 close > MA20 → 满仓 10 只
+ *    回调   close > MA200 且 close < MA20 → 5 只（短期走弱减仓）
+ *    空头   close < MA200 且 close > MA20 → 3 只（长期走弱但短期反弹，轻仓）
+ *    双空头 close < MA200 且 close < MA20 → 0 只（空仓规避大跌）
+ *  数据不足（< maLong）默认多头（不阻断早期建仓） */
+type TrendLevel = { targetN: number; label: string; bull: boolean };
+function getTrendLevel(benchMap: Map<string, number>, date: string, maLong = 200, maShort = 20): TrendLevel {
   const dates = [...benchMap.keys()].filter((d) => d <= date).sort();
-  if (dates.length < maDays) return true;
-  const recent = dates.slice(-maDays);
-  const ma = recent.reduce((sum, d) => sum + (benchMap.get(d) ?? 0), 0) / maDays;
+  if (dates.length < maLong) return { targetN: 10, label: "数据不足→满仓", bull: true };
   const close = benchMap.get(dates[dates.length - 1]!) ?? 0;
-  return close > ma;
+  const maL = dates.slice(-maLong).reduce((s, d) => s + (benchMap.get(d) ?? 0), 0) / maLong;
+  const maS =
+    dates.length >= maShort
+      ? dates.slice(-maShort).reduce((s, d) => s + (benchMap.get(d) ?? 0), 0) / maShort
+      : maL;
+  const aboveLong = close > maL;
+  const aboveShort = close > maS;
+  if (!aboveLong && !aboveShort) return { targetN: 0, label: "双空头→空仓", bull: false };
+  if (!aboveLong) return { targetN: 3, label: "空头→3成仓", bull: false };
+  if (!aboveShort) return { targetN: 5, label: "回调→5成仓", bull: true };
+  return { targetN: 10, label: "多头→满仓", bull: true };
 }
 
 async function computeReturns(
   db: MarketDb,
   tradingDates: string[],
-  holdings: { period: string; picks: { thscode: string }[] }[],
+  holdings: {
+    period: string;
+    picks: { thscode: string; weight: number; targetPrice?: number | null }[];
+  }[],
   benchMap: Map<string, number>,
 ): Promise<{
   nav: { dates: string[]; portfolio: number[]; benchmark: number[] };
@@ -186,6 +244,24 @@ async function computeReturns(
   // 每期执行日（asof 下一交易日）
   const execDates = holdings.map((h) => nextTradeDate(tradingDates, h.period));
 
+  // 止盈状态：每期一个 Map，记录每只股票的入场后复权价 + 是否已止盈 + 当前权重
+  //   触及 +50% 目标 → 减仓 50%（curWeight = origWeight / 2），剩余持有至下次调仓
+  const periodState = holdings.map((h) => {
+    const m = new Map<
+      string,
+      { entryAdj: number | null; stopped: boolean; origWeight: number; curWeight: number }
+    >();
+    for (const p of h.picks) {
+      m.set(p.thscode, {
+        entryAdj: null,
+        stopped: false,
+        origWeight: p.weight,
+        curWeight: p.weight,
+      });
+    }
+    return m;
+  });
+
   const dates = tradingDates;
   const n = dates.length;
   const portfolio = new Array<number>(n);
@@ -202,20 +278,43 @@ async function computeReturns(
     let k = -1;
     for (let j = 0; j < execDates.length; j++) if (execDates[j] && execDates[j]! <= t) k = j;
 
-    // 组合日收益（固定 10% 权重：满仓 10 只 = 100%，空头半仓 5 只 = 50% 股票 + 50% 现金收益0）
+    // 组合日收益：按 curWeight 加权（分数加权 + 趋势过滤总仓位 + 止盈减仓）
+    //   停牌/缺失数据 → 该 weight 部分视为现金（收益0），不重分配
     let r = 0;
     if (k >= 0) {
       const picks = holdings[k]!.picks;
-      const rs: number[] = [];
+      const state = periodState[k]!;
+
+      // 在 execDate 当天初始化入场后复权价（用于后续止盈判断）
+      if (t === execDates[k]) {
+        for (const p of picks) {
+          const s = adjMap.get(p.thscode);
+          if (!s) continue;
+          const entryAdj = valueAt(s.dates, s.values, t);
+          if (entryAdj) state.get(p.thscode)!.entryAdj = entryAdj;
+        }
+      }
+
+      // 日频止盈检查 + 收益计算
       for (const p of picks) {
         const s = adjMap.get(p.thscode);
         if (!s) continue;
         const a0 = valueAt(s.dates, s.values, tp);
         const a1 = valueAt(s.dates, s.values, t);
-        if (a0 && a1 && a0 > 0) rs.push(a1 / a0 - 1);
+        if (!a0 || !a1 || a0 <= 0) continue;
+
+        const st = state.get(p.thscode);
+        // 止盈：涨幅 >= 50%（相对入场后复权价）且未止盈 → 减仓 50% 锁利
+        if (st && !st.stopped && st.entryAdj && a1 / st.entryAdj - 1 >= 0.5) {
+          st.stopped = true;
+          st.curWeight = st.origWeight / 2;
+          console.log(
+            `  [止盈] ${p.thscode} @ ${t} 涨幅 ${((a1 / st.entryAdj - 1) * 100).toFixed(1)}% → 减仓至 ${st.curWeight.toFixed(2)}%`,
+          );
+        }
+        const w = st ? st.curWeight : p.weight;
+        r += (a1 / a0 - 1) * (w / 100);
       }
-      // 每只固定 10% 权重，不足 10 只部分为现金（收益0），与趋势过滤半仓逻辑对齐
-      if (rs.length > 0) r = rs.reduce((a, b) => a + b, 0) / 10;
     }
     portfolio[i] = portfolio[i - 1]! * (1 + r);
 
@@ -327,8 +426,16 @@ async function main() {
     report: string;
     nextPeriod: string | null;
     turnoverPct: number;
-    trend: "多头" | "空头";
-    weights: { thscode: string; name: string; industry: string | null; weight: number; score: number; pool: "明星池" | "观察池" }[];
+    trend: string;
+    weights: {
+      thscode: string;
+      name: string;
+      industry: string | null;
+      weight: number;
+      score: number;
+      pool: "明星池" | "观察池";
+      targetPrice: number | null;
+    }[];
   }[] = [];
   for (const asof of rebalances) {
     const report = reportFor(asof);
@@ -340,26 +447,60 @@ async function main() {
       smoke,
       concurrency,
     });
-    // 趋势过滤：沪深300收盘价 vs MA200。空头时半仓（TopN 10→5）规避大跌
-    const bull = isBullTrend(benchMap, asof);
-    const topN = bull ? 10 : 5;
-    console.log(`  趋势：${bull ? "多头↑（MA200上方）→ 满仓" : "空头↓（MA200下方）→ 半仓"}`);
+    // 趋势过滤：沪深300 MA200（长周期）+ MA20（短周期）四档风控
+    const tl = getTrendLevel(benchMap, asof);
+    const topN = tl.targetN;
+    console.log(`  趋势：${tl.label}（targetN ${topN}）`);
     const picks = buildPortfolio(screener, topN, 4, 5);
-    console.log(`  → 持仓 ${picks.length} 只（GREEN ${picks.filter((p) => p.verdict === "GREEN").length}）`);
-    picks.forEach((p, i) => console.log(`    ${i + 1}. ${p.name} ${p.thscode} ${p.industry ?? ""} 分 ${p.overallScore.toFixed(1)} PE ${p.peTtm?.toFixed(1) ?? "—"}`));
+    // 成长放缓检测：拉取同期前 2 年增速，连续下行者降分 10%（避免纸面高增长陷阱）
+    //   降分只影响权重分配（分数加权下 → 降权），不剔除持仓
+    const slowdownChecks = await Promise.all(
+      picks.map((p) =>
+        detectGrowthSlowdown(p.thscode, report, p.revenueYoy, p.netProfitYoy).then((t) => ({
+          thscode: p.thscode,
+          trend: t,
+        })),
+      ),
+    );
+    const slowdownMap = new Map(slowdownChecks.map((s) => [s.thscode, s.trend]));
+    const adjustedPicks = picks.map((p) => {
+      const t = slowdownMap.get(p.thscode);
+      return t === "放缓" ? { ...p, overallScore: +(p.overallScore * 0.9).toFixed(2) } : p;
+    });
+    const slowdownCount = slowdownChecks.filter((s) => s.trend === "放缓").length;
+    if (slowdownCount > 0)
+      console.log(
+        `  [成长放缓] ${slowdownCount}/${picks.length} 只增速连续下行 → 降分 10%（${slowdownChecks.filter((s) => s.trend === "放缓").map((s) => s.thscode).join(", ")}）`,
+      );
+    // 分数加权：weight_i = (score_i / sumScores) × totalPositionPct
+    //   totalPositionPct = min(picks.length, 10) × 10（满仓 100%，空头 30%，空仓 0%）
+    const totalScore = adjustedPicks.reduce((s, p) => s + p.overallScore, 0);
+    const totalPositionPct = Math.min(adjustedPicks.length, 10) * 10;
+    console.log(
+      `  → 持仓 ${adjustedPicks.length} 只（GREEN ${adjustedPicks.filter((p) => p.verdict === "GREEN").length}，总仓位 ${totalPositionPct}%）`,
+    );
+    adjustedPicks.forEach((p, i) =>
+      console.log(
+        `    ${i + 1}. ${p.name} ${p.thscode} ${p.industry ?? ""} 分 ${p.overallScore.toFixed(1)} PE ${p.peTtm?.toFixed(1) ?? "—"}`,
+      ),
+    );
     holdings.push({
       period: asof,
       report,
       nextPeriod: null,
       turnoverPct: 0,
-      trend: bull ? "多头" : "空头",
-      weights: picks.map((p) => ({
+      trend: tl.label,
+      weights: adjustedPicks.map((p) => ({
         thscode: p.thscode,
         name: p.name,
         industry: p.industry,
-        weight: 10, // 固定 10% 权重（满仓 10 只 = 100%，空头半仓 5 只 = 50% + 现金 50%）
+        weight: totalScore > 0 ? +((p.overallScore / totalScore) * totalPositionPct).toFixed(2) : 0,
         score: p.overallScore,
         pool: p.pool === "star" ? "明星池" : "观察池",
+        // 止盈目标价：调仓日收盘价 × 1.5（乐观估值上沿，+50%）
+        //   简化版：统一 +50% 目标，未结合历史 PE 分位（数据不足时降级）
+        //   触及即减仓 50%，锁利至下次调仓
+        targetPrice: p.price && p.price > 0 ? +(p.price * 1.5).toFixed(2) : null,
       })),
     });
   }
