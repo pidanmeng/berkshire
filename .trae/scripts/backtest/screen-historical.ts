@@ -21,6 +21,7 @@ import {
   getAllAShareTickers,
   getMarketCapWithFallback,
   getMarketCapFromEastmoney,
+  getIndustryMapFromClist,
   getIndicatorsRaw,
   getIncomeStatements,
 } from "../hithink/hithink.ts";
@@ -153,22 +154,24 @@ export async function runHistoricalScreen(opts: HistoricalScreenOpts): Promise<S
     let snapshot = loadSnapshot();
     if (!snapshot || Date.now() - snapshot.fetchedAt > 86400000) {
       console.log(`  股本快照刷新（全市场 ${tickers.length} 家）...`);
+      // 行业字段：10jqka 主源无 f100；东财 push2 ulist 在 bun 下被拒。
+      // 改用东财 clist 端点批量拉全市场行业映射 → Map<thscode, industry>
+      // P0 修复：东财 push2 在当前网络间歇性 TLS 握手失败（bun fetch/powershell/curl 均受影响）。
+      //   进程内 getIndustryMapFromClist 带 3 次重试，能拿到部分行业（~2000-5000 条）。
+      //   行业映射不完整时，buildPortfolio 降级：无行业不占配额 + 上限 3 只（确保能选出 10 只）。
+      console.log(`  clist 拉全市场行业（f100，5 个市场分页，3 次重试）...`);
+      const industryMap = await getIndustryMapFromClist();
+      console.log(`  行业映射 ${industryMap.size} 条${industryMap.size < 4000 ? '（不完整，buildPortfolio 将降级）' : ''}`);
       const emChunks: string[][] = [];
       for (let i = 0; i < tickers.length; i += CHUNK) emChunks.push(tickers.slice(i, i + CHUNK).map((t) => t.thscode));
       const emResults = await mapWithConcurrency(emChunks, 4, (codes) => getMarketCapWithFallback(codes), 1);
-      // 东财补行业（10jqka 主源无行业字段；行业用于高杠杆打标与单行业持仓上限）
-      const industryMap = new Map<string, string | null>();
-      const emIndResults = await mapWithConcurrency(emChunks, 4, (codes) =>
-        getMarketCapFromEastmoney(codes).then((items) => items.map((m) => [m.thscode, m.industry] as const)).catch(() => []),
-      );
-      for (const pairs of emIndResults) for (const [code, ind] of pairs) industryMap.set(code, ind);
       const items: { thscode: string; price: number | null; shares: number | null; industry: string | null }[] = [];
       for (const m of emResults.flat()) {
         items.push({
           thscode: m.thscode,
           price: m.price,
           shares: m.price ? (m.market_cap ?? 0) / m.price : null,
-          industry: m.industry ?? industryMap.get(m.thscode) ?? null,
+          industry: industryMap.get(m.thscode) ?? null,
         });
       }
       snapshot = { fetchedAt: Date.now(), items };

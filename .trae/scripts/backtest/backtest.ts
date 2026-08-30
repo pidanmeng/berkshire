@@ -22,7 +22,7 @@
 import { parseArgs } from "util";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { getIndexKline } from "../hithink/hithink.ts";
+import { getIndexKlineFromTencent } from "../hithink/hithink.ts";
 import { openMarketDb, type MarketDb } from "./market-db.ts";
 import { runHistoricalScreen } from "./screen-historical.ts";
 import type { ScreenRow } from "../screener/screen.ts";
@@ -60,24 +60,38 @@ function reportFor(asof: string): string {
   return `${y}-3`;
 }
 
-/** TopN 组合：GREEN 优先按综合分，不足用 YELLOW 补齐；单行业 ≤ maxPerIndustry（行业缺失不占配额） */
+/** TopN 组合：GREEN 优先按综合分，不足用 YELLOW 补齐；单行业 ≤ maxPerIndustry。
+ *  P0 修复（降级版）：东财 clist 在当前网络间歇性失败，行业映射可能不完整。
+ *    - 有行业：受 maxPerIndustry 配额限制（分散风险）
+ *    - 无行业：不占配额，但设上限 maxNoIndustry（默认 3）防止全无行业集中持仓
+ *    - 宁缺毋滥：候选不足 topN 时返回少于 topN 只 */
 function buildPortfolio(
   screener: { pools: Record<"star" | "watch" | "exclude" | "loss", ScreenRow[]> },
   topN: number,
   maxPerIndustry: number,
+  maxNoIndustry = 3,
 ): ScreenRow[] {
   const cands = [...screener.pools.star, ...screener.pools.watch].sort(
     (a, b) => b.overallScore - a.overallScore,
   );
   const picks: ScreenRow[] = [];
   const indCount = new Map<string, number>();
+  let noIndustryCount = 0;
   for (const c of cands) {
-    const key = c.industry?.trim() || null;
-    if (key && (indCount.get(key) ?? 0) >= maxPerIndustry) continue;
-    picks.push(c);
-    if (key) indCount.set(key, (indCount.get(key) ?? 0) + 1);
+    const key = c.industry?.trim();
+    if (!key) {
+      // 无行业：不占配额，但有数量上限
+      if (noIndustryCount >= maxNoIndustry) continue;
+      picks.push(c);
+      noIndustryCount++;
+    } else {
+      if ((indCount.get(key) ?? 0) >= maxPerIndustry) continue;
+      picks.push(c);
+      indCount.set(key, (indCount.get(key) ?? 0) + 1);
+    }
     if (picks.length >= topN) break;
   }
+  if (noIndustryCount > 0) console.log(`  [buildPortfolio] 无行业候选 ${noIndustryCount} 只（不占配额，上限 ${maxNoIndustry}）`);
   return picks;
 }
 
@@ -133,15 +147,20 @@ async function computeReturns(
     adjMap.set(code, { dates: s.map((x) => x.date), values: s.map((x) => x.adjClose) });
   }
 
-  // 基准：同花顺指数历史日K（沪深300，指数无复权）
+  // 基准：沪深300 指数日K（腾讯 fqkline，同花顺 a-share-index 返回空、东财 push2his 拒绝 bun）
+  // benchmarkCode 形如 "000300.SH" → 腾讯 code = "sh000300"（前缀+代码）
+  const [benchCode, benchMarket] = benchmarkCode.split('.');
+  const benchPrefix = benchMarket === 'SH' ? 'sh' : benchMarket === 'SZ' ? 'sz' : (benchMarket ?? '').toLowerCase();
+  const tencentCode = `${benchPrefix}${benchCode}`;
   let benchMap = new Map<string, number>();
   const startMs = Date.parse(`${tradingDates[0]}T00:00:00+08:00`) - 86400000;
   const endMs = Date.parse(`${tradingDates[tradingDates.length - 1]}T00:00:00+08:00`) + 86400000;
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      const kb = await getIndexKline(benchmarkCode, startMs, endMs);
-      // date_ms 为 Asia/Shanghai 零点，+8h 后取 UTC 日期即本地日期
+      const kb = await getIndexKlineFromTencent(tencentCode, startMs, endMs);
+      // date_ms 为 Asia/Shanghai 零点时间戳，+8h 后取 UTC 日期即本地日期
       benchMap = new Map(kb.map((x) => [new Date(x.date_ms + 8 * 3600000).toISOString().slice(0, 10), x.close_price]));
+      console.log(`  [基准] ${benchmarkCode} → 腾讯 ${tencentCode}，${benchMap.size} 条日K`);
       break;
     } catch (e) {
       if (attempt < 2) await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
@@ -301,7 +320,7 @@ async function main() {
       smoke,
       concurrency,
     });
-    const picks = buildPortfolio(screener, 10, 4);
+    const picks = buildPortfolio(screener, 10, 4, 5);
     console.log(`  → 持仓 ${picks.length} 只（GREEN ${picks.filter((p) => p.verdict === "GREEN").length}）`);
     picks.forEach((p, i) => console.log(`    ${i + 1}. ${p.name} ${p.thscode} ${p.industry ?? ""} 分 ${p.overallScore.toFixed(1)} PE ${p.peTtm?.toFixed(1) ?? "—"}`));
     holdings.push({

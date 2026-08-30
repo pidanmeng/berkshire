@@ -521,6 +521,18 @@ export function toEastmoneySecid(thscode: string): string {
   return `${prefix}.${ticker}`;
 }
 
+/** 东财 market(f13) + ticker(f12) → thscode（北交所 920xxx → .BJ，沪=1/深+北=0） */
+export function eastmoneyMarketToSuffix(market: string | number, ticker: string): string {
+  const m = String(market);
+  if (m === '1') return '.SH';
+  // 0：深市主板/创业板/北交所。北交所代码段 920xxx（含 920xxx.BJ）
+  if (ticker.startsWith('920') || ticker.startsWith('83') || ticker.startsWith('87') || ticker.startsWith('92')) {
+    // 920xxx 全部为北交所；83/87/92 段部分为北交所老代码
+    if (ticker.startsWith('920')) return '.BJ';
+  }
+  return '.SZ';
+}
+
 /**
  * 批量获取 A 股实时价格与总市值（东财 push2 ulist.np/get，一次请求多只）
  * 同花顺 hithink 估值端点不返回市值，本函数作为补充数据源。
@@ -544,7 +556,7 @@ export async function getMarketCapFromEastmoney(
   return diff.map((d) => {
     const ticker = String(d['f12'] ?? '');
     const market = String(d['f13'] ?? '0');
-    const suffix = market === '1' ? '.SH' : '.SZ';
+    const suffix = eastmoneyMarketToSuffix(market, ticker);
     const num = (v: unknown) => {
       if (v === null || v === undefined || v === '-' || v === '') return null;
       const n = Number(v);
@@ -568,6 +580,153 @@ export async function getMarketCapFromEastmoney(
       industry,
     };
   });
+}
+
+/**
+ * 全市场行业映射（东财 clist 端点，bun fetch 可用）— 替代 push2 ulist
+ * 沪深北 5 大市场各拉一次，合并成 thscode → 行业 Map。f100 100% 返回。
+ * 用途：回测股本快照补行业（10jqka 主源无行业字段）。
+ * 注意：北交所 clist 含 920xxx + 老三板（83/87/92），按 920 过滤为 .BJ。
+ */
+export async function getIndustryMapFromClist(): Promise<Map<string, string>> {
+  const groups = [
+    { fs: 'm:1+t:2', market: 1 },     // 沪市A股
+    { fs: 'm:1+t:23', market: 1 },    // 科创板
+    { fs: 'm:0+t:6', market: 0 },    // 深市主板
+    { fs: 'm:0+t:80', market: 0 },    // 创业板
+    { fs: 'm:0+t:81', market: 0 },    // 北交所/三板
+  ];
+  const out = new Map<string, string>();
+  for (const g of groups) {
+    let pn = 1;
+    for (;;) {
+      const url = `https://push2.eastmoney.com/api/qt/clist/get?pn=${pn}&pz=100&po=1&fid=f12&fs=${encodeURIComponent(g.fs)}&fields=f12,f13,f14,f100`;
+      let rows: any[] = [];
+      let total = 0;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const r = await fetch(url, {
+            headers: { 'User-Agent': EM_UA, 'Referer': 'https://quote.eastmoney.com/', 'Accept': '*/*' },
+            signal: AbortSignal.timeout(15000),
+          });
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+          const j = (await r.json()) as { data?: { total?: number; diff?: Record<string, any> | any[] } };
+          // clist 端点 diff 是对象（key="0","1",...）不是数组，统一转数组
+          const diffObj = j.data?.diff ?? {};
+          rows = Array.isArray(diffObj) ? diffObj : Object.values(diffObj);
+          total = j.data?.total ?? 0;
+          break;
+        } catch (e) {
+          if (attempt < 2) await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
+          else console.error(`[clist] ${g.fs} page ${pn} 失败：${e}`);
+        }
+      }
+      for (const row of rows) {
+        const ticker = String(row?.['f12'] ?? '');
+        if (!ticker) continue;
+        const suffix = eastmoneyMarketToSuffix(g.market, ticker);
+        const indRaw = row?.['f100'];
+        const industry = (indRaw === null || indRaw === undefined || String(indRaw) === '-' || String(indRaw) === '')
+          ? null : String(indRaw);
+        if (industry) out.set(`${ticker}${suffix}`, industry);
+      }
+      if (rows.length < 100 || out.size >= total) break;
+      pn++;
+      if (pn > 200) break; // 安全阀
+    }
+  }
+  return out;
+}
+
+/**
+ * 指数历史日K（腾讯 web.ifzq.gtimg.cn/appstock/app/fqkline/get）—
+ * 同花顺 a-share-index 端点对沪深300返回空，东财 push2his 在 bun 下被拒。
+ * 腾讯返回 [["YYYY-MM-DD","open","close","high","low","volume"], ...]
+ * code 示例：沪深300=sh000300、上证50=sh000016、中证500=sh000905、深证成指=sz399001
+ */
+export async function getIndexKlineFromTencent(
+  code: string,
+  startMs: number,
+  endMs: number,
+): Promise<{ date_ms: number; close_price: number }[]> {
+  const start = new Date(startMs);
+  const end = new Date(endMs);
+  const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  // P0 修复：腾讯 fqkline lmt 上限 2000（实测 2500+ 返回 param error）。
+  //   回测区间 2020-01~2026-08 ≈ 1614 个交易日 < 2000，单次拉取足够。
+  //   如未来区间 > 2000 交易日，需分段拉取并合并。
+  const url = `https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=${encodeURIComponent(code)},day,${fmt(start)},${fmt(end)},2000,qfq`;
+  const res = await fetch(url, {
+    headers: { 'User-Agent': EM_UA, 'Referer': 'https://gu.qq.com/' },
+    signal: AbortSignal.timeout(20000),
+  });
+  if (!res.ok) throw new Error(`腾讯指数日K HTTP ${res.status}`);
+  const j = (await res.json()) as { data?: Record<string, { day?: string[][]; qfqday?: string[][] }> };
+  const key = Object.keys(j.data ?? {})[0];
+  const rows = j.data?.[key]?.day ?? j.data?.[key]?.qfqday ?? [];
+  return rows.map((r) => ({
+    date_ms: new Date(`${r[0]}T00:00:00+08:00`).getTime(),
+    close_price: Number(r[2]), // close（腾讯字段顺序：日期/开/收/高/低/量）
+  }));
+}
+
+/**
+ * 加载行业映射（带缓存 + spawn 子进程兜底）。
+ *
+ * bun 在大进程内并发 fetch 东财 clist 会被拒（TLS 状态污染），
+ * 独立子进程调用 _fetch-industry-map.ts 隔离 TLS 状态可稳定拉取。
+ *
+ * 策略：
+ *   1. 读 JSON 缓存（cacheFile），fetchedAt 在 7 天内 → 直接返回
+ *   2. 缓存不存在/过期 → Bun.spawn 独立 bun 子进程跑 _fetch-industry-map.ts → 重新读缓存
+ *   3. spawn 失败 → 兜底退回进程内 getIndustryMapFromClist（通常也失败，但兜底）
+ *
+ * @param cacheFile 缓存 JSON 路径（绝对或相对 cwd）
+ * @param fetcherScript _fetch-industry-map.ts 脚本路径（绝对或相对 cwd）
+ */
+export async function loadOrSpawnIndustryMap(
+  cacheFile: string,
+  fetcherScript: string,
+): Promise<Map<string, string>> {
+  const exists = await existsAsync(cacheFile);
+  if (exists) {
+    try {
+      const data = JSON.parse(await readFileAsync(cacheFile, 'utf-8')) as { fetchedAt: number; items: { thscode: string; industry: string }[] };
+      const age = Date.now() - (data.fetchedAt ?? 0);
+      if (age < 7 * 86400000 && Array.isArray(data.items)) {
+        const m = new Map<string, string>();
+        for (const it of data.items) m.set(it.thscode, it.industry);
+        console.log(`  [industry-map] 缓存命中 ${m.size} 条（${Math.round(age / 86400000)} 天前）`);
+        return m;
+      }
+    } catch (e) {
+      console.warn(`  [industry-map] 缓存损坏，将重新拉取：${e}`);
+    }
+  }
+  // 缓存缺失/过期 → spawn 独立子进程拉取
+  console.log(`  [industry-map] spawn 子进程拉取 → ${fetcherScript}`);
+  try {
+    const proc = Bun.spawn(['bun', 'run', fetcherScript, cacheFile], { cwd: process.cwd() });
+    const exitCode = await proc.exited;
+    if (exitCode !== 0) throw new Error(`子进程退出码 ${exitCode}`);
+    // 重新读缓存
+    const data = JSON.parse(await readFileAsync(cacheFile, 'utf-8')) as { fetchedAt: number; items: { thscode: string; industry: string }[] };
+    const m = new Map<string, string>();
+    for (const it of data.items) m.set(it.thscode, it.industry);
+    console.log(`  [industry-map] 子进程拉取完成 ${m.size} 条`);
+    return m;
+  } catch (e) {
+    console.warn(`  [industry-map] spawn 失败，退回进程内 fetch：${e}`);
+    return getIndustryMapFromClist();
+  }
+}
+
+// 内部：异步 fs helper（避免在文件顶部 import fs，保持文件聚焦）
+import { readFile } from 'node:fs/promises';
+import { exists as existsCb } from 'node:fs';
+const readFileAsync = readFile;
+function existsAsync(p: string): Promise<boolean> {
+  return new Promise((r) => existsCb(p, (err) => r(!err && true)));
 }
 
 // ==================== 同花顺 10jqka 市值/行情主数据源（免鉴权）====================
