@@ -119,11 +119,45 @@ function valueAt(dates: string[], values: number[], date: string): number | null
   return found;
 }
 
+/** 预拉基准日K → Map<date, close>（腾讯 fqkline，主循环前调用，供趋势判断 + 净值计算复用） */
+async function fetchBenchmarkMap(benchmarkCode: string, startDate: string, endDate: string): Promise<Map<string, number>> {
+  const [benchCode, benchMarket] = benchmarkCode.split('.');
+  const benchPrefix = benchMarket === 'SH' ? 'sh' : benchMarket === 'SZ' ? 'sz' : (benchMarket ?? '').toLowerCase();
+  const tencentCode = `${benchPrefix}${benchCode}`;
+  // 提前 1 年拉基准数据，确保 MA200 从首期调仓就有足够历史（200 交易日 ≈ 280 自然日）
+  const startMs = Date.parse(`${startDate}T00:00:00+08:00`) - 400 * 86400000;
+  const endMs = Date.parse(`${endDate}T00:00:00+08:00`) + 86400000;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const kb = await getIndexKlineFromTencent(tencentCode, startMs, endMs);
+      const m = new Map(kb.map((x) => [new Date(x.date_ms + 8 * 3600000).toISOString().slice(0, 10), x.close_price]));
+      console.log(`[基准] ${benchmarkCode} → 腾讯 ${tencentCode}，${m.size} 条日K`);
+      return m;
+    } catch (e) {
+      if (attempt < 2) await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
+      else console.error(`[基准] ${benchmarkCode} 拉取失败：${e}`);
+    }
+  }
+  return new Map();
+}
+
+/** 趋势过滤：收盘价 vs MA200（A股经典风控指标）
+ *  多头（close > MA200）→ 正常持仓；空头（close < MA200）→ 半仓规避大跌
+ *  数据不足（< maDays）默认多头（不阻断早期建仓） */
+function isBullTrend(benchMap: Map<string, number>, date: string, maDays = 200): boolean {
+  const dates = [...benchMap.keys()].filter((d) => d <= date).sort();
+  if (dates.length < maDays) return true;
+  const recent = dates.slice(-maDays);
+  const ma = recent.reduce((sum, d) => sum + (benchMap.get(d) ?? 0), 0) / maDays;
+  const close = benchMap.get(dates[dates.length - 1]!) ?? 0;
+  return close > ma;
+}
+
 async function computeReturns(
   db: MarketDb,
   tradingDates: string[],
   holdings: { period: string; picks: { thscode: string }[] }[],
-  benchmarkCode: string,
+  benchMap: Map<string, number>,
 ): Promise<{
   nav: { dates: string[]; portfolio: number[]; benchmark: number[] };
   stats: {
@@ -147,26 +181,7 @@ async function computeReturns(
     adjMap.set(code, { dates: s.map((x) => x.date), values: s.map((x) => x.adjClose) });
   }
 
-  // 基准：沪深300 指数日K（腾讯 fqkline，同花顺 a-share-index 返回空、东财 push2his 拒绝 bun）
-  // benchmarkCode 形如 "000300.SH" → 腾讯 code = "sh000300"（前缀+代码）
-  const [benchCode, benchMarket] = benchmarkCode.split('.');
-  const benchPrefix = benchMarket === 'SH' ? 'sh' : benchMarket === 'SZ' ? 'sz' : (benchMarket ?? '').toLowerCase();
-  const tencentCode = `${benchPrefix}${benchCode}`;
-  let benchMap = new Map<string, number>();
-  const startMs = Date.parse(`${tradingDates[0]}T00:00:00+08:00`) - 86400000;
-  const endMs = Date.parse(`${tradingDates[tradingDates.length - 1]}T00:00:00+08:00`) + 86400000;
-  for (let attempt = 0; attempt < 3; attempt++) {
-    try {
-      const kb = await getIndexKlineFromTencent(tencentCode, startMs, endMs);
-      // date_ms 为 Asia/Shanghai 零点时间戳，+8h 后取 UTC 日期即本地日期
-      benchMap = new Map(kb.map((x) => [new Date(x.date_ms + 8 * 3600000).toISOString().slice(0, 10), x.close_price]));
-      console.log(`  [基准] ${benchmarkCode} → 腾讯 ${tencentCode}，${benchMap.size} 条日K`);
-      break;
-    } catch (e) {
-      if (attempt < 2) await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
-      else console.error(`[基准] ${benchmarkCode} 拉取失败：${e}`);
-    }
-  }
+  // 基准 benchMap 由主循环前预拉（fetchBenchmarkMap），此处直接复用
 
   // 每期执行日（asof 下一交易日）
   const execDates = holdings.map((h) => nextTradeDate(tradingDates, h.period));
@@ -187,7 +202,7 @@ async function computeReturns(
     let k = -1;
     for (let j = 0; j < execDates.length; j++) if (execDates[j] && execDates[j]! <= t) k = j;
 
-    // 组合日收益（等权）
+    // 组合日收益（固定 10% 权重：满仓 10 只 = 100%，空头半仓 5 只 = 50% 股票 + 50% 现金收益0）
     let r = 0;
     if (k >= 0) {
       const picks = holdings[k]!.picks;
@@ -199,7 +214,8 @@ async function computeReturns(
         const a1 = valueAt(s.dates, s.values, t);
         if (a0 && a1 && a0 > 0) rs.push(a1 / a0 - 1);
       }
-      if (rs.length > 0) r = rs.reduce((a, b) => a + b, 0) / rs.length;
+      // 每只固定 10% 权重，不足 10 只部分为现金（收益0），与趋势过滤半仓逻辑对齐
+      if (rs.length > 0) r = rs.reduce((a, b) => a + b, 0) / 10;
     }
     portfolio[i] = portfolio[i - 1]! * (1 + r);
 
@@ -302,12 +318,16 @@ async function main() {
   if (maxPeriods !== null) rebalances = rebalances.slice(0, maxPeriods);
   console.log(`调仓 ${rebalances.length} 期：${rebalances.join(", ")}`);
 
+  // 趋势过滤：预拉沪深300日K（主循环前拉取，供 isBullTrend 判断 + computeReturns 复用）
+  const benchMap = await fetchBenchmarkMap("000300.SH", startDate, endDate);
+
   // ===== 每期筛查 → 持仓（runHistoricalScreen 自管 market-db 连接，避免 Windows 文件锁冲突） =====
   const holdings: {
     period: string;
     report: string;
     nextPeriod: string | null;
     turnoverPct: number;
+    trend: "多头" | "空头";
     weights: { thscode: string; name: string; industry: string | null; weight: number; score: number; pool: "明星池" | "观察池" }[];
   }[] = [];
   for (const asof of rebalances) {
@@ -320,7 +340,11 @@ async function main() {
       smoke,
       concurrency,
     });
-    const picks = buildPortfolio(screener, 10, 4, 5);
+    // 趋势过滤：沪深300收盘价 vs MA200。空头时半仓（TopN 10→5）规避大跌
+    const bull = isBullTrend(benchMap, asof);
+    const topN = bull ? 10 : 5;
+    console.log(`  趋势：${bull ? "多头↑（MA200上方）→ 满仓" : "空头↓（MA200下方）→ 半仓"}`);
+    const picks = buildPortfolio(screener, topN, 4, 5);
     console.log(`  → 持仓 ${picks.length} 只（GREEN ${picks.filter((p) => p.verdict === "GREEN").length}）`);
     picks.forEach((p, i) => console.log(`    ${i + 1}. ${p.name} ${p.thscode} ${p.industry ?? ""} 分 ${p.overallScore.toFixed(1)} PE ${p.peTtm?.toFixed(1) ?? "—"}`));
     holdings.push({
@@ -328,11 +352,12 @@ async function main() {
       report,
       nextPeriod: null,
       turnoverPct: 0,
+      trend: bull ? "多头" : "空头",
       weights: picks.map((p) => ({
         thscode: p.thscode,
         name: p.name,
         industry: p.industry,
-        weight: +(100 / Math.max(picks.length, 1)).toFixed(1),
+        weight: 10, // 固定 10% 权重（满仓 10 只 = 100%，空头半仓 5 只 = 50% + 现金 50%）
         score: p.overallScore,
         pool: p.pool === "star" ? "明星池" : "观察池",
       })),
@@ -361,7 +386,7 @@ async function main() {
       db,
       tradingDates,
       holdings.map((h) => ({ period: h.period, picks: h.weights })),
-      "000300.SH",
+      benchMap,
     );
 
     // ===== 模拟指数日K（点位 = 1000 × 组合净值，前端展示用） =====
@@ -383,7 +408,7 @@ async function main() {
     const result = {
       meta: {
         name: "基本面精选指数",
-        strategy: "基本面筛查 Top10 等权 · 每年 3 次调仓（4月底一季报 / 8月底中报 / 10月底三季报）· 持有至下次调仓",
+        strategy: "基本面筛查 Top10 · 每年 3 次调仓（4/8/10月底财报披露截止后）· 趋势过滤（沪深300 MA200 空头半仓）",
         benchmark: "沪深300",
         startDate: nav.dates[0],
         endDate: nav.dates[nav.dates.length - 1],
