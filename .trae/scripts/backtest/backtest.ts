@@ -30,6 +30,9 @@ import { parseIndicatorsYear, type ScreenRow } from "../screener/screen.ts";
 const ROOT = process.cwd();
 const OUT_DIR = resolve(ROOT, "Research", "00-Workspace", "08-Backtest");
 const DEFAULT_END = "2026-08-28";
+// 止盈阈值：相对入场价涨幅达此比例 → 减仓 50% 锁利（+80% 让趋势走得更远，避免过早锁利）
+const TAKE_PROFIT_THRESHOLD = 0.8;
+const TAKE_PROFIT_FACTOR = 1 + TAKE_PROFIT_THRESHOLD; // 目标价 = 入场价 × 此倍数
 
 // ==================== 调仓日历 ====================
 
@@ -188,7 +191,7 @@ async function fetchBenchmarkMap(benchmarkCode: string, startDate: string, endDa
  *    多头   close > MA200 且 close > MA20 → 满仓 10 只
  *    回调   close > MA200 且 close < MA20 → 5 只（短期走弱减仓）
  *    空头   close < MA200 且 close > MA20 → 3 只（长期走弱但短期反弹，轻仓）
- *    双空头 close < MA200 且 close < MA20 → 0 只（空仓规避大跌）
+ *    双空头 close < MA200 且 close < MA20 → 2 只（轻仓规避大跌，不完全空仓避免错过反弹）
  *  数据不足（< maLong）默认多头（不阻断早期建仓） */
 type TrendLevel = { targetN: number; label: string; bull: boolean };
 function getTrendLevel(benchMap: Map<string, number>, date: string, maLong = 200, maShort = 20): TrendLevel {
@@ -202,7 +205,7 @@ function getTrendLevel(benchMap: Map<string, number>, date: string, maLong = 200
       : maL;
   const aboveLong = close > maL;
   const aboveShort = close > maS;
-  if (!aboveLong && !aboveShort) return { targetN: 0, label: "双空头→空仓", bull: false };
+  if (!aboveLong && !aboveShort) return { targetN: 2, label: "双空头→2成轻仓", bull: false };
   if (!aboveLong) return { targetN: 3, label: "空头→3成仓", bull: false };
   if (!aboveShort) return { targetN: 5, label: "回调→5成仓", bull: true };
   return { targetN: 10, label: "多头→满仓", bull: true };
@@ -304,8 +307,8 @@ async function computeReturns(
         if (!a0 || !a1 || a0 <= 0) continue;
 
         const st = state.get(p.thscode);
-        // 止盈：涨幅 >= 50%（相对入场后复权价）且未止盈 → 减仓 50% 锁利
-        if (st && !st.stopped && st.entryAdj && a1 / st.entryAdj - 1 >= 0.5) {
+        // 止盈：涨幅 >= TAKE_PROFIT_THRESHOLD（相对入场后复权价）且未止盈 → 减仓 50% 锁利
+        if (st && !st.stopped && st.entryAdj && a1 / st.entryAdj - 1 >= TAKE_PROFIT_THRESHOLD) {
           st.stopped = true;
           st.curWeight = st.origWeight / 2;
           console.log(
@@ -497,10 +500,10 @@ async function main() {
         weight: totalScore > 0 ? +((p.overallScore / totalScore) * totalPositionPct).toFixed(2) : 0,
         score: p.overallScore,
         pool: p.pool === "star" ? "明星池" : "观察池",
-        // 止盈目标价：调仓日收盘价 × 1.5（乐观估值上沿，+50%）
-        //   简化版：统一 +50% 目标，未结合历史 PE 分位（数据不足时降级）
+        // 止盈目标价：调仓日收盘价 × TAKE_PROFIT_FACTOR（乐观估值上沿，+80%）
+        //   简化版：统一 +80% 目标，未结合历史 PE 分位（数据不足时降级）
         //   触及即减仓 50%，锁利至下次调仓
-        targetPrice: p.price && p.price > 0 ? +(p.price * 1.5).toFixed(2) : null,
+        targetPrice: p.price && p.price > 0 ? +(p.price * TAKE_PROFIT_FACTOR).toFixed(2) : null,
       })),
     });
   }
