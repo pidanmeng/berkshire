@@ -482,6 +482,16 @@ export interface BacktestKlineBar {
   volume: number;
 }
 
+/** 每期每日实时权重序列（前端悬浮展示实时仓位）：
+ *  codes 与该期 holdings[k].weights 顺序一致；matrix 为 dates × codes 的实时权重（%），
+ *  由「份额 × 后复权价 ÷ 组合净值」现算，null = 当日无该股持仓数据（停牌/缺价） */
+export interface BacktestWeightSeries {
+  period: string;
+  codes: string[];
+  dates: string[];
+  matrix: (number | null)[][];
+}
+
 export interface BacktestResponse {
   meta: {
     name: string;
@@ -496,6 +506,7 @@ export interface BacktestResponse {
   kline: BacktestKlineBar[];
   stats: BacktestStats;
   holdings: BacktestHoldingPeriod[];
+  weightSeries: BacktestWeightSeries[];
 }
 
 export function getBacktest(signal?: AbortSignal): Promise<BacktestResponse> {

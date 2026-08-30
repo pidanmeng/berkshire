@@ -32,6 +32,27 @@ function periodIndexFor(execDates: string[], date: string): number {
   return k;
 }
 
+/** 该日期所属持仓期的实时权重（份额×复权价÷组合净值，取自引擎 weightSeries）；
+ *  取 dates 中 ≤ date 的最近一日；无数据返回 null（调用方回退初始权重） */
+function liveWeightFor(
+  series: BacktestResponse["weightSeries"] | undefined,
+  k: number,
+  date: string,
+): Map<string, number> | null {
+  const s = series?.[k];
+  if (!s) return null;
+  let idx = -1;
+  for (let j = 0; j < s.dates.length; j++) if (s.dates[j]! <= date) idx = j;
+  if (idx < 0) return null;
+  const row = s.matrix[idx]!;
+  const m = new Map<string, number>();
+  s.codes.forEach((c, ci) => {
+    const v = row[ci];
+    if (v != null) m.set(c, v);
+  });
+  return m;
+}
+
 /** 日期平移（用于个股 K 线拉取时扩边上下文） */
 function shiftDate(date: string, days: number): string {
   const d = new Date(`${date}T00:00:00+08:00`);
@@ -71,12 +92,13 @@ function mkPeriodMarkArea(execDates: string[], activeIdx: number) {
   };
 }
 
-/** tooltip 持仓明细 HTML：显示该日所属持仓期 + 持仓列表（代码/名称/权重） */
+/** tooltip 持仓明细 HTML：显示该日所属持仓期 + 持仓列表（代码/名称/初始权重/实时权重） */
 function periodTooltipHtml(
   date: string,
   topLines: string[],
   execDates: string[],
   holdings: BacktestResponse["holdings"],
+  liveWeight: Map<string, number> | null,
 ): string {
   const k = periodIndexFor(execDates, date);
   const parts = [...topLines];
@@ -93,15 +115,23 @@ function periodTooltipHtml(
     parts.push(`<div style="margin-top:6px;color:#f2c14e;font-size:11px">持仓期 · ${meta}</div>`);
     parts.push(
       `<table style="width:100%;border-collapse:collapse;margin-top:4px;font-size:11px">` +
+        `<tr style="color:#8a8a8a"><td style="padding:1px 8px 1px 0">代码</td><td style="padding:1px 8px 1px 0">名称</td>` +
+        `<td style="padding:1px 0;text-align:right">初始</td><td style="padding:1px 0 1px 8px;text-align:right">实时</td></tr>` +
         h.weights
-          .map(
-            (w) =>
+          .map((w) => {
+            const lw = liveWeight?.get(w.thscode);
+            return (
               `<tr><td style="padding:1px 8px 1px 0;color:#a1a1a1;font-family:JetBrains Mono,Consolas,monospace">${w.thscode}</td>` +
-              `<td style="padding:1px 8px 1px 0;color:#e5e5e5;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${w.name}</td>` +
-              `<td style="padding:1px 0;text-align:right;color:#f2c14e;font-family:JetBrains Mono,Consolas,monospace">${w.weight.toFixed(1)}%</td></tr>`,
-          )
+              `<td style="padding:1px 8px 1px 0;color:#e5e5e5;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${w.name}</td>` +
+              `<td style="padding:1px 0;text-align:right;color:#8a8a8a;font-family:JetBrains Mono,Consolas,monospace">${w.weight.toFixed(1)}</td>` +
+              `<td style="padding:1px 0 1px 8px;text-align:right;color:${lw != null ? (lw > w.weight ? "#ef4444" : lw < w.weight ? "#22c55e" : "#f2c14e") : "#666666"};font-family:JetBrains Mono,Consolas,monospace;font-weight:600">${lw != null ? lw.toFixed(1) : "—"}</td></tr>`
+            );
+          })
           .join("") +
-        `</table>`,
+        `</table>` +
+        (liveWeight
+          ? `<div style="margin-top:4px;color:#8a8a8a;font-size:10px">实时 = 份额×复权价 ÷ 组合净值（权重随涨跌漂移，红色=增持 绿色=减持）</div>`
+          : ""),
     );
   }
   return parts.join("");
@@ -111,12 +141,14 @@ function periodTooltipHtml(
 function NavChart({
   nav,
   holdings,
+  weightSeries,
   execDates,
   activeIdx,
   onSelectPeriod,
 }: {
   nav: BacktestResponse["nav"];
   holdings: BacktestResponse["holdings"];
+  weightSeries: BacktestResponse["weightSeries"];
   execDates: string[];
   activeIdx: number;
   onSelectPeriod: (idx: number) => void;
@@ -143,6 +175,8 @@ function NavChart({
           const i = p.dataIndex ?? 0;
           const pv = nav.portfolio[i];
           const bv = nav.benchmark[i];
+          const k = periodIndexFor(execDates, date);
+          const lw = k >= 0 ? liveWeightFor(weightSeries, k, date) : null;
           return periodTooltipHtml(
             date,
             [
@@ -154,6 +188,7 @@ function NavChart({
             ],
             execDates,
             holdings,
+            lw,
           );
         },
       },
@@ -222,7 +257,7 @@ function NavChart({
       chartRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nav, execDates]);
+  }, [nav, execDates, weightSeries]);
 
   // 选中期变化 → 仅更新 markArea（不重建图表）
   useEffect(() => {
@@ -238,12 +273,14 @@ function NavChart({
 function IndexKlineChart({
   bars,
   holdings,
+  weightSeries,
   execDates,
   activeIdx,
   onSelectPeriod,
 }: {
   bars: BacktestResponse["kline"];
   holdings: BacktestResponse["holdings"];
+  weightSeries: BacktestResponse["weightSeries"];
   execDates: string[];
   activeIdx: number;
   onSelectPeriod: (idx: number) => void;
@@ -273,6 +310,8 @@ function IndexKlineChart({
           const date = p.axisValue ?? dates[p.dataIndex ?? 0] ?? "";
           const i = p.dataIndex ?? 0;
           const b = bars[i];
+          const k = periodIndexFor(execDates, date);
+          const lw = k >= 0 ? liveWeightFor(weightSeries, k, date) : null;
           return periodTooltipHtml(
             date,
             [
@@ -281,6 +320,7 @@ function IndexKlineChart({
             ],
             execDates,
             holdings,
+            lw,
           );
         },
       },
@@ -349,7 +389,7 @@ function IndexKlineChart({
       chartRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bars, execDates]);
+  }, [bars, execDates, weightSeries]);
 
   // 选中期变化 → 仅更新 markArea
   useEffect(() => {
@@ -600,6 +640,7 @@ export default function BacktestDashboard({ initial }: { initial: BacktestRespon
                 <NavChart
                   nav={data.nav}
                   holdings={data.holdings}
+                  weightSeries={data.weightSeries}
                   execDates={execDates}
                   activeIdx={activeIdx}
                   onSelectPeriod={setActiveIdx}
@@ -615,6 +656,7 @@ export default function BacktestDashboard({ initial }: { initial: BacktestRespon
                 <IndexKlineChart
                   bars={data.kline}
                   holdings={data.holdings}
+                  weightSeries={data.weightSeries}
                   execDates={execDates}
                   activeIdx={activeIdx}
                   onSelectPeriod={setActiveIdx}
@@ -644,76 +686,105 @@ export default function BacktestDashboard({ initial }: { initial: BacktestRespon
 
                 {data.holdings[activeIdx] && (
                   <div className="mt-3">
-                    <div className="mb-2 text-xs text-[var(--text-secondary)]">
-                      调仓日 {data.holdings[activeIdx]!.period} · 依据报告期{" "}
-                      <span className="font-mono">{data.holdings[activeIdx]!.report}</span>（
-                      {reportLabel(data.holdings[activeIdx]!.report)}）
-                      {data.holdings[activeIdx]!.trend && (
-                        <> · 趋势 {data.holdings[activeIdx]!.trend}</>
-                      )}
-                      {data.holdings[activeIdx]!.nextPeriod && (
-                        <> · 持有至 {data.holdings[activeIdx]!.nextPeriod}</>
-                      )}
-                    </div>
-                    <div className="overflow-x-auto">
-                      <table className="w-full border-collapse text-sm">
-                        <thead>
-                          <tr className="border-b border-[var(--border-default)] text-left text-xs text-[var(--text-muted)]">
-                            <th className="py-2 pr-4 font-normal">代码</th>
-                            <th className="py-2 pr-4 font-normal">名称</th>
-                            <th className="py-2 pr-4 font-normal">行业</th>
-                            <th className="py-2 pr-4 text-right font-normal">权重</th>
-                            <th className="py-2 pr-4 text-right font-normal">综合分</th>
-                            <th className="py-2 font-normal">来源</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {data.holdings[activeIdx]!.weights.map((w) => (
-                            <tr
-                              key={w.thscode}
-                              onClick={() =>
-                                setSelectedStock({
-                                  thscode: w.thscode,
-                                  name: w.name,
-                                  period: data.holdings[activeIdx]!.period,
-                                  nextPeriod: data.holdings[activeIdx]!.nextPeriod,
-                                })
-                              }
-                              className={`cursor-pointer border-b border-[var(--border-subtle)] transition-colors ${
-                                selectedStock?.thscode === w.thscode && selectedStock?.period === data.holdings[activeIdx]!.period
-                                  ? "bg-[rgba(242,193,78,0.12)]"
-                                  : "hover:bg-[rgba(242,193,78,0.06)]"
-                              }`}
-                            >
-                              <td className="py-2 pr-4">
-                                <span className="co-code">{w.thscode}</span>
-                              </td>
-                              <td className="py-2 pr-4">
-                                <span className="co-name">{w.name}</span>
-                              </td>
-                              <td className="py-2 pr-4 text-[var(--text-secondary)]">{w.industry ?? "—"}</td>
-                              <td className="py-2 pr-4 text-right font-mono text-[var(--text-primary)]">
-                                {w.weight.toFixed(1)}%
-                              </td>
-                              <td className="py-2 pr-4 text-right font-mono" style={{ color: scoreColor(w.score) }}>
-                                {w.score.toFixed(1)}
-                              </td>
-                              <td className="py-2">
-                                <span className={`badge ${w.pool === "明星池" ? "badge-green" : "badge-yellow"}`}>
-                                  {w.pool}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                    <div className="mt-2 text-[10px] text-[var(--text-muted)]">点击持仓行展开该股在持仓期的 K 线走势</div>
+                    {/* 期末实时权重：取 weightSeries 该期最后一日（初始权重随涨跌漂移后的实际仓位） */}
+                    {(() => {
+                      const wsK = data.weightSeries?.[activeIdx];
+                      const lastRow = wsK && wsK.matrix.length > 0 ? wsK.matrix[wsK.matrix.length - 1]! : null;
+                      const liveW = (thscode: string): number | null => {
+                        if (!wsK || !lastRow) return null;
+                        const ci = wsK.codes.indexOf(thscode);
+                        return ci >= 0 ? (lastRow[ci] ?? null) : null;
+                      };
+                      return (
+                        <>
+                          <div className="mb-2 text-xs text-[var(--text-secondary)]">
+                            调仓日 {data.holdings[activeIdx]!.period} · 依据报告期{" "}
+                            <span className="font-mono">{data.holdings[activeIdx]!.report}</span>（
+                            {reportLabel(data.holdings[activeIdx]!.report)}）
+                            {data.holdings[activeIdx]!.trend && (
+                              <> · 趋势 {data.holdings[activeIdx]!.trend}</>
+                            )}
+                            {data.holdings[activeIdx]!.nextPeriod && (
+                              <> · 持有至 {data.holdings[activeIdx]!.nextPeriod}</>
+                            )}
+                          </div>
+                          <div className="overflow-x-auto">
+                            <table className="w-full border-collapse text-sm">
+                              <thead>
+                                <tr className="border-b border-[var(--border-default)] text-left text-xs text-[var(--text-muted)]">
+                                  <th className="py-2 pr-4 font-normal">代码</th>
+                                  <th className="py-2 pr-4 font-normal">名称</th>
+                                  <th className="py-2 pr-4 font-normal">行业</th>
+                                  <th className="py-2 pr-4 text-right font-normal">初始权重</th>
+                                  <th className="py-2 pr-4 text-right font-normal">实时权重</th>
+                                  <th className="py-2 pr-4 text-right font-normal">综合分</th>
+                                  <th className="py-2 font-normal">来源</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {data.holdings[activeIdx]!.weights.map((w) => {
+                                  const lw = liveW(w.thscode);
+                                  return (
+                                    <tr
+                                      key={w.thscode}
+                                      onClick={() =>
+                                        setSelectedStock({
+                                          thscode: w.thscode,
+                                          name: w.name,
+                                          period: data.holdings[activeIdx]!.period,
+                                          nextPeriod: data.holdings[activeIdx]!.nextPeriod,
+                                        })
+                                      }
+                                      className={`cursor-pointer border-b border-[var(--border-subtle)] transition-colors ${
+                                        selectedStock?.thscode === w.thscode && selectedStock?.period === data.holdings[activeIdx]!.period
+                                          ? "bg-[rgba(242,193,78,0.12)]"
+                                          : "hover:bg-[rgba(242,193,78,0.06)]"
+                                      }`}
+                                    >
+                                      <td className="py-2 pr-4">
+                                        <span className="co-code">{w.thscode}</span>
+                                      </td>
+                                      <td className="py-2 pr-4">
+                                        <span className="co-name">{w.name}</span>
+                                      </td>
+                                      <td className="py-2 pr-4 text-[var(--text-secondary)]">{w.industry ?? "—"}</td>
+                                      <td className="py-2 pr-4 text-right font-mono text-[var(--text-primary)]">
+                                        {w.weight.toFixed(1)}%
+                                      </td>
+                                      <td
+                                        className="py-2 pr-4 text-right font-mono"
+                                        style={{
+                                          color: lw == null ? "var(--text-muted)" : lw > w.weight ? "var(--fin-up)" : lw < w.weight ? "var(--fin-down)" : "var(--fin-flat)",
+                                        }}
+                                        title={lw == null ? "无实时数据（停牌/缺价）" : "期末实时仓位（份额×复权价÷组合净值）"}
+                                      >
+                                        {lw == null ? "—" : `${lw.toFixed(1)}%`}
+                                      </td>
+                                      <td className="py-2 pr-4 text-right font-mono" style={{ color: scoreColor(w.score) }}>
+                                        {w.score.toFixed(1)}
+                                      </td>
+                                      <td className="py-2">
+                                        <span className={`badge ${w.pool === "明星池" ? "badge-green" : "badge-yellow"}`}>
+                                          {w.pool}
+                                        </span>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                          <div className="mt-2 text-[10px] text-[var(--text-muted)]">
+                            实时权重 = 期末份额×复权价 ÷ 组合净值（买入持有下权重随涨跌漂移，红=增持 绿=减持）· 点击持仓行展开该股在持仓期的 K 线走势
+                          </div>
 
-                    {/* ===== 个股区间 K 线 ===== */}
-                    {selectedStock && selectedStock.period === data.holdings[activeIdx]!.period && (
-                      <StockKlineCard stock={selectedStock} onClose={() => setSelectedStock(null)} />
-                    )}
+                          {/* ===== 个股区间 K 线 ===== */}
+                          {selectedStock && selectedStock.period === data.holdings[activeIdx]!.period && (
+                            <StockKlineCard stock={selectedStock} onClose={() => setSelectedStock(null)} />
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
                 )}
               </div>

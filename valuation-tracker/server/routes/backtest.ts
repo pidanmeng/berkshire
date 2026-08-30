@@ -283,6 +283,7 @@ export const backtestRoutes = new Elysia({ prefix: "/api" }).get(
       kline,
       stats,
       holdings,
+      weightSeries: [], // mock 无实时权重序列（真实引擎产物才有）
     };
   },
   { detail: { tags: ["backtest"] } },

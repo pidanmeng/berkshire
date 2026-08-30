@@ -232,6 +232,12 @@ async function computeReturns(
     sharpe: number;
     winRate: number;
   };
+  weightSeries: {
+    period: string;
+    codes: string[];
+    dates: string[];
+    matrix: (number | null)[][];
+  }[];
 }> {
   // 预取全部持仓股票后复权序列
   const codes = new Set<string>();
@@ -266,6 +272,8 @@ async function computeReturns(
 
   let cash = 1.0; // 期初全部现金（首个调仓日前持有现金）
   let prevBench = benchMap.get(dates[0]) ?? null;
+  // 每日实时权重收集：date → [{ thscode, pct }]（份额×复权价 ÷ 组合净值 × 100）
+  const allDailyWeights: { date: string; ws: { thscode: string; pct: number }[] }[] = [];
   for (let i = 1; i < n; i++) {
     const t = dates[i]!;
 
@@ -328,17 +336,27 @@ async function computeReturns(
         }
       }
 
-      // 组合净值 = Σ 份额 × 当日后复权价 + 现金
+      // 组合净值 = Σ 份额 × 当日后复权价 + 现金；同时收集各股市值用于实时权重
       let value = cash;
+      const liveMv: { thscode: string; mv: number }[] = [];
       for (const p of picks) {
         const s = adjMap.get(p.thscode);
         if (!s) continue;
         const sh = shares.get(p.thscode);
         if (!sh || sh <= 0) continue;
         const px = valueAt(s.dates, s.values, t);
-        if (px) value += sh * px;
+        if (px && px > 0) {
+          const mv = sh * px;
+          value += mv;
+          liveMv.push({ thscode: p.thscode, mv });
+        }
       }
       portfolio[i] = value;
+      // 实时权重 = 个股市值 / 组合净值 × 100（现金部分为剩余占比，未单独列出）
+      allDailyWeights.push({
+        date: t,
+        ws: value > 0 ? liveMv.map((x) => ({ thscode: x.thscode, pct: (x.mv / value) * 100 })) : [],
+      });
     } else {
       portfolio[i] = portfolio[i - 1]!; // 首个调仓日前：纯现金 1.0
     }
@@ -390,6 +408,27 @@ async function computeReturns(
   }
   const avgTurnover = Math.round((totalTurn / Math.max(holdings.length, 1)) * 100);
 
+  // ===== 每期实时权重序列（前端悬浮展示实时仓位） =====
+  // 按 execDates 边界切分每日权重 → codes/dates/matrix 紧凑格式（dates × codes 的权重 %，null=当日无持仓数据）
+  const weightSeries = holdings.map((h, k) => {
+    const start = execDates[k] ?? "9999-12-31";
+    const end = k + 1 < execDates.length ? execDates[k + 1]! : null;
+    const codes = h.picks.map((p) => p.thscode);
+    const daily = allDailyWeights.filter((d) => d.date >= start && (end ? d.date < end : true));
+    return {
+      period: h.period,
+      codes,
+      dates: daily.map((d) => d.date),
+      matrix: daily.map((d) => {
+        const m = new Map(d.ws.map((w) => [w.thscode, w.pct] as const));
+        return codes.map((c) => {
+          const v = m.get(c);
+          return v === undefined ? null : +v.toFixed(2);
+        });
+      }),
+    };
+  });
+
   return {
     nav: {
       dates,
@@ -407,6 +446,7 @@ async function computeReturns(
       sharpe,
       winRate,
     },
+    weightSeries,
   };
 }
 
@@ -548,7 +588,7 @@ async function main() {
     const tradingDates = allDates.filter((d) => d >= startDate && d <= endDate);
     if (tradingDates.length < 2) throw new Error("区间内交易日不足");
     console.log(`\n[收益] 组合净值计算（${tradingDates.length} 交易日）...`);
-    const { nav, stats } = await computeReturns(
+    const { nav, stats, weightSeries } = await computeReturns(
       db,
       tradingDates,
       holdings.map((h) => ({ period: h.period, picks: h.weights })),
@@ -585,6 +625,7 @@ async function main() {
       kline,
       stats,
       holdings,
+      weightSeries,
     };
     writeFileSync(join(OUT_DIR, "backtest-result.json"), JSON.stringify(result, null, 2), "utf-8");
     console.log(`\n[完成] → ${join(OUT_DIR, "backtest-result.json")}`);
