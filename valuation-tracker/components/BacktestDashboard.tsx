@@ -60,10 +60,13 @@ function shiftDate(date: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-// ===== 图表公共：调仓 markLine + 选中期 markArea =====
+// ===== 图表公共：选中调仓竖线 + 其余调仓 POI 点 + 选中期 markArea =====
 
-/** 调仓日 markLine 配置（金色虚线，x 轴为执行日） */
-function mkRebalanceMarkLine(execDates: string[], periods: string[]) {
+/** 选中持仓期的调仓日竖线（仅渲染选中期，避免 19 条竖线太乱） */
+function mkPeriodMarkLine(execDates: string[], periods: string[], activeIdx: number) {
+  if (activeIdx < 0 || activeIdx >= execDates.length) {
+    return { symbol: "none" as const, data: [] as unknown[] };
+  }
   return {
     symbol: "none" as const,
     label: {
@@ -71,13 +74,33 @@ function mkRebalanceMarkLine(execDates: string[], periods: string[]) {
       position: "insideEndTop" as const,
       color: "#f2c14e",
       fontSize: 10,
-      formatter: (p: { dataIndex?: number; value?: number | string }) => {
-        const i = typeof p.dataIndex === "number" ? p.dataIndex : -1;
-        return i >= 0 ? `调仓 ${periods[i] ?? ""}` : "调仓";
-      },
+      formatter: `调仓 ${periods[activeIdx] ?? ""}`,
     },
-    lineStyle: { color: "rgba(242,193,78,0.75)", type: "dashed" as const, width: 1 },
-    data: execDates.map((d, i) => ({ xAxis: d, name: `调仓 ${periods[i] ?? ""}` })),
+    lineStyle: { color: "rgba(242,193,78,0.85)", type: "dashed" as const, width: 1.5 },
+    data: [{ xAxis: execDates[activeIdx], name: `调仓 ${periods[activeIdx] ?? ""}` }],
+  };
+}
+
+/** 非选中期的调仓 POI 点（轻量圆点，点击可选中该期） */
+function mkRebalanceMarkPoint(
+  execDates: string[],
+  periods: string[],
+  activeIdx: number,
+  valueByDate: Map<string, number>,
+) {
+  return {
+    symbol: "circle" as const,
+    symbolSize: 6,
+    itemStyle: { color: "rgba(242,193,78,0.35)", borderColor: "#f2c14e", borderWidth: 1 },
+    label: { show: false },
+    data: execDates
+      .map((d, i) => ({ d, i }))
+      .filter((x) => x.i !== activeIdx)
+      .map((x) => ({
+        coord: [x.d, valueByDate.get(x.d) ?? 0] as [string, number],
+        name: `调仓 ${periods[x.i] ?? ""}`,
+        periodIdx: x.i,
+      })),
   };
 }
 
@@ -155,6 +178,13 @@ function NavChart({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const chartRef = useRef<echarts.ECharts | null>(null);
+  const periods = useMemo(() => holdings.map((h) => h.period), [holdings]);
+  // 调仓执行日 → 当日净值（POI 点落在线上的 y 坐标）
+  const valueByDate = useMemo(() => {
+    const m = new Map<string, number>();
+    nav.dates.forEach((d, i) => m.set(d, nav.portfolio[i]!));
+    return m;
+  }, [nav]);
 
   useEffect(() => {
     if (!ref.current) return;
@@ -223,7 +253,8 @@ function NavChart({
           lineStyle: { color: "#f2c14e", width: 2 },
           itemStyle: { color: "#f2c14e" },
           areaStyle: { color: "rgba(242,193,78,0.08)" },
-          markLine: mkRebalanceMarkLine(execDates, holdings.map((h) => h.period)),
+          markLine: mkPeriodMarkLine(execDates, periods, activeIdx),
+          markPoint: mkRebalanceMarkPoint(execDates, periods, activeIdx, valueByDate),
           markArea: mkPeriodMarkArea(execDates, activeIdx),
         },
         {
@@ -237,7 +268,16 @@ function NavChart({
       ],
     });
     chart.on("click", (params) => {
-      const p = params as { componentType?: string; dataIndex?: number; data?: { xAxis?: string } };
+      const p = params as {
+        componentType?: string;
+        dataIndex?: number;
+        data?: { xAxis?: string; periodIdx?: number };
+      };
+      // 点击 POI 点 → 直接选中对应期
+      if (p.componentType === "markPoint" && typeof p.data?.periodIdx === "number") {
+        onSelectPeriod(p.data.periodIdx);
+        return;
+      }
       let date: string | undefined;
       if (p.componentType === "markLine") {
         date = p.data?.xAxis;
@@ -257,14 +297,21 @@ function NavChart({
       chartRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nav, execDates, weightSeries]);
+  }, [nav, execDates, weightSeries, periods, valueByDate]);
 
-  // 选中期变化 → 仅更新 markArea（不重建图表）
+  // 选中期变化 → 更新竖线/POI 点/高亮区间（不重建图表）
   useEffect(() => {
     chartRef.current?.setOption({
-      series: [{ name: "组合净值", markArea: mkPeriodMarkArea(execDates, activeIdx) }],
+      series: [
+        {
+          name: "组合净值",
+          markLine: mkPeriodMarkLine(execDates, periods, activeIdx),
+          markPoint: mkRebalanceMarkPoint(execDates, periods, activeIdx, valueByDate),
+          markArea: mkPeriodMarkArea(execDates, activeIdx),
+        },
+      ],
     });
-  }, [activeIdx, execDates]);
+  }, [activeIdx, execDates, periods, valueByDate]);
 
   return <div ref={ref} className="chart-container" />;
 }
@@ -287,6 +334,13 @@ function IndexKlineChart({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const chartRef = useRef<echarts.ECharts | null>(null);
+  const periods = useMemo(() => holdings.map((h) => h.period), [holdings]);
+  // 调仓执行日 → 当日收盘点位（POI 点落在线上的 y 坐标）
+  const valueByDate = useMemo(() => {
+    const m = new Map<string, number>();
+    bars.forEach((b) => m.set(b.date, b.close));
+    return m;
+  }, [bars]);
 
   useEffect(() => {
     if (!ref.current) return;
@@ -355,7 +409,8 @@ function IndexKlineChart({
           type: "candlestick",
           data: kline,
           itemStyle: { color: "#ef4444", color0: "#22c55e", borderColor: "#ef4444", borderColor0: "#22c55e" },
-          markLine: mkRebalanceMarkLine(execDates, holdings.map((h) => h.period)),
+          markLine: mkPeriodMarkLine(execDates, periods, activeIdx),
+          markPoint: mkRebalanceMarkPoint(execDates, periods, activeIdx, valueByDate),
           markArea: mkPeriodMarkArea(execDates, activeIdx),
         },
         {
@@ -369,7 +424,16 @@ function IndexKlineChart({
       ],
     });
     chart.on("click", (params) => {
-      const p = params as { componentType?: string; dataIndex?: number; data?: { xAxis?: string } };
+      const p = params as {
+        componentType?: string;
+        dataIndex?: number;
+        data?: { xAxis?: string; periodIdx?: number };
+      };
+      // 点击 POI 点 → 直接选中对应期
+      if (p.componentType === "markPoint" && typeof p.data?.periodIdx === "number") {
+        onSelectPeriod(p.data.periodIdx);
+        return;
+      }
       let date: string | undefined;
       if (p.componentType === "markLine") {
         date = p.data?.xAxis;
@@ -389,14 +453,21 @@ function IndexKlineChart({
       chartRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bars, execDates, weightSeries]);
+  }, [bars, execDates, weightSeries, periods, valueByDate]);
 
-  // 选中期变化 → 仅更新 markArea
+  // 选中期变化 → 更新竖线/POI 点/高亮区间（不重建图表）
   useEffect(() => {
     chartRef.current?.setOption({
-      series: [{ name: "指数K线", markArea: mkPeriodMarkArea(execDates, activeIdx) }],
+      series: [
+        {
+          name: "指数K线",
+          markLine: mkPeriodMarkLine(execDates, periods, activeIdx),
+          markPoint: mkRebalanceMarkPoint(execDates, periods, activeIdx, valueByDate),
+          markArea: mkPeriodMarkArea(execDates, activeIdx),
+        },
+      ],
     });
-  }, [activeIdx, execDates]);
+  }, [activeIdx, execDates, periods, valueByDate]);
 
   return <div ref={ref} className="chart-container" />;
 }
@@ -646,7 +717,7 @@ export default function BacktestDashboard({ initial }: { initial: BacktestRespon
                   onSelectPeriod={setActiveIdx}
                 />
                 <div className="chart-source">
-                  虚线 = 调仓执行日（点击图表任一点可选中对应持仓期）· 悬浮查看当日持仓 · 买入持有（份额×后复权价 + 现金）· 分红再投资
+                  选中期的调仓日 = 金色虚线（仅一条）· 其他调仓日 = 金色圆点（POI，点击可直接选中）· 悬浮查看当日持仓 · 买入持有（份额×后复权价 + 现金）· 分红再投资
                 </div>
               </div>
 
@@ -661,7 +732,7 @@ export default function BacktestDashboard({ initial }: { initial: BacktestRespon
                   activeIdx={activeIdx}
                   onSelectPeriod={setActiveIdx}
                 />
-                <div className="chart-source">模拟指数点位 = 1000 × 组合净值 · 成交量按当日波动放大（示意）· 点击图表选中持仓期后下方明细同步高亮</div>
+                <div className="chart-source">模拟指数点位 = 1000 × 组合净值 · 成交量按当日波动放大（示意）· 选中期调仓为虚线、其余为 POI 点，点击选中后下方明细同步高亮</div>
               </div>
 
               {/* ===== 持仓与调仓明细 ===== */}
