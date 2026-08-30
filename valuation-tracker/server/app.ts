@@ -11,6 +11,7 @@ import { quotesRoutes } from "./routes/quotes.ts";
 import { klineRoutes } from "./routes/kline.ts";
 import { fundamentalsRoutes } from "./routes/fundamentals.ts";
 import { screenerRoutes } from "./routes/screener.ts";
+import { backtestRoutes } from "./routes/backtest.ts";
 import { darktradeRoutes } from "./routes/darktrade.ts";
 import { messagesRoutes } from "./routes/messages.ts";
 import { diagRoutes } from "./routes/diag.ts";
@@ -30,6 +31,7 @@ export const app = new Elysia()
   .use(klineRoutes)
   .use(fundamentalsRoutes)
   .use(screenerRoutes)
+  .use(backtestRoutes)
   .use(darktradeRoutes)
   .use(messagesRoutes)
   .use(diagRoutes)

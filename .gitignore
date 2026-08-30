@@ -55,3 +55,12 @@ Code/投研/valuation-tracker/public/data
 
 # 投研笔记
 鸩的投资笔记
+
+# 回测数据层与中间缓存（本地生成，不入库）
+# market/：duckdb 行情库 + parquet 原始 dump（约 520MB）
+# cache/：历史时点指标 JSONL 断点续跑缓存 + 股本快照
+# *-screener.{csv,json}：每期筛查中间产物（最终结果见 backtest-result.json）
+Research/00-Workspace/08-Backtest/market/
+Research/00-Workspace/08-Backtest/cache/
+Research/00-Workspace/08-Backtest/*-screener.csv
+Research/00-Workspace/08-Backtest/*-screener.json

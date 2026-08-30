@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, BookOpen, Home, LayoutGrid, MessageSquare } from "lucide-react";
+import { Activity, BookOpen, Home, LayoutGrid, MessageSquare, TrendingUp } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -16,6 +16,7 @@ const NAV_ICONS = [
   { href: "/", label: "首页", Icon: Home },
   { href: "/screener", label: "全市场初筛", Icon: LayoutGrid },
   { href: "/darktrade", label: "暗盘追踪", Icon: Activity },
+  { href: "/backtest", label: "回测", Icon: TrendingUp },
   { href: "/docs", label: "文档", Icon: BookOpen },
   { href: "/messages", label: "留言板", Icon: MessageSquare },
 ];

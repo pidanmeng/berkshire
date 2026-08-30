@@ -284,53 +284,83 @@ export async function getKline(
   return res.data?.item ?? [];
 }
 
-/** 财务报表：利润表 */
+/** 指数/板块历史日K（指数无复权概念；窗口 ≤ 10 年，单次单只） */
+export async function getIndexKline(
+  thscode: string,
+  startMs: number,
+  endMs: number,
+): Promise<{ date_ms: number; close_price: number }[]> {
+  const res = await apiGet<{ item: { date_ms: number; close_price: number }[] }>(
+    '/api/a-share-index/prices/historical',
+    {
+      thscode,
+      interval: '1d',
+      start: String(startMs),
+      end: String(endMs),
+    },
+  );
+  return res.data?.item ?? [];
+}
+
+/** 财务报表：利润表（limit 与 range 互斥，range 为毫秒区间，end-start ≤ 10 年） */
 export async function getIncomeStatements(
   thscode: string,
   period: 'annual' | 'quarterly' = 'annual',
   limit = 4,
+  range?: { start: number; end: number },
 ): Promise<IncomeStatement[]> {
+  const params: Record<string, string> = { thscode, period };
+  if (range) {
+    params.start = String(range.start);
+    params.end = String(range.end);
+  } else {
+    params.limit = String(limit);
+  }
   const res = await apiGet<{ timestamp: number; item: IncomeStatement[] }>(
     '/api/a-share/financials/income-statements',
-    {
-      thscode,
-      period,
-      limit: String(limit),
-    },
+    params,
   );
   return res.data?.item ?? [];
 }
 
-/** 财务报表：资产负债表 */
+/** 财务报表：资产负债表（limit 与 range 互斥） */
 export async function getBalanceSheets(
   thscode: string,
   period: 'annual' | 'quarterly' = 'annual',
   limit = 4,
+  range?: { start: number; end: number },
 ): Promise<BalanceSheet[]> {
+  const params: Record<string, string> = { thscode, period };
+  if (range) {
+    params.start = String(range.start);
+    params.end = String(range.end);
+  } else {
+    params.limit = String(limit);
+  }
   const res = await apiGet<{ timestamp: number; item: BalanceSheet[] }>(
     '/api/a-share/financials/balance-sheets',
-    {
-      thscode,
-      period,
-      limit: String(limit),
-    },
+    params,
   );
   return res.data?.item ?? [];
 }
 
-/** 财务报表：现金流量表 */
+/** 财务报表：现金流量表（limit 与 range 互斥） */
 export async function getCashFlows(
   thscode: string,
   period: 'annual' | 'quarterly' = 'annual',
   limit = 4,
+  range?: { start: number; end: number },
 ): Promise<CashFlow[]> {
+  const params: Record<string, string> = { thscode, period };
+  if (range) {
+    params.start = String(range.start);
+    params.end = String(range.end);
+  } else {
+    params.limit = String(limit);
+  }
   const res = await apiGet<{ timestamp: number; item: CashFlow[] }>(
     '/api/a-share/financials/cash-flow-statements',
-    {
-      thscode,
-      period,
-      limit: String(limit),
-    },
+    params,
   );
   return res.data?.item ?? [];
 }

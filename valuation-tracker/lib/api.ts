@@ -440,6 +440,66 @@ export function getScreener(params?: ScreenerParams, signal?: AbortSignal): Prom
   return get(`/api/screener${qs ? `?${qs}` : ""}`, signal);
 }
 
+// ===== 回测（/api/backtest）=====
+
+export interface BacktestStats {
+  periods: number;
+  avgTurnover: number;
+  totalReturn: number;
+  annualReturn: number;
+  benchmarkReturn: number;
+  excessReturn: number;
+  maxDrawdown: number;
+  sharpe: number;
+  winRate: number;
+}
+
+export interface BacktestHoldingWeight {
+  thscode: string;
+  name: string;
+  industry: string;
+  weight: number; // 权重（%）
+  score: number; // 综合分
+  pool: "明星池" | "观察池";
+}
+
+export interface BacktestHoldingPeriod {
+  period: string; // 调仓日 YYYY-MM-DD
+  report: string; // 对应报告期 YYYY-N
+  nextPeriod: string | null;
+  turnoverPct: number;
+  weights: BacktestHoldingWeight[];
+}
+
+export interface BacktestKlineBar {
+  date: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
+export interface BacktestResponse {
+  meta: {
+    name: string;
+    strategy: string;
+    benchmark: string;
+    startDate: string;
+    endDate: string;
+    rebalanceDates: string[];
+    dataSource: string; // "mock" | 真实回测引擎标识
+  };
+  nav: { dates: string[]; portfolio: number[]; benchmark: number[] };
+  kline: BacktestKlineBar[];
+  stats: BacktestStats;
+  holdings: BacktestHoldingPeriod[];
+}
+
+export function getBacktest(signal?: AbortSignal): Promise<BacktestResponse> {
+  return get("/api/backtest", signal);
+}
+
 export interface QuoteItem {
   thscode: string;
   name: string | null;
