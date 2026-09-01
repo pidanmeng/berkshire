@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import * as echarts from "echarts";
-import type { CompanyItem } from "@/lib/api";
+import type { CompanyItem, Announcement } from "@/lib/api";
 
 type MarkLineData = NonNullable<echarts.MarkLineComponentOption["data"]>;
 
@@ -17,16 +17,24 @@ function capLine(value: number | undefined, color: string, label: string): MarkL
   };
 }
 
+/** HTML 转义（公告标题进 tooltip，防注入） */
+function esc(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
 export default function PriceChart({
   bars,
   target,
   marketCapYi,
   totalSharesYi,
+  announcements,
 }: {
   bars: { date: string; open: number; high: number; low: number; close: number; volume: number }[];
   target: CompanyItem["targetMarketCapYi"];
   marketCapYi: number | null;
   totalSharesYi?: number | null;
+  /** 公告 POI：在对应日期 K 线下方打标记，悬停显示标题，点击打开 PDF */
+  announcements?: Announcement[];
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const chartRef = useRef<echarts.ECharts | null>(null);
@@ -52,6 +60,30 @@ export default function PriceChart({
       capLine(targetPerShare(target?.neutral), "#fbbf24", "合理"),
       capLine(targetPerShare(target?.optimistic), "#f87171", "乐观"),
     ].filter((x): x is MarkLineData[number] => x !== null);
+
+    // 公告 POI：仅保留 K 线日期范围内的公告，在当日 K 线下方打金色标记点
+    // （与巨潮公告 date 同 YYYY-MM-DD 格式直接对齐；hover 显示标题，点击打开 PDF）
+    const inRange: Announcement[] = (announcements ?? []).filter((a) => dates.includes(a.date));
+    const markPoints = inRange.map((a) => {
+      const idx = dates.indexOf(a.date);
+      const low = bars[idx].low;
+      return {
+        name: a.title,
+        coord: [a.date, +(low * 0.965).toFixed(3)],
+        value: a.title,
+        symbol: "pin",
+        symbolSize: 14,
+        itemStyle: { color: "#f2c14e", borderColor: "#000000", borderWidth: 0.5 },
+        label: { show: false },
+        tooltip: {
+          formatter: () =>
+            `<div style="max-width:320px"><div style="color:#f2c14e;font-size:11px">${a.date} 公告</div>` +
+            `<div style="font-size:12px;margin-top:3px">${esc(a.title)}</div>` +
+            (a.pdfUrl ? `<div style="font-size:11px;color:#a1a1a1;margin-top:3px">点击打开公告 PDF ↗</div>` : "") +
+            `</div>`,
+        },
+      };
+    });
 
     chart.setOption({
       backgroundColor: "transparent",
@@ -95,6 +127,9 @@ export default function PriceChart({
           data: kline,
           itemStyle: { color: "#ef4444", color0: "#22c55e", borderColor: "#ef4444", borderColor0: "#22c55e" },
           markLine: markLines.length > 0 ? { symbol: "none", data: markLines, label: { fontSize: 10 } } : undefined,
+          markPoint: markPoints.length > 0
+            ? { data: markPoints, animation: false }
+            : undefined,
         },
         {
           name: "成交量",
@@ -107,24 +142,35 @@ export default function PriceChart({
       ],
     });
 
+    // 点击公告 POI → 新标签打开公告 PDF（index 与 markPoints 数组顺序一致）
+    const onClick = (params: unknown) => {
+      const p = params as { componentType?: string; dataIndex?: number };
+      if (p.componentType === "markPoint" && typeof p.dataIndex === "number") {
+        const ann = inRange[p.dataIndex];
+        if (ann?.pdfUrl) window.open(ann.pdfUrl, "_blank", "noopener,noreferrer");
+      }
+    };
+    chart.on("click", onClick);
+
     const onResize = () => chart.resize();
     window.addEventListener("resize", onResize);
     // 容器尺寸变化（侧栏折叠/面板拖拽/移动端断点切换）时自适应
     const ro = new ResizeObserver(onResize);
     ro.observe(ref.current);
     return () => {
+      chart.off("click", onClick);
       window.removeEventListener("resize", onResize);
       ro.disconnect();
       chart.dispose();
       chartRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bars, target, marketCapYi, totalSharesYi]);
+  }, [bars, target, marketCapYi, totalSharesYi, announcements]);
 
   return (
     <div>
       <div ref={ref} className="chart-container" />
-      <div className="chart-source">前复权日 K · 虚线为目标市值折算每股参考价 · 数据源：同花顺 hithink</div>
+      <div className="chart-source">前复权日 K · 虚线为目标市值折算每股参考价 · 金色标记为公告（悬停查看，点击打开）· 数据源：同花顺 hithink + 巨潮</div>
     </div>
   );
 }

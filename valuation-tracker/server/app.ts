@@ -12,6 +12,8 @@ import { klineRoutes } from "./routes/kline.ts";
 import { fundamentalsRoutes } from "./routes/fundamentals.ts";
 import { screenerRoutes } from "./routes/screener.ts";
 import { darktradeRoutes } from "./routes/darktrade.ts";
+import { announcementsRoutes } from "./routes/announcements.ts";
+import { stListRoutes } from "./routes/st-list.ts";
 import { messagesRoutes } from "./routes/messages.ts";
 import { diagRoutes } from "./routes/diag.ts";
 import { serverTiming } from '@elysia/server-timing'
@@ -31,6 +33,8 @@ export const app = new Elysia()
   .use(fundamentalsRoutes)
   .use(screenerRoutes)
   .use(darktradeRoutes)
+  .use(announcementsRoutes)
+  .use(stListRoutes)
   .use(messagesRoutes)
   .use(diagRoutes)
   .onError(({ code, error }) => {

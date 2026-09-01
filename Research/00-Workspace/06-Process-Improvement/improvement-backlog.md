@@ -1,6 +1,6 @@
 # 流程改进 Backlog
 
-> 状态真源：improvement-backlog.json · 最后更新：2026-08-28T12:08:15.481Z
+> 状态真源：improvement-backlog.json · 最后更新：2026-09-01T04:23:03.847Z
 
 | 状态 | 严重度 | 问题描述 | 目标文件 | 任务数 | 问题码 |
 |---|---|---|---|---:|---|
@@ -72,3 +72,6 @@
 | 观察 | 中 | quality-screen --mode report 在 frontmatter financials 块显式提供 … | .trae/scripts/quality-gate/quality-screen.ts | 1 | quality-screen-nonrecurring-field-mistrigger |
 | 观察 | 中 | leverageSafety 仅由资产负债率单变量反向评分（score(debtRatio, 0.25, 0.55, t… | .trae/scripts/quality-gate/quality-screen.ts | 1 | quality-screen-leverage-score-bias |
 | 观察 | 低 | stock.ts --reports 输出的研报详情页为东财 jshtml 动态页，fetch-file.ts 因 Co… | .trae/scripts/stock-data/stock.ts | 1 | research-report-pdf-link-format |
+| 候选 | 高 | stock.ts --announcements 默认 pageSize=20 且不循环翻页，近 730 天只返回最近 … | .trae/scripts/stock-data/stock.ts | 1 | stock-announcements-pagination-limit |
+| 观察 | 低 | quality-screen --mode auto 传负值参数（如 --inventory-growth -0.01）… | .trae/scripts/quality-gate/quality-screen.ts | 1 | quality-screen-negative-value-parse-ambiguity |
+| 观察 | 低 | st-dive 定向抓取公告 PDF 时，编排器首次按记忆/推断的 finalpage URL 下载（如立案告知书猜为 … | .trae/commands/st-dive.md | 1 | st-dive-announcement-url-copy-discipline |

@@ -1,0 +1,57 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "st-dive-ST臻镭-20260901-a3f8",
+  "origin": "process-improvement",
+  "command": "st-dive ST臻镭",
+  "status": "success",
+  "issues": [
+    {
+      "problemCode": "stock-announcements-pagination-limit",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/stock-data/stock.ts",
+      "symptom": "stock.ts --announcements 默认 pageSize=20 且不循环翻页，近 730 天只返回最近 20 条（本次全是 2026 年 7-8 月公告）；戴帽公告（2026-04-18 实施其他风险警示暨停牌）、行政处罚事先告知书（2026-04-18）、行政处罚决定书（2026-05-09）、立案告知书（2025-12-27）、前期会计差错更正（2025-12-25）等 ST 一级信源重大公告全部缺失，ST 命令（公告权重 40%）的公告时间线重建无法基于脚本输出完成",
+      "evidence": [
+        { "grade": "A", "detail": "2026-09-01 st-dive ST臻镭：bun run stock.ts --code 688270 --announcements --days 730 仅返回 20 条（全部 2026-07~08，董事会换届/半年报类），戴帽/立案/差错更正/处罚等重大公告零返回；随后以 pageSize=30 循环翻页直调巨潮 hisAnnouncement（.trae/scripts/stock-data/fetch-announcements.ts，临时脚本）得到完整 203 条，含全部关键公告" }
+      ],
+      "rootCauseHypothesis": "stock.ts 的 queryAnnouncements 仅取单页（pageSize 默认 20，sortType 缺省按时间倒序），未实现分页循环，导致大时间窗口（--days 730）下只返回最新一页，早期重大公告被截断；deep-dive/st-dive 命令按 --days 拉长窗口的用法未被脚本支持",
+      "goal": "stock.ts --announcements 支持全量分页拉取（循环翻页至 totalAnnouncement 或提供 --page-size 与 --max-pages 参数），确保 --days 730 等长窗口下返回全部公告而非单页；或至少将默认 pageSize 提升并明确返回条数上限",
+      "severity": "high",
+      "confidence": 0.95,
+      "benefit": "ST/事件驱动研究（公告权重 40%）的重大公告采集不再依赖临时脚本；公告时间线重建覆盖完整，避免戴帽/立案等关键公告漏采导致误判",
+      "risk": "分页循环增加巨潮 API 调用次数，需控制速率与总页数上限，避免被限流；与既有 category 过滤逻辑需保持兼容",
+      "acceptance": "stock.ts --code X --announcements --days 730 返回近 730 天全部公告（含早期重大公告），并附总条数说明"
+    },
+    {
+      "problemCode": "quality-screen-negative-value-parse-ambiguity",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "quality-screen --mode auto 传负值参数（如 --inventory-growth -0.01）报 ERR_PARSE_ARGS_INVALID_OPTION_VALUE『argument is ambiguous』并退出；需改用 --inventory-growth=-0.01 语法，脚本注释虽说明但 CLI 报错不友好，首次使用者易误以为参数名错误",
+      "evidence": [
+        { "grade": "C", "detail": "2026-09-01 st-dive ST臻镭：bun run quality-screen.ts --mode auto ... --inventory-growth -0.01 报 ERR_PARSE_ARGS_INVALID_OPTION_VALUE 退出码 1；改为 --inventory-growth=-0.01 后成功（RED 0.0 分）；脚本头部注释已记载负值参数需 --x=-v 语法，但报错信息未提示该解决方式" }
+      ],
+      "rootCauseHypothesis": "脚本使用 bun 内置 parseArgs，以 '-' 开头的负值参数值被误解析为未知选项；报错信息未包含『负值请用 --x=-v』的提示，脚本文档中的说明未同步到运行时错误信息",
+      "goal": "quality-screen 对负值参数的报错信息补充『负值参数请使用 --<name>=<负值> 语法（如 --inventory-growth=-0.01）』的引导，或在 README/用法示例中显式覆盖负值场景",
+      "severity": "low",
+      "confidence": 0.6,
+      "benefit": "减少负值参数（存货/净利负增长场景常见）使用时的踩坑与重试成本",
+      "risk": "低，仅影响错误提示与文档，不改变评分逻辑",
+      "acceptance": "传负值参数时脚本给出明确语法引导而非 ambiguous 报错"
+    },
+    {
+      "problemCode": "st-dive-announcement-url-copy-discipline",
+      "targetKind": "command",
+      "targetPath": ".trae/commands/st-dive.md",
+      "symptom": "st-dive 定向抓取公告 PDF 时，编排器首次按记忆/推断的 finalpage URL 下载（如立案告知书猜为 1224931090）返回 HTTP 404，需先从巨潮公告清单精确复制 adjunctUrl 才能成功；公告 PDF URL 无稳定规律可推断",
+      "evidence": [
+        { "grade": "C", "detail": "2026-09-01 st-dive ST臻镭：fetch-file.ts 用臆测 URL（https://static.cninfo.com.cn/finalpage/2025-12-27/1224931090.PDF）下载立案告知书报 404；从 announcements-list.txt 清单核对实际 URL（1224902453.PDF）后成功" }
+      ],
+      "rootCauseHypothesis": "st-dive 命令文档未强调『公告 PDF URL 必须从巨潮公告清单精确复制、禁止按日期/序号推断』，编排器在公告清单未落盘前凭模式猜测 URL 导致 404",
+      "goal": "st-dive 命令文档（或共享脚本用法表）补充约束：公告 PDF 下载前先拉取公告清单并将 URL 落盘，fetch-file 一律使用清单中的 adjunctUrl，禁止推断 finalpage 序号",
+      "severity": "low",
+      "confidence": 0.6,
+      "benefit": "减少 ST 公告采集阶段的无效下载与重试，保障公告原文落盘完整",
+      "risk": "低，仅过程纪律约束，不涉及逻辑变更",
+      "acceptance": "st-dive 流程中公告 URL 均取自已落盘的公告清单，无臆测 URL 下载"
+    }
+  ]
+}

@@ -120,6 +120,7 @@ else:
 | `/validate [文件]` | 仅 Phase 3 | — |
 | `/report [主题]` | 基于已有知识生成报告 | — |
 | `/revise [报告] [意见]` | 修订报告 | — |
+| `/st-dive [公司名]` | ST/*ST 标的价值评价深度调研（双轨框架：价值修复+事件博弈，公告驱动权重提升；方法论见 `10-Knowledge/99-宏观/ST股价值评价方法论.md`，产物接入 valuation-tracker「ST 专题」页） | — |
 | `/sync-links` | 修复断链与缺失 properties | — |
 | `/update-moc` | 更新 MOC 索引 | — |
 | `/quality-report [月份]` | 生成质量趋势报告 | `--month YYYY-MM` |

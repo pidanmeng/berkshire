@@ -159,6 +159,12 @@ export interface CompanyItem {
   updateCount: number;
   /** 调研截止后未采信的财报列表（基本面 tooltip 展示） */
   fundamentalItems?: { title: string; date: string }[];
+  // ST 专用字段（st-dive 产出；供 ST 专题页消费；普通公司为 null/undefined）
+  stStatus?: string | null;                 // ST / *ST / 摘帽 / 退市整理
+  stReason?: string | null;                 // 戴帽规则条款简述
+  delistRisk?: string | null;               // 高 / 中 / 低
+  removalPath?: string | null;              // 财务 / 重整 / 重组
+  stRemovalTimeline?: { date: string; event: string; status: string }[] | null;
 }
 
 export interface CompaniesResponse { list: CompanyItem[]; fetchedAt: number }
@@ -459,6 +465,55 @@ export interface QuotesResponse {
 
 export function getQuotes(codes: string[], signal?: AbortSignal): Promise<QuotesResponse> {
   return get(`/api/quotes?codes=${encodeURIComponent(codes.join(","))}`, signal);
+}
+
+// ===== ST 专题（/api/st-list + /api/announcements）=====
+
+/** 巨潮公告（服务端代理后的安全结构） */
+export interface Announcement {
+  title: string;
+  date: string;    // YYYY-MM-DD（与 K 线 bars[].date 同格式，可直接对齐 POI）
+  pdfUrl: string;
+}
+
+export interface AnnouncementsResponse {
+  thscode: string;
+  items: Announcement[];
+  fetchedAt: number;
+}
+
+export type StType = "ST" | "*ST" | "退";
+
+/** ST 名单单行（全市场 ST/*ST/退市整理 + 已研究标记） */
+export interface StListItem {
+  thscode: string;
+  name: string;
+  stType: StType;
+  market: string; // SH / SZ / BJ
+  price: number | null;
+  pct: number | null;
+  mcap: number | null; // 元
+  researched: boolean;
+  stStatus: string | null;
+  delistRisk: string | null;
+  stReason: string | null;
+  removalPath: string | null;
+}
+
+export interface StListResponse {
+  updatedAt: string;
+  total: number;
+  items: StListItem[];
+}
+
+/** 公司公告（重要公告过滤由后端做；st=true 时 ST 公司放宽全部返回） */
+export function getAnnouncements(thscode: string, days = 365, st = false, signal?: AbortSignal): Promise<AnnouncementsResponse> {
+  return get(`/api/announcements/${encodeURIComponent(thscode)}?days=${days}&category=all${st ? "&st=1" : ""}`, signal);
+}
+
+/** ST 全市场名单（ST/*ST/退市整理 + 行情 + 已研究标记） */
+export function getStList(signal?: AbortSignal): Promise<StListResponse> {
+  return get("/api/st-list", signal);
 }
 
 // ===== 暗盘追踪（/api/darktrade）=====

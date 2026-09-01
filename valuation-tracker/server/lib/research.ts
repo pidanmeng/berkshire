@@ -7,7 +7,7 @@
 import { existsSync } from "node:fs";
 import { join, resolve, dirname, basename } from "node:path";
 import matter from "gray-matter";
-import { computeComposite } from "./weights.ts";
+import { computeComposite, type SixScores } from "./weights.ts";
 import { openDocStore, type DocStore } from "./doc-store.ts";
 
 /** 调研数据存储单例（FS 或 SQLite，由 doc-store 按环境探测） */
@@ -65,6 +65,12 @@ export interface CompanyNote {
   earnsType: string | null;        // 赚的是什么钱
   whyInvest: string | null;        // 为什么投资他
   whyNotInvest: string | null;     // 为什么不投资他
+  // ST 专用字段（st-dive 产出；供 valuation-tracker ST 专题页消费）
+  stStatus: string | null;         // ST / *ST / 摘帽 / 退市整理
+  stReason: string | null;         // 戴帽规则条款简述
+  delistRisk: string | null;       // 高 / 中 / 低
+  removalPath: string | null;      // 财务 / 重整 / 重组
+  stRemovalTimeline: { date: string; event: string; status: string }[] | null;
 }
 
 /** PEG 快照：PEG = 当前价对应 PE ÷ 预测期增速(%）；growthBasis: forward（预测期）/ yoy（单年同比） */
@@ -204,10 +210,27 @@ function parseFinancials(rawFin: Record<string, unknown> | null): Financials | n
  * 解析公司笔记 frontmatter → CompanyNote（纯函数，构建期 generate-static-data 复用）
  * relPath：POSIX 相对路径（相对 Research 根），供 notePath/fileName 使用。
  */
+/** 公司笔记类型（含 ST 深度调研笔记）——其余类型（deep-dive-update/report 等）跳过 */
+const NOTE_TYPES = new Set(["company", "st-deep-dive-report"]);
+
+/** scores 键名归一化：ST 模板用 capability_circle/reverse_checklist/valuation，统一映射到六维标准键 */
+function normalizeScores(raw: Record<string, number> | null): SixScores | null {
+  if (!raw) return null;
+  const out: SixScores = {
+    capability: raw.capability ?? raw.capability_circle ?? null,
+    moat: raw.moat ?? null,
+    business_model: raw.business_model ?? null,
+    management: raw.management ?? null,
+    inversion: raw.inversion ?? raw.reverse_checklist ?? null,
+    historical: raw.historical ?? raw.valuation ?? null,
+  };
+  return Object.values(out).some((v) => v != null && !Number.isNaN(v)) ? out : null;
+}
+
 export function parseNote(relPath: string, content: string): CompanyNote | null {
   const { data } = matter(content);
   // 公司文件夹内可能存在 deep-dive-update 等非公司类型产物，跳过以免被当成独立公司
-  if (typeof data.type === "string" && data.type !== "company") return null;
+  if (typeof data.type === "string" && !NOTE_TYPES.has(data.type)) return null;
   const sc = (data.stock_code ?? data.stockCode) as string | undefined;
   const thscode = typeof sc === "string" ? sc.toUpperCase() : "";
   if (!thscode) return null;
@@ -231,6 +254,7 @@ export function parseNote(relPath: string, content: string): CompanyNote | null 
     ? data.financials as Record<string, unknown> : null;
 
   const financials = parseFinancials(rawFin);
+  const normalizedScores = normalizeScores(rawScores);
 
   return {
     thscode,
@@ -240,16 +264,10 @@ export function parseNote(relPath: string, content: string): CompanyNote | null 
     industry: unwrapWiki(data.industry),
     subIndustry: unwrapWiki(data.sub_industry ?? data.subIndustry),
     tags: Array.isArray(data.tags) ? data.tags.map(String) : [],
-    scores: rawScores
-      ? {
-          capability: rawScores.capability, moat: rawScores.moat,
-          business_model: rawScores.business_model, management: rawScores.management,
-          inversion: rawScores.inversion, historical: rawScores.historical,
-        }
-      : null,
-    composite: computeComposite(rawScores ?? {}),
+    scores: normalizedScores,
+    composite: computeComposite(normalizedScores ?? {}),
     targetMarketCapYi: rawCap
-      ? { pessimistic: rawCap.pessimistic, neutral: rawCap.neutral, optimistic: rawCap.optimistic }
+      ? { pessimistic: rawCap.pessimistic, neutral: rawCap.neutral ?? rawCap.fair, optimistic: rawCap.optimistic }
       : null,
     forwardPe: rawFpe
       ? {
@@ -286,6 +304,21 @@ export function parseNote(relPath: string, content: string): CompanyNote | null 
     earnsType: typeof data.earns_type === "string" ? data.earns_type : null,
     whyInvest: typeof data.why_invest === "string" ? data.why_invest : null,
     whyNotInvest: typeof data.why_not_invest === "string" ? data.why_not_invest : null,
+    // ST 专用字段（st-dive 写入；js-yaml 会把 YYYY-MM-DD 解析为 Date，统一归一化）
+    stStatus: typeof data.st_status === "string" ? data.st_status : null,
+    stReason: typeof data.st_reason === "string" ? data.st_reason : null,
+    delistRisk: typeof data.delist_risk === "string" ? data.delist_risk : null,
+    removalPath: typeof data.removal_path === "string" ? data.removal_path : null,
+    stRemovalTimeline: Array.isArray(data.st_removal_timeline)
+      ? data.st_removal_timeline.map((it: unknown) => {
+          const o = (it ?? {}) as Record<string, unknown>;
+          return {
+            date: ymd(o.date) ?? "",
+            event: typeof o.event === "string" ? o.event : "",
+            status: typeof o.status === "string" ? o.status : "",
+          };
+        })
+      : null,
   };
 }
 

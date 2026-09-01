@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import type {
+  Announcement,
   CompanyDocs,
   CompanyDocMeta,
   CompanyStaticDetail,
@@ -10,7 +11,7 @@ import type {
   CompanyUpdateMeta,
   FundamentalResponse,
 } from '@/lib/api';
-import { getFundamentals, fetchStaticCompanies, staticDocUrl, getApiBase } from '@/lib/api';
+import { getFundamentals, getAnnouncements, fetchStaticCompanies, staticDocUrl, getApiBase } from '@/lib/api';
 import { fetchQuotesThrottled, fetchKline, type MarketQuote } from '@/lib/market-data';
 import { classifyCapZone } from '@/server/lib/safety';
 import {
@@ -112,6 +113,7 @@ export default function CompanyDashboard({
   const [bars, setBars] = useState<KlineBar[]>([]);
   const [quote, setQuote] = useState<MarketQuote | null>(null);
   const [fundamental, setFundamental] = useState<FundamentalResponse | null>(null);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -127,6 +129,7 @@ export default function CompanyDashboard({
     setBars([]);
     setQuote(null);
     setFundamental(null);
+    setAnnouncements([]);
     setError(null);
 
     (async () => {
@@ -192,6 +195,12 @@ export default function CompanyDashboard({
       getFundamentals(code)
         .then((fd) => {
           if (!cancelled) setFundamental(fd);
+        })
+        .catch(() => {});
+      // 公告（巨潮经服务端代理）：普通公司按重要公告过滤，ST 公司（公告驱动）放宽全部返回
+      getAnnouncements(code, 365, !!item.stStatus)
+        .then((res) => {
+          if (!cancelled) setAnnouncements(res.items ?? []);
         })
         .catch(() => {});
 
@@ -352,6 +361,92 @@ export default function CompanyDashboard({
         )}
       </div>
 
+      {/* ST 状态卡（st-dive 产出 frontmatter st_status 非空时显示） */}
+      {note.stStatus && (
+        <div className="card" style={{ borderLeft: '3px solid var(--accent-danger)' }}>
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="m-0" style={{ color: 'var(--accent-danger)' }}>
+              ST 专题
+            </h3>
+            <span className="badge badge-red">{note.stStatus}</span>
+            {note.delistRisk && (
+              <span className="badge badge-yellow">退市风险：{note.delistRisk}</span>
+            )}
+            {note.removalPath && (
+              <span className="badge badge-primary">摘帽路径：{note.removalPath}</span>
+            )}
+          </div>
+          {note.stReason && (
+            <div style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '8px 0 2px' }}>
+              戴帽原因：{note.stReason}
+            </div>
+          )}
+          {note.stRemovalTimeline && note.stRemovalTimeline.length > 0 && (
+            <div style={{ marginTop: 8 }}>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>
+                关键时间节点（st_removal_timeline）
+              </div>
+              <ul className="m-0 list-none space-y-1 p-0" style={{ fontSize: 12 }}>
+                {note.stRemovalTimeline.map((t, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <span className="shrink-0 font-mono text-[var(--text-muted)]">{t.date || '—'}</span>
+                    <span className="min-w-0 flex-1 text-[var(--text-primary)]">{t.event}</span>
+                    <span className="shrink-0 text-[var(--text-muted)]">（{t.status || '—'}）</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 公告时间线（巨潮经服务端代理；与 K 线 POI 同源） */}
+      {announcements.length > 0 && (
+        <div className="card">
+          <div className="flex items-center justify-between">
+            <h3>公告时间线（近一年 · 巨潮）</h3>
+            <a
+              className="back-link"
+              href={`${getApiBase()}/api/announcements/${note.thscode}?days=365&category=all${note.stStatus ? '&st=1' : ''}`}
+              target="_blank"
+              rel="noreferrer"
+              title="查看后端公告接口原始返回"
+            >
+              接口 JSON ↗
+            </a>
+          </div>
+          <div
+            style={{
+              maxHeight: 280,
+              overflowY: 'auto',
+              marginTop: 8,
+              fontSize: 12,
+            }}
+          >
+            <ul className="m-0 list-none space-y-1.5 p-0">
+              {announcements.map((a, i) => (
+                <li key={i} className="flex items-start gap-2">
+                  <span className="shrink-0 font-mono text-[var(--text-muted)]">{a.date}</span>
+                  {a.pdfUrl ? (
+                    <a
+                      className="min-w-0 flex-1 break-words text-[var(--text-primary)] underline-offset-2 hover:underline"
+                      href={a.pdfUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="打开公告 PDF"
+                    >
+                      {a.title} ↗
+                    </a>
+                  ) : (
+                    <span className="min-w-0 flex-1 break-words text-[var(--text-primary)]">{a.title}</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+
       {/* 股价走势（近一年日 K） */}
       <div className="card">
         <h3>股价走势（近一年日 K）</h3>
@@ -361,6 +456,7 @@ export default function CompanyDashboard({
             target={cap}
             marketCapYi={marketCapYi}
             totalSharesYi={totalSharesYi}
+            announcements={announcements}
           />
         ) : (
           <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>
