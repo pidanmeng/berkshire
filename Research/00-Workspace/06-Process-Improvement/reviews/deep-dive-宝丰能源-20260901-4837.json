@@ -1,0 +1,89 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "deep-dive-宝丰能源-20260901-4837",
+  "origin": "process-improvement",
+  "command": "deep-dive 宝丰能源",
+  "status": "success",
+  "issues": [
+    {
+      "problemCode": "document-reader-selfcheck-missing",
+      "targetKind": "agent",
+      "targetPath": ".trae/agents/document-reader.md",
+      "symptom": "document-reader 角色无同名 .self-check.ts 自检脚本，deep-read 产出（9 大精读目标 + 三年年报 + 多空论证第十章）缺乏自动化校验。本任务为跨任务第 4 例复现：document-reader 子 Agent 无法运行脚本自检，只能按角色定义质量标准清单手动逐项核验，并补充了 A 级目录证据（其余五个角色均有 .self-check.ts，document-reader 为唯一缺口）",
+      "evidence": [
+        { "grade": "A", "detail": "2026-09-01 deep-dive 宝丰能源：document-reader 子任务交付报告明确注明『self-check 脚本 .trae/agents/document-reader.md.self-check.ts 在仓库中不存在（AGENTS.md 声明的路径缺失），已按角色定义质量标准清单手动逐项核验全部通过』；.trae/agents/ 目录 LS 确认仅有 cross-validator/info-alchemist/info-hunter/knowledge-architect/process-optimizer/report-writer 六个 .self-check.ts，document-reader.md.self-check.ts 缺席；info-hunter.md.self-check.ts 存在（.trae/agents/ 目录所列），说明该脚本体系为统一约定，document-reader 为唯一缺口" }
+      ],
+      "rootCauseHypothesis": "document-reader 角色先于自检脚本体系建立，deep-read 九大目标/多空论证覆盖率无脚本化验收；建仓 agents/ 目录时未随角色定义文件一并创建该自检脚本",
+      "goal": "补建 document-reader.md.self-check.ts（校验 9 大精读目标覆盖率、三年年报覆盖、扣非归因/指标波动归因/逻辑一致性、多空论证第十章完整性 10.1-10.5、No-Go 红线显式标注），纳入 Phase 1.5 验收",
+      "severity": "high",
+      "confidence": 0.95,
+      "benefit": "DocumentReader 自检从人工核验升级为脚本可复现，与其余五个角色对齐；防止精读遗漏关键强制项而不被发现",
+      "risk": "新增脚本需与 document-reader.md 定义的质量标准逐项对齐，防止脚本与定义漂移",
+      "acceptance": ".trae/agents/document-reader.md.self-check.ts 存在且可通过 bun 语法检查；对含/不含第十章多空论证的样例 deep-read 文件分别给出通过/不通过判定"
+    },
+    {
+      "problemCode": "quality-screen-report-mode-absolute-value-as-growth",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "quality-screen --mode report 在公司笔记 frontmatter 缺 growth 字段（或从正文回退解析）时，把财务绝对值误当增速：营收『480.38 亿』解析为营收同比 48038.00%、净利『113.50 亿』解析为净利同比 11350.00%，触发『净利含大额一次性损益』误报并得 RED 4.0；改用 --mode auto 显式传增速 45.64/79.09 后正确输出 YELLOW 5.9",
+      "evidence": [
+        { "grade": "B", "detail": "2026-09-01 deep-dive 宝丰能源：quality-screen --mode report --file（宝丰能源-公司研究-draft.md，frontmatter 含 valuation_type=cyclical/peg=0.0 但无结构化 financials 块）输出『营收同比 48038.00%』『净利同比 11350.00%』及 RED 4.0 + 一次性损益红牌；同日 --mode auto --revenue-growth 45.64 --earnings-growth 79.09 --type cyclical 输出 YELLOW 5.9 无红牌；同一份数据两种模式结论 RED↔YELLOW 反转，属解析口径缺陷而非财务数据问题" }
+      ],
+      "rootCauseHypothesis": "report 模式正则从正文财务表提取数值时，未区分『绝对值』与『增速/同比』字段，优先命中营收/净利绝对值列并把单位（亿）剥离后当作百分比增速；frontmatter 无结构化 financials 块时回退正文解析，导致增速字段错位",
+      "goal": "quality-screen report 模式解析增速时增加单位/口径校验：明确匹配『同比』『增速』『%』等上下文，禁止把带『亿』的绝对值当增速；或 frontmatter 缺少结构化增速字段时显式提示缺参并要求 --mode auto 传参，而不是静默错误解析",
+      "severity": "medium",
+      "confidence": 0.75,
+      "benefit": "消除 report 模式对缺增速字段笔记的 RED 误判，避免编排器/用户因解析缺陷得到错误筛查结论",
+      "risk": "需保持与既有 report 模式正则兼容，防止误伤正常解析路径",
+      "acceptance": "对 frontmatter 无增速字段的笔记，report 模式不把绝对值当增速（输出增速为 N/A 或提示缺参），且不再触发『大额一次性损益』误报红牌"
+    },
+    {
+      "problemCode": "quality-screen-growth-param-display-times100",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "quality-screen --mode auto 传增速参数 --revenue-growth 45.64 --earnings-growth 79.09（脚本注释 growth 类参数不做单位折算），输出财务筛查表却显示『营收同比 4564.00%』『净利同比 7909.00%』并误触发『净利含大额一次性损益：净利同比 7909.0%』红牌警告；评分逻辑判定虽正确（≥15% 强成长），但显示与红牌文案失真，误导读者以为净利含一次性损益",
+      "evidence": [
+        { "grade": "B", "detail": "2026-09-01 deep-dive 宝丰能源：quality-screen --mode auto 传 --revenue-growth 45.64 --earnings-growth 79.09，输出『营收同比 4564.00%』『净利同比 7909.00%』及红牌『⚠️ 净利含大额一次性损益：净利同比 7909.0%』；宝丰 2025 年报扣非>归母（非经常性为负，主因慈善捐赠），不存在大额一次性收益，红牌为显示 bug 误报；内部评分（growth 6 分）判断正确，仅展示层 ×100 且文案误触发" }
+      ],
+      "rootCauseHypothesis": "quality-screen 对 growth 类参数显示时按百分比格式 ×100 渲染（与 ROE/毛利率等 0-1 参数同一渲染路径），而 45.64/79.09 本身已是百分比数值，导致显示放大 100 倍；『大额一次性损益』判定复用了该显示值做阈值判断（7909% >> 阈值），从而误报",
+      "goal": "quality-screen 参数渲染区分『百分比数值（45.64→45.64%）』与『小数比率（0.4564→45.64%）』两类输入，growth 类按百分比直接显示；一次性损益判定改用内部原始值而非显示值",
+      "severity": "medium",
+      "confidence": 0.8,
+      "benefit": "消除 YELLOW/GREEN 公司被误报『含大额一次性损益』红牌与 45 倍夸张增速显示，提高筛查结论可信度",
+      "risk": "渲染路径修改需回归现有 --mode auto/report 输出，防止已有笔记回读结果变化",
+      "acceptance": "--mode auto --revenue-growth 45.64 时财务筛查表显示『营收同比 45.64%』且不触发一次性损益红牌"
+    },
+    {
+      "problemCode": "checklist-auto-goodwill-parse-error",
+      "targetKind": "script",
+      "targetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "symptom": "50 项投资决策清单 AUTO 扫描第 15 项『商誉/净资产 <30%』把宝丰能源商誉占比解析为 30.0% 触发黄牌警示，而年报实际商誉 11.24 亿占净资产 2.3%（2025 减值测试通过）；报告附录 D 第 7 项已正确载明 2.3%，脚本解析与年报实际严重背离，需人工修正",
+      "evidence": [
+        { "grade": "B", "detail": "2026-09-01 deep-dive 宝丰能源：investment-checklist-auto.ts 对（报告+公司笔记）输出『#15 商誉占比 ❌ 🚩 商誉/净资产=30.0% ≥30%（商誉减值风险）』；公司笔记/报告正文载明商誉 11.24 亿、净资产约 484 亿、占比 2.3%，且附录 D 10 项清单第 7 项判定 ✅（<30%）；同一次扫描对同一数据源给出矛盾判定，脚本正则命中 30% 字样（可能命中『30%』阈值文案或其他字段）" }
+      ],
+      "rootCauseHypothesis": "investment-checklist-auto.ts 商誉占比正则对文本中『30%』『≥30%』等阈值文案敏感，或从估值/分红率（如分红率 44.85%、负债率 46.32%）附近上下文误取数字，未锚定『商誉』关键词的最近数值",
+      "goal": "investment-checklist-auto.ts 商誉项正则锚定『商誉』关键词上下文取值（如『商誉 11.24 亿』或『商誉/净资产 2.3%』），增加与报告/笔记明示占比的一致性校验，解析值偏差>10pp 时输出警示而非直接判定",
+      "severity": "medium",
+      "confidence": 0.65,
+      "benefit": "消除 AUTO 扫描对低商誉公司的误报黄牌，减少人工修正与附录回填成本",
+      "risk": "正则收紧可能漏报真实高商誉公司，需用样本回归验证",
+      "acceptance": "对商誉占比 2.3% 的宝丰能源笔记，AUTO 扫描第 15 项输出 ✅ 或 N/A，不再触发商誉减值黄牌"
+    },
+    {
+      "problemCode": "research-report-bear-view-sourcing",
+      "targetKind": "process",
+      "targetPath": "AGENTS.md",
+      "symptom": "deep-dive 命令要求研报采集覆盖多空分歧『至少 1 篇看多 + 1 篇看空/谨慎（如有）』，但 stock.ts --reports 近 400 天返回 28 条研报全部为买入/增持/优于大市等看多或中性评级，无看空研报；空方证据只能依赖外部财经媒体文章（头条财经《煤价跌了煤化工才赚》、首财《业绩持续高增长 宝丰能源靠什么、隐忧又知多少》），且其中一篇存在数据口径错误（把 2026H1 数据误标为 2025 年）",
+      "evidence": [
+        { "grade": "C", "detail": "2026-09-01 deep-dive 宝丰能源：stock.ts --code 600989 --reports --days 400 返回 28 条研报（国信/东吴/中银/东莞/太平洋/华安等）标题均为看多/中性，无看空；外部空方证据来自头条财经与首条财经自媒体文章，其中《煤价跌了煤化工才赚》一文将 2026H1 数据标注为 2025 年，deep-read 已显式标注引用需谨慎；空方论点完整性依赖这些非券商来源" }
+      ],
+      "rootCauseHypothesis": "A 股卖方研报生态普遍缺乏看空评级（合规与派点机制使然），『多空分歧研报』约束在多数个股上不可满足；流程把研报评级当作多空证据的主来源，未预设外部中立/空方媒体信源的标准接入通道与数据校验",
+      "goal": "deep-dive 命令与研报采集说明补充『看空研报稀缺时的替代信源』：明确允许以行业媒体/期货研报（如建信、银河、卓创）/ 财经深度文章作为空方证据，并约定对自媒体引用的数据须与原报告或公司披露交叉校验后方可采信",
+      "severity": "low",
+      "confidence": 0.7,
+      "benefit": "多空论证的证据来源标准化，减少对单一自媒体文章的依赖与引用错误，提升空方论点置信度",
+      "risk": "行业媒体亦可能带立场，需保留置信度标注机制",
+      "acceptance": "deep-dive 命令文档出现『研报多空缺失时的替代信源与校验要求』说明"
+    }
+  ]
+}
