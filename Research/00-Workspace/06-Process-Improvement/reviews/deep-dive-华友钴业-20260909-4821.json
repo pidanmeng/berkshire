@@ -1,0 +1,57 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "deep-dive-华友钴业-20260909-4821",
+  "origin": "process-improvement",
+  "command": "deep-dive 华友钴业",
+  "status": "success",
+  "issues": [
+    {
+      "problemCode": "quality-screen-report-mode-parse-fragility",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "quality-screen --mode report 从公司笔记 Markdown 解析财务指标时存在脆弱性：①现金收入比行被误读为 90.00（实际 2025 收现比 97-106%，脚本命中『90.00』应为无关字段），需子 Agent 人工核验并如实标注解析异常；②商誉占比需把指标改写成表格外独立句子才能被脚本正确解析（表格内行无法命中），否则产生缺失黄牌；③对周期+资源复合型公司（如华友钴业：ROE 13.7%/负债率 61.9%/毛利 17.5% 结构性特征与通用制造业不同）报告模式给出结构性低分（RED 2.6），需人工判断 RED 是『机械口径』还是真实红旗——文本布局影响解析结果，解析结果影响筛查结论",
+      "evidence": [
+        { "grade": "A", "detail": "2026-09-09 deep-dive 华友钴业：knowledge-architect 子任务汇报明确记载 quality-screen --mode report 两次修正——①商誉占比改为表格下独立句（脚本才可解析，消除 1 张缺失黄）；②现金收入比检查行被脚本误读为 90.00（实际 97-106%），嵌入时如实标注解析异常、注明不影响评分；同一文件解析输出受 Markdown 行文布局影响" }
+      ],
+      "rootCauseHypothesis": "report 模式采用正则+行位置启发式从 Markdown 表格/正文取值，未对『指标标签与最近数值是否同语境』做语义校验，导致表格行内或紧邻行出现阈值/其他数值时误抓；脚本对目标字段的上下文（表格内 vs 独立句）存在隐性格式依赖",
+      "goal": "quality-screen report 模式增强取值上下文校验：指标标签与取值锚定同一语义单元（行/句），消除表格内阈值字词串扰与独立句格式依赖；解析异常（如命中非目标数值）显式输出警示而非静默采用，减少 RED/YELLOW 误判与人工修正",
+      "severity": "medium",
+      "confidence": 0.7,
+      "benefit": "同一公司笔记在不同行文布局下获得稳定一致的筛查结论，降低子 Agent 人工返工与解析异常注释成本；提高 quality_verdict 回填 frontmatter 的可信度",
+      "risk": "正则收紧可能漏报真实指标，需用既有 15+ 家已入库笔记回归验证（宁德时代/温氏股份/生益科技等）",
+      "acceptance": "对含现金收入比/商誉占比行的公司笔记，report 模式输出值与笔记明示一致（偏差≥5pp 时输出警示）；独立句与表格行两种布局均能正确解析"
+    },
+    {
+      "problemCode": "checklist-auto-unparsed-financial-item",
+      "targetKind": "script",
+      "targetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "symptom": "50 项投资决策清单 AUTO 扫描存在解析缺口：第 28 项『有息负债/OCF』在（报告+公司笔记）输入下脚本未解析出数值，report-writer 子 Agent 只能人工核验（华友 2026H1 有息负债约 800+ 亿 vs OCF 21.48 亿 ≈15-31x 远超 5x 红线）后修正为触发 ❌；解析缺口导致 CRITICAL 级风险项可能被静默放行或依赖人工补判，扫描块可靠性打折",
+      "evidence": [
+        { "grade": "A", "detail": "2026-09-09 deep-dive 华友钴业：report-writer 子任务汇报『第 28 项有息负债/OCF 脚本未解析，人工核验 ≈15-31 远超 5 红线 → 修正为触发 ❌』；该修正未自动化，依赖子 Agent 主动补核，存在漏判风险（exit code 0 有条件放行，但若未人工修正该项本会被放行）" }
+      ],
+      "rootCauseHypothesis": "checklist-auto 对有息负债/OCF 类需跨字段计算的条目缺少取值来源（笔记/报告正文未必载明『有息负债总额』），脚本静默跳过未解析项而不提示人工补核，导致 CRITICAL 项被隐式放行",
+      "goal": "checklist-auto 对未解析条目显式输出『未解析-需人工核验』标记并计入扫描结论，不允许静默跳过；对有息负债/OCF 类条目给出可从财务数据/股本推导的兜底口径说明",
+      "severity": "medium",
+      "confidence": 0.65,
+      "benefit": "消除 CRITICAL 财务项被静默放行的漏判风险，扫描结论与人工核验结果的一致性可审计",
+      "risk": "新增标记需同步扫描结论聚合逻辑与既有批次输出格式，防止误报",
+      "acceptance": "对缺少有息负债数据的输入，AUTO 扫描第 28 项输出『未解析-需人工核验』警示而非默认通过；扫描汇总注明未解析条目清单"
+    },
+    {
+      "problemCode": "evaluate-valuation-type-auto-judge-mixed",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "symptom": "evaluate.ts 品种自动判定对『周期资源+成长材料』复合型公司（钴镍锂一体化，营收高增+盈利为正）判定为『一般工商』，而华友钴业盈利实质由金属价格周期主导（钴/镍/锂价格波动、硫磺成本冲击），须按 deep-read 裁决人工修正为周期股正常化 EPS 定价；自动 PEG 0.22 基于单年同比 47% 增速（含金属涨价一次性成分），高成长判读对周期股具误导性，需 Agent 强制复核",
+      "evidence": [
+        { "grade": "A", "detail": "2026-09-09 deep-dive 华友钴业：evaluate.ts --code 603799 输出『当前标的判定：一般工商（EPS≥0，增速 47%）』与 PEG 0.22『有吸引力』，但 deep-read §八/§十裁决华友为三重周期叠加应按周期股正常化盈利定价、PEG 0.22 增速口径含金属涨价成分不可作主锚；knowledge-architect 据此将品种人工修正为 cyclical（正常化EPS×PE + Forward PE 校验），valuation_type 与脚本自动判定不一致" }
+      ],
+      "rootCauseHypothesis": "品种自动判定仅用 EPS 符号+单年增速两个信号，无法识别『利润由金属/大宗价格周期性驱动』的结构特征（缺价格敏感性/毛利率波动/历史净利序列信号），周期股在繁荣期的高增速使自动判定偏向 general/growth",
+      "goal": "evaluate.ts 自动判定增加周期特征信号（近 3 年净利/毛利率波动率、行业属性关键词如资源/金属/冶炼），命中时输出『疑似周期/资源股，请人工确认 --type』提示而非直接判 general；PEG 判读对疑似周期股加注『增速含周期成分，建议用正常化盈利』",
+      "severity": "low",
+      "confidence": 0.6,
+      "benefit": "降低周期股被按成长股错误估值的风险，减少 Agent 人工修正环节；估值快照的品种路由与后续估值模型选择一致性提升",
+      "risk": "周期特征信号可能误伤高波动成长股，需样本验证阈值；修改仅影响提示层不改变已入库结论",
+      "acceptance": "对华友钴业类（资源+材料一体化、净利随金属价大幅波动）标的，evaluate.ts 输出含周期股复核提示或直接路由 cyclical"
+    }
+  ]
+}

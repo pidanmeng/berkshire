@@ -1,6 +1,6 @@
 # 流程改进 Backlog
 
-> 状态真源：improvement-backlog.json · 最后更新：2026-09-01T15:50:22.595Z
+> 状态真源：improvement-backlog.json · 最后更新：2026-09-09T10:15:50.506Z
 
 | 状态 | 严重度 | 问题描述 | 目标文件 | 任务数 | 问题码 |
 |---|---|---|---|---:|---|
@@ -75,8 +75,10 @@
 | 候选 | 高 | stock.ts --announcements 默认 pageSize=20 且不循环翻页，近 730 天只返回最近 … | .trae/scripts/stock-data/stock.ts | 1 | stock-announcements-pagination-limit |
 | 观察 | 低 | quality-screen --mode auto 传负值参数（如 --inventory-growth -0.01）… | .trae/scripts/quality-gate/quality-screen.ts | 1 | quality-screen-negative-value-parse-ambiguity |
 | 观察 | 低 | st-dive 定向抓取公告 PDF 时，编排器首次按记忆/推断的 finalpage URL 下载（如立案告知书猜为 … | .trae/commands/st-dive.md | 1 | st-dive-announcement-url-copy-discipline |
-| 候选 | 高 | AGENTS.md 质量检查体系声明的 DocumentReader 自检脚本 .trae/agents/documen… | .trae/agents/document-reader.md.self-check.ts | 1 | document-reader-selfcheck-script-missing |
 | 观察 | 中 | quality-screen --mode report 在公司笔记 frontmatter 缺 growth 字段（或… | .trae/scripts/quality-gate/quality-screen.ts | 1 | quality-screen-report-mode-absolute-value-as-growth |
 | 观察 | 中 | quality-screen --mode auto 传增速参数 --revenue-growth 45.64 --ea… | .trae/scripts/quality-gate/quality-screen.ts | 1 | quality-screen-growth-param-display-times100 |
 | 观察 | 中 | 50 项投资决策清单 AUTO 扫描第 15 项『商誉/净资产 <30%』把宝丰能源商誉占比解析为 30.0% 触发黄牌… | .trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts | 1 | checklist-auto-goodwill-parse-error |
 | 观察 | 低 | deep-dive 命令要求研报采集覆盖多空分歧『至少 1 篇看多 + 1 篇看空/谨慎（如有）』，但 stock.ts… | AGENTS.md | 1 | research-report-bear-view-sourcing |
+| 观察 | 中 | quality-screen --mode report 从公司笔记 Markdown 解析财务指标时存在脆弱性：①现金… | .trae/scripts/quality-gate/quality-screen.ts | 1 | quality-screen-report-mode-parse-fragility |
+| 观察 | 中 | 50 项投资决策清单 AUTO 扫描存在解析缺口：第 28 项『有息负债/OCF』在（报告+公司笔记）输入下脚本未解析出… | .trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts | 1 | checklist-auto-unparsed-financial-item |
+| 观察 | 低 | evaluate.ts 品种自动判定对『周期资源+成长材料』复合型公司（钴镍锂一体化，营收高增+盈利为正）判定为『一般工… | .trae/scripts/evaluation/evaluate.ts | 1 | evaluate-valuation-type-auto-judge-mixed |

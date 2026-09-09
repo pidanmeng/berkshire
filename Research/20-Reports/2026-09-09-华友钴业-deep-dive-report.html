@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>【深度调研】华友钴业（603799.SH）— 内部研究</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+<style>
+:root {
+  /* ===== Black & Gold tokens (design.md) ===== */
+  --color-canvas: #000000;
+  --color-surface: #0a0a0a;
+  --color-surface-raised: #111111;
+  --color-border: #1a1a1a;
+  --color-ink: #ffffff;
+  --color-ink-muted: #a1a1a1;
+  --color-ink-subtle: #666666;
+  --color-accent: #d4af37;
+  --color-accent-hover: #e6c25c;
+  --color-danger: #ee0000;
+  /* A股习惯：红涨绿跌 */
+  --fin-up: #e5484d;
+  --fin-down: #46a758;
+  --fin-flat: #a1a1a1;
+  --star-on: #d4af37;
+  --star-half: #b8902a;
+  --star-off: #333333;
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-6: 24px; --sp-8: 32px; --sp-10: 40px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: 'Geist', 'Inter', -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-size: 16px; line-height: 24px;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 1120px; margin: 0 auto; padding: var(--sp-8) var(--sp-6) var(--sp-16); }
+section { margin-top: var(--sp-10); }
+.section-title {
+  font-size: 24px; font-weight: 600; line-height: 32px; letter-spacing: -0.96px;
+  color: var(--color-ink); margin-bottom: var(--sp-4);
+  padding-left: var(--sp-3); border-left: 2px solid var(--color-accent);
+}
+.section-sub { color: var(--color-ink-muted); font-size: 14px; margin-bottom: var(--sp-4); }
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--sp-6);
+  margin-bottom: var(--sp-4);
+}
+.card-raised { background: var(--color-surface-raised); }
+.hero { padding: var(--sp-10) 0 var(--sp-6); border-bottom: 1px solid var(--color-border); }
+.hero .kicker { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 12px; color: var(--color-accent); letter-spacing: 1.5px; text-transform: uppercase; }
+.hero h1 { font-size: 48px; font-weight: 600; line-height: 48px; letter-spacing: -2.4px; margin: var(--sp-3) 0 var(--sp-2); }
+.hero .meta { color: var(--color-ink-muted); font-size: 14px; font-family: 'Geist Mono', ui-monospace, monospace; }
+.tags { margin-top: var(--sp-4); display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+.tag { font-size: 12px; padding: 2px 10px; border: 1px solid var(--color-border); border-radius: 9999px; color: var(--color-ink-muted); }
+.tag.red { color: var(--fin-up); border-color: #3a1518; }
+.tag.gold { color: var(--color-accent); border-color: #3a3220; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--color-border); vertical-align: top; }
+th { color: var(--color-ink-muted); font-weight: 500; font-size: 12px; letter-spacing: 0.5px; }
+tr:last-child td { border-bottom: none; }
+td.num, th.num { text-align: right; font-family: 'Geist Mono', ui-monospace, monospace; }
+.up { color: var(--fin-up); } .down { color: var(--fin-down); }
+.strong { color: var(--color-ink); font-weight: 600; }
+.muted { color: var(--color-ink-muted); }
+.subtle { color: var(--color-ink-subtle); }
+.conf { display: inline-block; font-size: 11px; padding: 1px 8px; border-radius: var(--radius-sm); border: 1px solid var(--color-border); color: var(--color-accent); margin-left: 6px; vertical-align: middle; }
+.badge-red { color: #ff6b6b; border-color: #3a1518; }
+.badge-yellow { color: #f0c674; border-color: #3a3220; }
+.badge-green { color: #7cc98f; border-color: #15331f; }
+.conclusion { display: flex; gap: var(--sp-3); padding: var(--sp-4) 0; border-bottom: 1px solid var(--color-border); }
+.conclusion:last-child { border-bottom: none; }
+.conclusion .idx { font-family: 'Geist Mono', ui-monospace, monospace; color: var(--color-accent); font-size: 14px; flex-shrink: 0; width: 28px; }
+.conclusion .body p { margin-bottom: var(--sp-2); }
+.stars { font-size: 18px; letter-spacing: 2px; white-space: nowrap; }
+.stars .on { color: var(--star-on); }
+.stars .half { color: var(--star-half); }
+.stars .off { color: var(--star-off); }
+.stars + .score { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 12px; color: var(--color-ink-muted); margin-top: 2px; }
+.chart-container { width: 100%; height: 380px; }
+.chart-source { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 11px; color: var(--color-ink-subtle); margin-top: var(--sp-2); }
+.chart-fallback { display: none; font-size: 13px; color: var(--color-ink-muted); }
+.chart-fallback table { margin-top: var(--sp-2); }
+.callout { border: 1px solid var(--color-border); border-left: 2px solid var(--color-accent); border-radius: var(--radius-sm); padding: var(--sp-4); font-size: 14px; color: var(--color-ink-muted); margin: var(--sp-3) 0; background: var(--color-surface-raised); }
+.callout.red { border-left-color: var(--fin-up); }
+.callout.green { border-left-color: var(--fin-down); }
+footer { border-top: 1px solid var(--color-border); margin-top: var(--sp-16); padding-top: var(--sp-6); font-size: 12px; color: var(--color-ink-subtle); line-height: 20px; }
+a { color: var(--color-accent); text-decoration: none; }
+a:hover { color: var(--color-accent-hover); }
+h3 { font-size: 17px; font-weight: 600; margin: var(--sp-4) 0 var(--sp-2); }
+ul, ol { padding-left: 22px; margin: var(--sp-2) 0; }
+li { margin-bottom: var(--sp-1); }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4); }
+@media (max-width: 800px) { .grid2 { grid-template-columns: 1fr; } .hero h1 { font-size: 34px; line-height: 38px; } }
+.kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--sp-3); margin: var(--sp-4) 0; }
+.kpi { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--sp-4); }
+.kpi .label { font-size: 12px; color: var(--color-ink-muted); }
+.kpi .value { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 22px; font-weight: 600; margin-top: var(--sp-1); }
+.kpi .note { font-size: 11px; color: var(--color-ink-subtle); margin-top: var(--sp-1); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ==================== 头部 ==================== -->
+<header class="hero">
+  <div class="kicker">Deep-Dive Research · Phase 5 Report</div>
+  <h1>华友钴业（603799.SH）深度调研</h1>
+  <div class="meta">钴镍锂纵向一体化锂电材料龙头 · 上控资源（刚果(金)钴铜矿 / 印尼湿法 MHP / 津巴布韦锂矿）+ 中提能力（前驱体 / 正极 / 冶炼）+ 下拓市场（特斯拉 / LGES / 亿纬 / 宁德）</div>
+  <div class="tags">
+    <span class="tag gold">deep-dive</span><span class="tag">company</span><span class="tag">新能源</span><span class="tag">锂电材料</span>
+    <span class="tag red">质量筛查 RED 2.6/10</span><span class="tag">内部研究</span>
+  </div>
+  <div class="meta" style="margin-top:12px;">数据时点：2026-09-09 ｜ taskId：deep-dive-华友钴业-20260909-4821 ｜ 主验证源：[[2026-09-09-华友钴业-deep-read]] ｜ confidence：中</div>
+</header>
+
+<!-- ==================== 1. 核心结论 ==================== -->
+<section id="conclusion">
+  <h2 class="section-title">核心结论（带置信度 · 多空双方 + 综合裁决）</h2>
+  <div class="card">
+    <div class="conclusion"><div class="idx">01</div><div class="body">
+      <p><span class="strong">生意模式：周期弹性型资本扩张生意，评 5.5/10</span><span class="conf">置信度：高</span></p>
+      <p>🟢 一体化使材料端原料成本低于外购同业——2026H1 毛利率 <span class="strong up">19.6% vs 中伟 13% / 格林美 13.5%</span>（领先约 6pp，置信度 8）；🔴 OCF/归母净利 2025 仅 <span class="down strong">0.66</span>、2026H1 0.61（合并口径 0.53/0.42，连续 &lt;0.8），2026H1 capex/OCF = <span class="down strong">464%</span>、FCF 约 -78 亿（置信度 7）。<span class="strong">裁决：资源卡位有真实价值，但重资产高杠杆 + 现金沉淀于存货/应收，「赚辛苦钱且把钱押在存货里」——只在周期低位 + 估值显著折价时有安全边际。</span></p>
+    </div></div>
+    <div class="conclusion"><div class="idx">02</div><div class="body">
+      <p><span class="strong">护城河：中等宽度（5.5/10）、「外部条件敏感型」而非自我强化型</span><span class="conf">置信度：中</span></p>
+      <p>🟢 一体化成本 + 车规认证（2-3 年）+ 资源卡位（印尼镍 &gt;14 亿湿吨 / Arcadia 锂 11.1 年）三维混合，9 系超高镍正极市占率 &gt;33%（置信度 8）；🔴 <span class="up">硫磺单点断供即击穿湿法护城河</span>——CIF 印尼 550→1,250 美元/吨（+126%），华飞自 2026-05-01 停产约 50% 产量、MHP 出货 -19%；刚果(金)自有矿可开采 0-0.23 年（置信度 7/6）。<span class="strong">裁决：有真实成分但依赖硫磺/矿价/政策等外部条件，3-5 年可维持、10 年不确定性高。</span></p>
+    </div></div>
+    <div class="conclusion"><div class="idx">03</div><div class="body">
+      <p><span class="strong">盈利质量是当前最大弱点：账面盈利强、现金实现弱</span><span class="conf">置信度：高</span></p>
+      <p>收入真实性可（收现比 97.4%/106%），但利润沉淀于存货与应收：2026H1 存货 <span class="up strong">322.15 亿</span>（较年初 +25.7%、跌价准备率仅 0.96%）、应收账款 150.47 亿（较年初 <span class="up">+61.07%</span> &gt; 营收 +49.39%）。quality-screen RED（2.6/10）核心依据（deep-read §4.8 高严重度断裂点）。</p>
+    </div></div>
+    <div class="conclusion"><div class="idx">04</div><div class="body">
+      <p><span class="strong">估值：绝对不高，但周期高点利润不可线性外推——安全边际不足</span><span class="conf">置信度：中</span></p>
+      <p>股价 38.19 元、总市值 723.1 亿、PE-TTM 10.47x / PB 1.42x（近 1 年约 4.2% 分位）。<span class="up strong">⚠️ 周期股高点的低 PE 可能是「便宜陷阱」</span>：三情景（2027E 净利 55/75/100 亿 × PE 8/10/12x）目标价 <span class="strong">23.2 / 39.6 / 63.4 元</span>（市值 440/750/1,200 亿），中性仅 +4%。目标买入价约 <span class="strong">18.6 元</span>、目标卖出价 <span class="strong">63.4 元</span>。</p>
+    </div></div>
+    <div class="conclusion"><div class="idx">05</div><div class="body">
+      <p><span class="strong">最大分歧点：当前利润是「周期性高点」还是「新中枢起点」</span><span class="conf">置信度：中</span></p>
+      <p>裁决（结合外围因素）：①硫磺地缘（1,250 美元/吨无回落信号）短期击穿湿法护城河；②钴配额执行率 2026H1 实际出口仅配额 <span class="up">2/3</span>（智通财经 2026-09-04）→ Bull「配额支撑钴价」被部分证伪（稀土 2010 管制结局类比）；③印尼政策（RKAB/HPM/外汇管制）+ 新项目少数股东占合并净利 32.1% → 归母弹性打折；④材料放量（内因）真实但毛利率仅 9-17%，Q2 归母环比 <span class="down">-59.55%</span> 已实证「材料翻倍难对冲资源利润收缩」。<span class="strong up">综合裁决偏空方框架：按周期正常化盈利定价（2027E 中性 75 亿 × 10x），不对 TTM 利润线性外推。</span></p>
+    </div></div>
+    <div class="conclusion"><div class="idx">06</div><div class="body">
+      <p><span class="strong">当前操作建议：观望</span><span class="conf badge-red">置信度：高（与质量 RED 一致）</span></p>
+      <p>RED 质量结论（2.6/10）下不使用买入式表述；现价 38.19 元接近中性目标 39.6 元（+4%），安全边际不足 + 周期下行初期低 PE 便宜陷阱风险。<span class="strong">等待条件</span>：硫磺回落/华飞复产信号、钴配额执行与钴价企稳、OCF/NI 修复、回调至 30 元以下或正常化盈利上修信号。</p>
+    </div></div>
+  </div>
+</section>
+
+<!-- ==================== 2. 四大师综合评分卡 ==================== -->
+<section id="masters">
+  <h2 class="section-title">四大师综合评分卡</h2>
+  <div class="card">
+    <table>
+      <tr><th>维度</th><th>大师</th><th>星级（1-5）</th><th>0-10 分</th><th>核心判断</th></tr>
+      <tr><td>能力圈</td><td>巴菲特</td><td><span class="stars"><span class="on">★★★</span><span class="off">☆☆</span></span></td><td class="num">6.5</td><td>生意一句话可说清（上控资源+中提能力+下拓市场），但三重周期（金属价/资源国政策/中游产能）叠加，10 年格局预测置信度低</td></tr>
+      <tr><td>护城河</td><td>巴菲特</td><td><span class="stars"><span class="on">★★★</span><span class="off">☆☆</span></span></td><td class="num">5.5</td><td>一体化成本+车规认证+资源卡位三维混合（中等宽度），<span class="up strong">外部条件敏感、非自我强化</span>（硫磺单点击穿已实证）</td></tr>
+      <tr><td>生意模式</td><td>段永平</td><td><span class="stars"><span class="on">★★★</span><span class="off">☆☆</span></span></td><td class="num">5.5</td><td>上游资源卡位有生意价值（毛利率领先同业 6pp），但 OCF/净利 0.42-0.66、FCF 深度为负、重资产扩张依赖举债</td></tr>
+      <tr><td>管理层诚信（本分）</td><td>段永平</td><td><span class="stars"><span class="on">★★★★</span><span class="off">☆</span></span></td><td class="num">7.0</td><td><span class="badge-green" style="display:inline-block;font-size:12px;padding:1px 8px;border:1px solid #15331f;border-radius:6px;color:#7cc98f;">🟢 诚实红线通过</span>（三年审计无保留/预告精准/停产如实披露）；质押 44.02%/担保 510 亿/矿权披露不足扣分</td></tr>
+      <tr><td>反向检查清单</td><td>芒格</td><td><span class="stars"><span class="on">★★★★</span><span class="off">☆</span></span></td><td class="num">7.0</td><td>红旗识别全面（OCF 背离/应收超速/存货准备率 &lt;1%/矿权 0-0.23 年/担保集中）+ 四情景失败分析完整</td></tr>
+      <tr><td>历史类比与时间框架</td><td>李录</td><td><span class="stars"><span class="on">★★★</span><span class="off">☆☆</span></span></td><td class="num">6.5</td><td>稀土 2010 管制/锂 2022-24/印尼镍 2010s 三个周期类比清晰，直接指导「按正常化盈利定价」</td></tr>
+      <tr><td><span class="strong">综合（系统加权）</span></td><td>—</td><td><span class="stars"><span class="on">★★★</span><span class="off">☆☆</span></span></td><td class="num">6.3</td><td>六维均分加权（composite.ts：Σscores/6 = 38/6）；未达「值得跟踪」上沿，与质量 RED 方向一致</td></tr>
+    </table>
+    <p class="chart-source">评分依据：华友钴业-公司研究 frontmatter scores（capability 6.5 / moat 5.5 / business_model 5.5 / management 7.0 / inversion 7.0 / historical 6.5）；综合分由系统按 composite.ts 均分权重现算。星级说明：★=1 分、☆=0.5 分、✩=0 分。</p>
+  </div>
+</section>
+
+<!-- ==================== 3. 估值快照 ==================== -->
+<section id="valuation">
+  <h2 class="section-title">估值与股价快照（2026-09-09）</h2>
+  <div class="kpi-row">
+    <div class="kpi"><div class="label">最新股价</div><div class="value">38.19 元</div><div class="note">近 250 日 36.21-80.26 · 约 4.2% 分位（历史低位区）</div></div>
+    <div class="kpi"><div class="label">总市值</div><div class="value">723.1 亿</div><div class="note">总股本约 18.94 亿股</div></div>
+    <div class="kpi"><div class="label">PE-TTM</div><div class="value">10.47x</div><div class="note">TTM 归母约 69.1 亿 · 周期高点利润口径</div></div>
+    <div class="kpi"><div class="label">PB-MRQ / PS-TTM</div><div class="value">1.42 / 0.73</div><div class="note">PCF-TTM 15.92 · BVPS ≈ 26.9 元</div></div>
+    <div class="kpi"><div class="label">Forward PE</div><div class="value">9.6x</div><div class="note">2027E 中性归母 75 亿口径（723.1 ÷ 75）</div></div>
+    <div class="kpi"><div class="label">股息率 / 回购</div><div class="value">约 1.3%</div><div class="note">2025 年度 10 派 5（9.48 亿）；回购 6-10 亿方案未实施</div></div>
+  </div>
+
+  <div class="card">
+    <h3>估值区间与目标价（安全边际视角 · 2027E 正常化盈利三情景）</h3>
+    <table>
+      <tr><th>情景</th><th>估值假设</th><th>目标价（元）</th><th>目标市值（亿元）</th><th>隐含涨跌幅</th><th>置信度</th></tr>
+      <tr><td>悲观</td><td>2027E 净利 55 亿 × 正常化 PE 8x</td><td class="num">23.2</td><td class="num">440</td><td class="num down">-39%</td><td>中</td></tr>
+      <tr><td>中性</td><td>2027E 净利 75 亿 × 正常化 PE 10x（锚定东吴 10x）</td><td class="num">39.6</td><td class="num">750</td><td class="num">+4%</td><td>中</td></tr>
+      <tr><td>乐观</td><td>2027E 净利 100 亿 × 正常化 PE 12x</td><td class="num">63.4</td><td class="num">1200</td><td class="num up">+66%</td><td>低</td></tr>
+    </table>
+    <div class="callout red" style="margin-top:var(--sp-4);">
+      <span class="strong">目标买入价 ≈ 18.6 元</span>（悲观市值 440 亿 × 0.8 = 352 亿，留足周期下行缓冲）｜
+      <span class="strong">目标卖出价 63.4 元</span>（乐观估值上沿）｜
+      <span class="strong up">当前操作建议：观望</span>——现价 38.19 元接近中性目标 39.6 元（+4%），安全边际不足；质量 RED + 周期下行初期低 PE 便宜陷阱风险（Bear 论点 5）。不使用买入式表述。
+    </div>
+    <div class="chart-container" id="chart-valuation"></div>
+    <p class="chart-source">来源：华友钴业-公司研究 frontmatter target_market_cap_yi（440/750/1,200 亿）÷ 18.94 亿股；现价 38.19 元（evaluate.ts，2026-09-09）。金色柱 = 三情景目标市值；红线 = 现市值 723.1 亿（中性仅 +4%）。</p>
+  </div>
+</section>
+
+<!-- ==================== 4. 财务数据摘要 ==================== -->
+<section id="financials">
+  <h2 class="section-title">财务数据摘要（三年 + 2026H1）</h2>
+  <div class="card">
+    <div class="chart-container" id="chart-financials"></div>
+    <p class="chart-source">来源：三份年报「主要会计数据」+ 2026H1 半年报（processed 结构化卡，deep-read 核验口径）。⚠️ 2026H1 为半年度数据（营收 555.68 亿 +49.39%、归母 35.07 亿 +29.38%），与全年列并排仅示量级。单位：亿元 / %。</p>
+    <table style="margin-top:var(--sp-4);">
+      <tr><th>指标</th><th class="num">2023</th><th class="num">2024</th><th class="num">2025</th><th class="num">2026H1</th><th>趋势 / 要点</th></tr>
+      <tr><td>营收（亿元）</td><td class="num">663.04</td><td class="num">609.46（-8.08%）</td><td class="num up">810.19（+32.94%）</td><td class="num up">555.68（+49.39%）</td><td>2024 主动收缩后 2025 创新高</td></tr>
+      <tr><td>归母净利（亿元）</td><td class="num">33.51</td><td class="num">41.55（+23.99%）</td><td class="num up">61.10（+47.07%）</td><td class="num up">35.07（+29.38%）</td><td>逐年向好（V 型反转）</td></tr>
+      <tr><td>扣非净利（亿元）</td><td class="num">30.93</td><td class="num">37.95</td><td class="num up">57.93（+52.64%）</td><td class="num">33.11（+27.97%）</td><td>占归母约 95%（无「扣非远低归母」警示）</td></tr>
+      <tr><td>毛利率</td><td class="num">14.11%</td><td class="num">17.23%</td><td class="num">17.47%</td><td class="num up">19.60%（+3.74pp）</td><td>价格周期驱动为主</td></tr>
+      <tr><td>ROE（加权）</td><td class="num">11.14%</td><td class="num">11.69%</td><td class="num">13.70%</td><td class="num">7.05%（半年）</td><td>2025 主因周转率 0.412→0.547 回升</td></tr>
+      <tr><td>经营现金流 OCF（亿元）</td><td class="num">34.86</td><td class="num">124.31（+256.61%）</td><td class="num down">40.12（-67.73%）</td><td class="num">21.48</td><td class="down"><span class="strong">大幅波动（利润未同步转化为现金）</span></td></tr>
+      <tr><td>OCF/归母净利</td><td class="num">1.04</td><td class="num">2.99</td><td class="num down strong">0.66</td><td class="num down strong">0.61</td><td class="down">连续两期 &lt;0.8（合并口径 0.53/0.42）</td></tr>
+      <tr><td>资本开支（亿元）</td><td class="num">≈67.2</td><td class="num">67.22</td><td class="num">107.58</td><td class="num up">99.59（+118%）</td><td>capex/OCF = 268% → <span class="up strong">464%</span></td></tr>
+      <tr><td>资产负债率</td><td class="num">~68%*</td><td class="num">64.38%</td><td class="num">61.85%</td><td class="num">64.28%</td><td>高位（*2023 为推算，存疑）</td></tr>
+      <tr><td>存货（亿元）</td><td class="num">≈172.97</td><td class="num">≈172.97</td><td class="num">256.24（+48.1%）</td><td class="num up">322.15（+25.7%）</td><td class="up"><span class="strong">跌价准备率仅 0.96%</span>（金属价反转放大项）</td></tr>
+      <tr><td>应收账款（亿元）</td><td class="num">—</td><td class="num">≈68.04</td><td class="num">93.42</td><td class="num up">150.47（+61.07%）</td><td class="up">增速超营收（+49.39%）</td></tr>
+      <tr><td>少数股东损益（亿元）</td><td class="num">11.54</td><td class="num">10.04</td><td class="num">14.10</td><td class="num up">16.60（+118%）</td><td>占合并净利 32.1%（压制归母弹性）</td></tr>
+      <tr><td>EPS（元/股）</td><td class="num">2.05</td><td class="num">2.50</td><td class="num">3.34</td><td class="num">1.86（半年）</td><td>逐年向好</td></tr>
+    </table>
+    <h3>分季度颗粒度（周期股禁止全年平滑）</h3>
+    <div class="chart-container" id="chart-quarterly" style="margin-top:var(--sp-4);"></div>
+    <p class="chart-source">来源：2023/2025 年报分季度表（官方）+ 2026Q1/Q2 外部口径（时代周报 2026-08-23 / 东吴 2026-08-19，标注 ⚠️）。要点：2026Q2 归母 10.10 亿环比 <span class="down">-59.55%</span>、同比 -30.76%（减值 3.07 + 信用 3.13 + 公允 -2.65 亿等约 8 亿拖累）——<span class="strong">周期回落已实证</span>；2025Q4 OCF 转负（-1.67 亿）。</p>
+  </div>
+</section>
+
+<!-- ==================== 5. 公司概览与生意模式 ==================== -->
+<section id="business">
+  <h2 class="section-title">公司概览与生意模式</h2>
+  <div class="card">
+    <p>华友钴业成立于 2002 年，总部浙江桐乡，全球钴产品龙头与钴镍锂材料一体化龙头。资源板块（利润弹性来源，2025 毛利率：钴产品 <span class="strong up">36.78%</span>、镍中间品 19.32%、镍产品 19.70%、锂产品 20.65%）+ 材料板块（结构性放量引擎，毛利率薄：正极 9.36%、前驱体 16.84%）。2026H1 材料出货：正极 7.63 万吨（+93%）、前驱体 8.08 万吨（+94%）、碳酸锂 3.05 万吨（+17%）；资源端：钴 -24%、MHP -19%。</p>
+    <table style="margin-top:var(--sp-4);">
+      <tr><th>板块</th><th>资产/产能</th><th>2025 分产品毛利率</th><th>关键点</th></tr>
+      <tr><td>资源·钴</td><td>刚果(金)鲁苏西/鲁库尼（<span class="up strong">可开采 0-0.23 年，矿权续期办理中</span>）+ 当地采购</td><td class="num up">36.78%（+21.24pp）</td><td>纯价格驱动（钴价管制行情）；自有矿临近枯竭</td></tr>
+      <tr><td>资源·镍</td><td>印尼参股矿山（&gt;14 亿湿吨）+ HPAL 湿法 MHP（华越/华飞）+ RKEF 火法（华科/擎天），合计约 24.5 万吨镍金属量</td><td class="num">19.32%-19.70%</td><td>华飞全球单体最大在产 MHP（2025 营收约 145 亿/净利约 12.5 亿）；<span class="up">硫磺为关键辅料，停产 50%</span></td></tr>
+      <tr><td>资源·锂</td><td>津巴布韦 Arcadia（245 万吨 LCE、11.1 年）+ 加纳 Ewoyaa（112.7 万吨 LCE，交割中）</td><td class="num">20.65%（+8.71pp）</td><td>矿冶一体化（硫酸锂贯通）</td></tr>
+      <tr><td>材料·三元</td><td>前驱体/正极产能全球第一梯队；9 系市占 &gt;33%、高端圆柱三元 &gt;60%</td><td class="num">16.84% / 9.36%</td><td>车规认证 2-3 年 + 长单锁定（21.58 万吨正极+15.56 万吨前驱体）</td></tr>
+    </table>
+    <h3>生意模式评价（段永平框架）</h3>
+    <ul>
+      <li><span class="strong">怎么赚钱</span>：两头都是市场价——材料端按「金属市价 + 加工费」成本加成；资源端原料按 LME/MB 金属价折扣采购，矿冶一体化赚「资源自给差价 + 冶炼折价差」。盈利 = 金属价格 × 加工量 + 资源自给差价。</li>
+      <li><span class="strong">谁付钱</span>：B2B——全球电池供应链（特斯拉/LGES/亿纬/宁德等），前五大客户 48.57%（2025，无关联方），最终买单方为电动车/消费电子需求。</li>
+      <li><span class="strong">为什么选它</span>：一体化使材料端原料成本低于外购同业（毛利率 19.6% vs 中伟 13%）；印尼镍资源深度锁定 + 车规认证 + 高端 9 系/大圆柱卡位。</li>
+      <li><span class="strong">现金流特征</span>：<span class="down strong">差</span>——收现比健康（97-106%）但利润沉淀于存货/应收（OCF/归母 0.66/0.61，合并 0.53/0.42）；2024 年 OCF 124 亿为异常高值（预收/应付扩张），不可作常态。</li>
+      <li><span class="strong">资本密集度</span>：<span class="up strong">重资产 + 资本黑洞倾向</span>——capex 67.2→107.6→99.59 亿（2026H1 +118%）；FCF 除 2024 外深度为负（2025 约 -67 亿、2026H1 约 -78 亿）；对比中伟 2026H1 capex 仅 11.1 亿（-33.6%）。</li>
+      <li><span class="strong">整体评价</span>：<span class="up strong">一般偏下的生意模式</span>——上游资源卡位有真实价值（区别于纯材料商），但重资产高杠杆 + 现金流差 + 利润高度依赖金属价格周期；周期弹性型资本扩张生意，只在周期低位 + 显著折价时有安全边际。</li>
+    </ul>
+    <h3>分产品毛利率结构（2025）</h3>
+    <div class="chart-container" id="chart-gm"></div>
+    <p class="chart-source">来源：2025 年报「主营业务分产品」表（P16-17）。利润大头在上游资源变现（钴/镍中间品/铜），材料端（正极 9.36%/前驱体 16.84%）为薄利放量——「材料翻倍放量难对冲资源利润收缩」的结构性原因。</p>
+  </div>
+</section>
+
+<!-- ==================== 6. 护城河评估 ==================== -->
+<section id="moat">
+  <h2 class="section-title">护城河评估（巴菲特框架 · 多空对照）</h2>
+  <div class="card">
+    <table>
+      <tr><th>护城河类型</th><th>是否存在</th><th>量化证据</th><th>趋势</th><th>多空裁决</th></tr>
+      <tr><td>成本优势</td><td>⚠️ 部分成立</td><td>2026H1 毛利率 19.6% vs 中伟 13%/格林美 13.5%；钴产品 36.78%</td><td class="up">依赖外部条件（硫磺暴涨即致华飞停产 50%，非绝对壁垒）</td><td>🟢 Bull 最硬论点（置信度 8）vs 🔴 Bear 硫磺单点击穿（置信度 7）——裁决：有真实成分但外部条件敏感</td></tr>
+      <tr><td>技术/产品溢价</td><td>✅ 中强</td><td>研发 2026H1 11.21 亿（+109%）；9 系/46 系大圆柱/固态布局；专利 667 项</td><td>高端细分有认证壁垒</td><td>双方认可（Bull 论点 2 支撑）</td></tr>
+      <tr><td>规模效应</td><td>✅ 有</td><td>华越超产、华飞全球单体最大 MHP</td><td class="up">华飞停产暴露产能刚性与辅料单一来源</td><td>中性偏空</td></tr>
+      <tr><td>资源卡位</td><td>⚠️ 中</td><td>印尼镍 &gt;14 亿湿吨（真壁垒）、Arcadia 锂 11.1 年、刚果金钴矿 0-0.23 年（短板）</td><td>镍/锂长、钴自有矿短</td><td>Bear 论点 5（置信度 6）部分成立</td></tr>
+      <tr><td>客户转换成本</td><td>✅ 中强</td><td>特斯拉框架、亿纬 12.78 万吨、LGES 长单；车规认证 2-3 年</td><td>稳定</td><td>Bull 论点 2 支撑（置信度 8）</td></tr>
+      <tr><td>网络效应</td><td>❌ 无</td><td>—</td><td>—</td><td>—</td></tr>
+    </table>
+    <div class="callout red">
+      <span class="strong">护城河宽度评分：5.5/10（中等，资源+认证+规模三维混合，无单一绝对壁垒）</span> ｜ 能否持续 10 年以上：<span class="strong up">不确定</span>（印尼镍/高端三元卡位 3-5 年可维持；钴自有矿枯竭为最长资源链断点）。侵蚀信号：①中伟/格林美印尼扩产（火法规避硫磺）；②前驱体价格战（18.26%→16.84%）；③三元被 LFP 挤压（2025 全球 LFP +63% vs 三元 +7.4%）；④硫磺单一来源依赖（印尼 75% 硫磺进口来自中东）。
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 7. 管理层与诚信 ==================== -->
+<section id="management">
+  <h2 class="section-title">管理层与诚信（本分原则）</h2>
+  <div class="card">
+    <ul>
+      <li><span class="strong">审计与财务可信度</span>：<span class="badge-green" style="display:inline-block;font-size:12px;padding:1px 8px;border:1px solid #15331f;border-radius:6px;color:#7cc98f;">天健 2023/2024/2025 三年标准无保留 + 无强调事项段</span>；期初衔接无重述——报表可信度基础良好。</li>
+      <li><span class="strong">承诺兑现</span>：近三年分红全部实施（10 派 10 → 10 派 5 → 10 派 5），占年均净利 76.30%（口径含回购）；2026-07 回购 6-10 亿方案（未实施）；控股股东 2025 增持超 7 亿；2023 年激励第三期<span class="up">考核未达标被注销 320 万股</span>（激励有约束力）。</li>
+      <li><span class="strong">业绩预告精度</span>：2025 年度预告 58.5-64.5 亿 → 实际 61.10 亿落在区间内（🟢）。</li>
+      <li><span class="strong">关联交易</span>：2025 前五客户/供应商关联方销售/采购均为 0（干净）；🟡 与华友控股合建总部大楼出资 9.58 亿（2026-020，评估公允性待核）。</li>
+      <li><span class="strong">MD&A 坦诚度（🟡 偏中性）</span>：华飞停产/硫磺风险披露及时（2026-04-28 公告 + 半年报）；但①刚果金自有矿 0-0.23 年仅资源表呈现、MD&A 未主动风险提示；②Q2 利润环比 -59.55% 以 H1 累计口径叙事未单列解释（时代周报 2026-08-23 公开质疑未回应）；③322 亿存货跌价敏感性着墨少。</li>
+      <li><span class="strong">治理关注项</span>：实控人及一致行动人质押持股 44.02%（占总股本 9.08%）；担保 510.30 亿 = 归母净资产 76.81%（对负债率 &gt;70% 子公司 255.81 亿）；2026-04 董事长换届平稳交接。</li>
+      <li><span class="strong">一票否决项</span>：<span class="badge-green" style="display:inline-block;font-size:12px;padding:1px 8px;border:1px solid #15331f;border-radius:6px;color:#7cc98f;">未触发 — 🟢 诚实红线通过</span>（无造假/重大隐瞒/无合理解释的前后矛盾）；🟡 存疑项（矿权提示不足、Q2 解释偏弱、2026-08-18 会计政策变更待核）不构成 No-Go。</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== 8. 竞争劣势与风险（芒格） ==================== -->
+<section id="inversion">
+  <h2 class="section-title">竞争劣势与风险（芒格框架 · 反向检查清单）</h2>
+  <div class="card">
+    <h3>失败情景（deep-read §7.4 四情景）</h3>
+    <ul>
+      <li><span class="strong up">A 周期反转</span>（概率中、杀伤力大）：钴/锂/镍价 2026H2-2027 共振下行 → 322 亿存货（准备率 ~1%）计提巨额跌价 + 毛利收缩。2023 剧本重演（彼时存货 173 亿 → 今日 322 亿敞口近乎翻倍）。</li>
+      <li><span class="strong up">B 印尼资产黑天鹅</span>（概率中）：硫磺断供长期化 → 华飞/华越停产扩大 → MHP 自给链条断裂，一体化优势反转为劣势；叠加印尼资源民族主义 + 510 亿担保或有负债集中触发。</li>
+      <li><span class="strong up">C 债务-扩张螺旋</span>（概率中）：capex（Pomalaa/Sorowako 后续）依赖滚动短债（占比约 66-70%，估算存疑）；融资收紧或金属价下跌压缩 OCF → 再融资压力。</li>
+      <li><span class="strong">D 技术代际淘汰</span>（概率中低）：固态/钠电/铁锂长期替代三元高镍 → 数百亿产能沉没（弱化：麦肯锡预测 2030 三元占动力 30-35%）。</li>
+    </ul>
+    <h3>历史错误 / 财务地雷 / 竞争侵蚀 / 心理偏差</h3>
+    <ul>
+      <li><span class="strong">历史错误</span>：2021-2022 高价扩张 + 2023 钴锂价下行致业绩 -14.25%；「言行部分背离的乐观扩张倾向」（deep-read §8.3：承认产能过剩风险但扩张计划未见减速）。</li>
+      <li><span class="strong">财务地雷</span>：OCF/净利连续 &lt;0.8（🔴）；存货 322 亿 + 跌价准备率 0.96%（🔴）；capex/OCF 268-464%（🔴）；负债率 64.28% + 短债占比约 66-70%（🟡）；受限资产 = 净资产约 75%（🟡）；担保 510 亿 = 净资产 76.81%（🟡）；商誉 1.2%（✅）。</li>
+      <li><span class="strong">竞争侵蚀</span>：中伟/格林美印尼扩产；三元被 LFP 挤压；材料加工费被下游压缩（正极毛利率 9.36%）。</li>
+      <li><span class="strong">心理偏差</span>：市场对「周期低位 + 低 PE + 材料高增长」叙事可能集体乐观——<span class="up">10.5x PE 对应的是 TTM 周期高点利润，2023 年低 PE 后归母 -14.25% 提示周期股低 PE 可能是便宜陷阱</span>；同时避免对「一体化=护城河」过度锚定（硫磺事件已证明外部条件敏感性）。</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== 9. 周期位置 + 核心驱动 ==================== -->
+<section id="cycle">
+  <h2 class="section-title">周期位置与核心驱动因素</h2>
+  <div class="grid2">
+    <div class="card">
+      <h3>周期位置</h3>
+      <p><span class="strong up">判定：金属价格周期「顺风顶部区域 → 逆风增强」的转折带</span>（deep-read §8.2/§10.3 裁决）。结构性成分（EV/储能渗透、高端三元/大圆柱/固态份额、一体化卡位）真实但非当期利润主驱动；周期性成分 2025-2026H1 贡献 &gt; 结构性（钴产品毛利率 +21.24pp 纯价格驱动）。钴价自高点回落近 30%、碳酸锂 H2 中枢下移 13-18 万/吨、镍 LME 库存 27.8 万吨历史高位 → H2 起逆风增强（Q2 归母环比 -59.55% 已实证）。</p>
+      <p><span class="strong">时间框架：1-3 年金属价格周期主导 + 3-5 年材料放量叠加——非 10 年稳定复利生意，须按周期股正常化盈利定价并等待周期低位。</span></p>
+    </div>
+    <div class="card">
+      <h3>核心驱动因素</h3>
+      <ul>
+        <li><span class="strong">金属价格周期（第一驱动）</span>：钴（刚果金管制 vs 配额执行松动 + 回收钴 34% 替代）、锂（供给复产 vs 储能需求）、镍（印尼成本 vs LME 高库存）。</li>
+        <li><span class="strong">硫磺成本与华飞复产（2026-2027 关键变量）</span>：CIF 550→1,250 美元/吨；石膏制酸/自供为湿法降本核心路径。</li>
+        <li><span class="strong">材料端结构性放量</span>：正极/前驱体 2026H1 +93%/+94%（行业 3 倍+）+ 长单 + 匈牙利本土化产能（2.5 万吨）。</li>
+        <li><span class="strong">资源接续与扩张</span>：刚果金矿权续期；Pomalaa 12 万吨镍（2026 底投产）/Sorowako 6 万吨；Ewoyaa 交割。</li>
+        <li><span class="strong">资本结构与再融资</span>：短债占比约 66-70%、超短融/中票/科创债滚动；2025 可转债 76 亿转股曾改善权益，2026H1 负债率回升至 64.28%。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 10. 增长驱动分析（A） ==================== -->
+<section id="growth">
+  <h2 class="section-title">增长驱动分析（问题组 A：高增长能否持续）</h2>
+  <div class="card">
+    <div class="callout red">
+      <span class="strong up">A1 判断：总量高增长（三年归母 CAGR ≈ +35%），但单季环比断崖 + 钴价回落 + 硫磺冲击 →「高增长后期 / 周期见顶回落初期」。</span> 归母 33.51（-14.25%）→ 41.55（+23.99%）→ 61.10 亿（+47.07%）；2026H1 +29.38%；但 <span class="down strong">2026Q2 单季归母 10.10 亿环比 -59.55%、同比 -30.76%</span>（外部口径），增长质量（OCF/NI &lt;0.8）不支持线性外推。
+    </div>
+    <h3>A2 当前高增长的促成原因（量化归因）</h3>
+    <table>
+      <tr><th>归因维度</th><th>是否贡献</th><th>量化证据</th><th>出处</th></tr>
+      <tr><td>量增（销量/产能释放）</td><td>✅ 主因之一</td><td>2025 镍销量 +58.72%、正极销量 +77.29%；2026H1 正极 +93%/前驱体 +94%/碳酸锂 +17%</td><td>年报产销量表 P16；半年报 P10</td></tr>
+      <tr><td>价增（金属价格/结构）</td><td>✅ 主因之一</td><td>2025 钴产品营收 +48.77% 而销量 -0.62% → <span class="strong up">纯价格驱动</span>；碳酸锂 2026H1 均价 +132%</td><td>2025 年报分产品表；证券时报 2026-07-09</td></tr>
+      <tr><td>新业务/第二曲线</td><td>✅ 部分</td><td>高端三元/大圆柱/固态卡位 + 锂产品利润修复（毛利率 +8.71pp）</td><td>2025 年报</td></tr>
+      <tr><td>并购并表</td><td>❌ 非主因</td><td>内生资本开支驱动为主（出售 BCM 25% 获一次性收益 4.73 亿）；无重大并表利润</td><td>2025 年报 P18/P24</td></tr>
+      <tr><td>行业景气/政策红利</td><td>✅ 重要外因</td><td>刚果金钴出口管制（2026-2027 配额 9.7 万吨、较 2024 产量 -56%）</td><td>民生邱祖学 2026-07-01</td></tr>
+    </table>
+    <h3>A3-A4 未来增长因素（内因 vs 外因，企业能否主导）</h3>
+    <table>
+      <tr><th>未来增长因素</th><th>已兑现/待验证</th><th>内/外因</th><th>能否主导</th><th>持续性判断</th></tr>
+      <tr><td>材料端放量（正极/前驱体 +93%/+94%）</td><td>已兑现（2025-2026H1）</td><td>内因</td><td>是</td><td class="up">真实但毛利率 9-17%，无法单独支撑利润中枢（Q2 已实证）</td></tr>
+      <tr><td>金属价格中枢</td><td>高位兑现 → 回落中</td><td>外因</td><td>否</td><td class="up">钴 -30%、锂 H2 中枢下移——弹性大但不可主导</td></tr>
+      <tr><td>资源接续（Pomalaa/Sorowako/Ewoyaa）</td><td>待验证（2026 底-2027）</td><td>内因（项目）受外因制约</td><td>部分</td><td>产能兑现确定性高，回报受少数股东（32.1%）与金属价打折</td></tr>
+      <tr><td>硫磺降本（石膏制酸自供）</td><td>待验证（2027）</td><td>内因</td><td>是</td><td>华飞复产关键；落地前湿法利润承压</td></tr>
+      <tr><td>钴配额执行率</td><td>已部分证伪</td><td>外因</td><td>否</td><td class="up">2026H1 实际出口仅配额 2/3——Bull「配额支撑」打折</td></tr>
+    </table>
+    <div class="callout">
+      <span class="strong">A4 结论：未来增长中「可主导的内因」（材料放量/石膏制酸）真实但利润率低；「弹性大的外因」（金属价格）不可主导且现回落——内因成长确定性中等偏弱，外因周期风险必须显式标注。</span>
+    </div>
+    <h3>A5 可持续性与跟踪阈值</h3>
+    <ul>
+      <li>边际信号：2026Q2 归母环比 -59.55%（回落实证）；钴价自高点 -30%；硫磺高位徘徊无回落信号（时代周报 2026-08-23）。</li>
+      <li>跟踪阈值：归母单季同比转负 / 钴价跌破 30 万/吨 / 硫磺高位持续 2 季以上 = 增长失速；华飞复产 + 石膏制酸投产 + OCF/NI 回升至 0.8 = 多方翻盘。</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== 11. 核心优势可持续性（B） ==================== -->
+<section id="edge">
+  <h2 class="section-title">核心优势可持续性分析（问题组 B：优势能否维持）</h2>
+  <div class="card">
+    <h3>B1 相对同行的核心优势（按实际突出维度：一体化毛利率）</h3>
+    <table>
+      <tr><th>公司/行业</th><th>2026H1 毛利率</th><th>差异</th><th>时点</th></tr>
+      <tr><td><span class="strong">本公司（华友钴业）</span></td><td class="num">19.6%</td><td>—</td><td>2026H1</td></tr>
+      <tr><td>中伟股份</td><td class="num">13.0%</td><td class="num up">+6.6pp（本公司领先）</td><td>2026H1</td></tr>
+      <tr><td>格林美</td><td class="num">13.5%（Q2 8.6%，2021 来最低）</td><td class="num up">+6.1pp（本公司领先）</td><td>2026H1</td></tr>
+    </table>
+    <p class="muted">优势维度：①矿冶一体化成本优势（整体毛利率领先同业约 6pp——印尼 MHP 自供 + 津巴布韦锂贯通压低材料端原料成本）；②高端三元产品结构（9 系市占 &gt;33%、高端圆柱三元 &gt;60%，公司口径）。</p>
+    <h3>B2-B3 优势成因与趋势</h3>
+    <ul>
+      <li><span class="strong">成因</span>：垂直一体化（资源自给差价是利润大头）+ 工艺（HPAL 湿法规模化）+ 产品结构（高端 9 系/大圆柱认证溢价）+ 车规认证长单（2-3 年转换成本）。</li>
+      <li><span class="strong up">趋势：收窄风险（2026 年已实证）</span>——整体毛利率表面上行（14.11%→19.60%）但由金属价格驱动；硫磺暴涨致华飞（2025 净利约 12.5 亿）停产约 50%、MHP 出货 -19%，直接击穿湿法成本优势；中伟火法路线反而受损更小、毛利率逐季回升。</li>
+    </ul>
+    <h3>B4 优势被侵蚀的风险因素</h3>
+    <table>
+      <tr><th>侵蚀因素</th><th>概率</th><th>幅度</th><th>说明</th></tr>
+      <tr><td>硫磺成本击穿湿法成本优势（CIF 550→1,250 美元/吨，占 MHP 成本 40-60%）</td><td class="up">高（已发生）</td><td class="up">大</td><td>华飞停产 50%、MHP -19%；华友为湿法最大暴露者</td></tr>
+      <tr><td>刚果(金)自有矿枯竭（0-0.23 年可开采）</td><td>中（时间未定）</td><td class="up">大（中长期）</td><td>铜钴自给率下降 → 自给差价收窄</td></tr>
+      <tr><td>三元路线被 LFP/固态挤压</td><td>中高（长期）</td><td>中</td><td>2025 全球 LFP +63% vs 三元 +7.4%</td></tr>
+      <tr><td>前驱体/正极产能过剩价格战</td><td>中高（进行中）</td><td>中</td><td>前驱体毛利率 18.26%→16.84%</td></tr>
+      <tr><td>竞争者印尼扩产（中伟火法/格林美）</td><td>中</td><td>中</td><td>火法规避硫磺风险</td></tr>
+      <tr><td>印尼政策（HPM/外汇管制/特许权费）+ 汇率</td><td>中</td><td>中</td><td>RKAB 配额 -30%+；美元/印尼盾敞口</td></tr>
+    </table>
+    <h3>B5 独特壁垒（护城河 → 优势溢价因果链 + 可持续年限）</h3>
+    <p><span class="strong">资源卡位 → 自给差价 → 材料端原料成本低于外购同业 → 毛利率领先 6pp → 支撑扩张现金流（再投资印尼/非洲新项目）</span>。其中：印尼 14 亿湿吨镍（参股+包销）为难以复制的资源壁垒（10 年+）；Arcadia 锂 245 万吨 LCE（11.1 年）+ Ewoyaa 交割中；特斯拉/亿纬/LGES 长单 + 2-3 年车规认证构成客户转换壁垒（3-5 年）。<span class="up strong">短板：刚果金自有钴矿 0-0.23 年（护城河最长资源链的断点）。</span></p>
+    <div class="callout red">
+      <span class="strong">B6 优势敏感性：</span>硫磺成本占 MHP 成本升至 40-60%，华飞停产约 50% 已致 2026H1 MHP 出货 -19%；以华飞 2025 净利约 12.5 亿计，<span class="strong up">MHP 产量长期腰斩年化利润损失约 6-10 亿（占 2025 归母 10-16%）</span>（估算，置信度 6，存疑——受复产与硫磺回落节奏影响）。毛利率优势每收窄 1pp ≈ 毛利损失约 8 亿（年化营收约 1,111 亿 × 1%）。
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 12. 估值模型与参数明细 ==================== -->
+<section id="valuation-model">
+  <h2 class="section-title">估值模型与参数明细（2026-09-09 · 与公司笔记 frontmatter valuation_model 同源）</h2>
+  <div class="card">
+    <h3>1. 估值模型选择（品种路由：cyclical）</h3>
+    <table>
+      <tr><th>品种</th><th>主估值模型</th><th>选择理由（数据信号）</th><th>辅助校验模型</th></tr>
+      <tr><td><span class="strong">cyclical</span>（evaluate.ts 初判 general，被 deep-read 修正为周期属性）</td><td><span class="strong">正常化 EPS × PE（周期）+ Forward PE 校验</span></td><td>①deep-read §8.2：三重周期叠加体（资源国管制 + 金属价格 + 中游产能）；②2025-2026H1 利润弹性周期成分 &gt; 结构成分（钴产品毛利率 +21.24pp 纯价格驱动、Q2 归母环比 -59.55%）；③金属价格主导利润 + 资源股属性 + 材料成长性。<span class="muted">PEG 不作主锚（单年同比 +47% 含周期成分，正常化口径 PEG 0.5 仅辅助）</span></td><td>①Forward PE（2027E 中性 75 亿 → 9.6x）；②PB 1.42x 隐含净资产回报 13%+ 持续性校验；③券商前瞻 PE 区间 8-11.3x 交叉验证</td></tr>
+    </table>
+    <h3>2. 关键参数明细（三情景，2027E 正常化盈利）</h3>
+    <table>
+      <tr><th>参数</th><th class="num">悲观</th><th class="num">中性</th><th class="num">乐观</th><th>取值依据（锚定方法）</th></tr>
+      <tr><td>预测期归母净利（亿元，2027E）</td><td class="num">55</td><td class="num">75</td><td class="num">100</td><td>中性对齐东吴 2026-08-19 下调后 <span class="strong">2027E = 80 亿</span>保守 5 亿（硫磺假设不确定）；悲观 = 硫磺高位 + 钴锂价回落（Bear 论点 1/2/4）；乐观 = 硫磺自供降本 + 钴价中枢上移 + 材料量利齐升（Bull 论点 3/4）</td></tr>
+      <tr><td>估值倍数（x，正常化 PE）</td><td class="num">8</td><td class="num">10</td><td class="num">12</td><td>三重锚定：①同业前瞻 PE——东吴下调后 2027E 约 10x、2028E 8x；国信（2026-04-09，硫磺冲击前）约 11.3x → 券商区间 <span class="strong">8-11.3x</span>；②历史分位——PE-TTM 10.47x 处历史低位；③PEG 0.5（正常化口径，仅辅助）</td></tr>
+      <tr><td>目标市值（亿元）</td><td class="num">440</td><td class="num">750</td><td class="num">1,200</td><td>净利 × 倍数（交叉校验一致）</td></tr>
+      <tr><td>目标价（元）</td><td class="num">23.2</td><td class="num">39.6</td><td class="num">63.4</td><td>目标市值 ÷ 18.94 亿股</td></tr>
+    </table>
+    <div class="callout">
+      <span class="strong">模型要点：正常化盈利（而非 TTM）是估值锚核心</span>——若按 TTM 69 亿利润 × 12x 乐观外推可得 828 亿（+15%），显著高估安全边际；中性 75 亿 × 10x = 750 亿仅 +4%，正体现「周期高点利润不线性外推」裁决（deep-read §10.3/10.5）。
+    </div>
+    <h3>3. 参数敏感性分析（政策/原材料/竞争/汇率/技术代际）</h3>
+    <table>
+      <tr><th>影响因素</th><th>影响参数</th><th>方向与幅度</th><th>概率</th><th>触发信号/跟踪指标</th><th>置信度</th></tr>
+      <tr><td>政策：刚果金钴配额 / 印尼 RKAB-HPM-外汇管制 / IRA</td><td>钴价、净利、倍数</td><td>配额严格执行 → 钴价中枢抬升（Bull）；印尼政策收紧抬升资产成本（RKAB -30%+、HPM CF 17%→30%）</td><td>中</td><td>刚果金出口量 vs 配额执行率（2026H1 仅 2/3）；印尼新政细则</td><td>6-7</td></tr>
+      <tr><td>原材料/成本：硫磺 CIF 550→1,250 美元/吨；钴/锂/镍价</td><td>净利（弹性最大）</td><td>硫磺占 MHP 成本 40-60%，华飞停产 50% 已致 MHP -19%（强证据）；钴价 -30%、锂 H2 中枢 13-18 万/吨 → 存货跌价共振</td><td class="up">高</td><td>硫磺 CIF 印尼报价；SMM 电解钴/碳酸锂现货；华飞复产公告与石膏制酸投产</td><td>7-8</td></tr>
+      <tr><td>竞争：前驱体产能过剩 / 三元 vs LFP / 中伟火法</td><td>加工费、材料毛利率</td><td>前驱体毛利率 18.26%→16.84%（价格战）；LFP 2025 +63% vs 三元 +7.4%；中伟火法受硫磺冲击小</td><td>中高</td><td>分产品毛利率季度趋势；中伟/格林美印尼投放</td><td>6-7</td></tr>
+      <tr><td>汇率/利率：美元结算 + 印尼盾 + 高有息负债</td><td>财务费用、净利</td><td>汇兑波动（2026H1 公允 -2.65 亿含套保亏损）；有息负债约 620-660 亿 + 短债占比约 66-70% 对利率敏感</td><td>中</td><td>美元/人民币与印尼盾汇率；财务费用构成</td><td>6（短债占比估算存疑）</td></tr>
+      <tr><td>技术代际/需求：高镍/大圆柱/固态/低空</td><td>材料量、成长溢价</td><td>9 系/46 系大圆柱/固态卡位真实（出货支撑）；固态/钠电替代则产能沉没（弱化）</td><td>中低</td><td>高端三元出货结构（9 系占比）；固态量产时间表</td><td>8（出货支撑）</td></tr>
+      <tr><td>治理/地缘：矿权续期、担保 510 亿、质押 44.02%</td><td>资源自给率、或有负债</td><td>鲁苏西/鲁库尼可开采 0-0.23 年 → 铜钴自给率下降；对负债率 &gt;70% 子公司担保 255.81 亿的或有传导</td><td>中</td><td>矿权续期公告；子公司负债率与担保余额</td><td>7</td></tr>
+    </table>
+    <p class="chart-source">模型/参数与华友钴业-公司研究 frontmatter 严格一致：valuation_model「正常化EPS×PE（周期）+ Forward PE 校验」/ valuation_type cyclical / target_market_cap_yi 440-750-1200 / forward_pe 9.6x@2027E 75 亿 / peg 0.5（normalized，辅助）。</p>
+  </div>
+</section>
+
+<!-- ==================== 13. 跟踪指标 ==================== -->
+<section id="tracking">
+  <h2 class="section-title">跟踪指标（与投资论点直接挂钩 · 带阈值）</h2>
+  <div class="card">
+    <ol>
+      <li><span class="strong">硫磺 CIF 印尼价格 + 华飞复产公告</span>（月度/事件驱动，<span class="strong up">第一跟踪指标</span>）——湿法护城河论点成败关键。阈值：&gt;1,000 美元/吨持续 2 季 + 复产无时间表 = Bear 论点 2 确认；回落 &lt;800 美元/吨或石膏制酸投产 = Bull 翻盘。</li>
+      <li><span class="strong">钴配额执行率 / 钴价</span>（月度，SMM/智通口径）——「周期高点 vs 新中枢」分歧裁决支点。阈值：出口接近配额 9.7 万吨 + 钴价企稳 &gt;35 万/吨 = Bull 论点 3 成立；执行率持续 &lt;2/3 + 钴价 &lt;30 万/吨 = Bear 论点 4 确认。</li>
+      <li><span class="strong">OCF/归母净利 + 存货跌价准备率</span>（每季度）——盈利质量核心指标。阈值：连续第三期 &lt;0.8 + 金属价下行 = 2023 剧本预警；OCF/NI &gt;0.8 = 质量修复。</li>
+      <li><span class="strong">应收账款增速 vs 营收增速</span>（每季度）——2026H1 应收 +61.07% 超速延续与否（信用放宽 vs 集中发货）。</li>
+      <li><span class="strong">资本开支与在建工程</span>（每半年）——capex/OCF 464% 收敛/扩张；Pomalaa/Sorowako 投产爬坡与归母占比。</li>
+      <li><span class="strong">正极/前驱体出货与加工费</span>（每季度）——量增（+93%/+94%）与单吨盈利匹配。</li>
+      <li><span class="strong">少数股东损益占比</span>（每季度）——2026H1 占合并净利 32.1%，决定归母弹性。</li>
+      <li><span class="strong">刚果(金)矿权续期 + 担保/质押余额</span>（事件/每半年）。</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ==================== 14. 风险提示 ==================== -->
+<section id="risk">
+  <h2 class="section-title">风险提示（分级 · 呈现多空双方论点及证据强度）</h2>
+  <div class="card">
+    <table>
+      <tr><th>级别</th><th>风险</th><th>多空证据（证据强度）</th></tr>
+      <tr><td class="up strong">高</td><td>金属价格周期反转</td><td>🔴 Bear 论点 4（强，置信度 6，外部数据已部分兑现：钴 -30%、锂 H2 中枢下移）；🟢 Bull 反驳「配额/矿权抬升成本地板」（中，置信度 6）——裁决：已处回落初期，H2 逆风增强</td></tr>
+      <tr><td class="up strong">高</td><td>硫磺地缘断供击穿湿法护城河</td><td>🔴 Bear 论点 2（强，置信度 7，华飞停产 50% 已实证、时代周报 2026-08-23 独立核查）；🟢 Bull「石膏制酸/自供降本」（待验证 2027）——裁决：短期无解，为最大单一风险</td></tr>
+      <tr><td class="up strong">高</td><td>现金流与盈利质量</td><td>🔴 Bear 论点 1（强，置信度 8：OCF/NI &lt;0.8、存货 322 亿准备率 &lt;1%）；🟢 Bull 反驳「收现比 106% + 锁价囤货 + 2024 OCF 124 亿」（中）——裁决：账面盈利强、现金实现弱，质量 RED 主因</td></tr>
+      <tr><td class="up strong">中高</td><td>重资产高杠杆与再融资依赖</td><td>🔴 Bear 论点 3（强，置信度 7：capex/OCF 464%、短债占比约 66-70%、受限资产 = 净资产 75%、担保 510 亿）；🟢 反驳「授信破千亿 + 可转债/AIC 战投」（中）——裁决：扩张期可控，周期下行期收紧</td></tr>
+      <tr><td>中</td><td>刚果(金)自有矿枯竭与资源接续</td><td>🔴 Bear 论点 5（中，置信度 6：0-0.23 年可开采年限）；🟢 反驳「外购/包销 + 印尼伴生钴」（中）——裁决：中长期自给率下降确定</td></tr>
+      <tr><td>中</td><td>中游产能过剩与技术路线（LFP/固态/钠电）</td><td>🔴 空方（中：LFP 2025 +63% vs 三元 +7.4%、前驱体价格战）；🟢 多方（中：9 系/大圆柱/固态卡位）——裁决：高端细分有对冲，长期路线风险弱化</td></tr>
+      <tr><td>中</td><td>印尼资源民族主义与地缘政策</td><td>🔴 空方（中强：RKAB -30%+、HPM、外汇管制）；🟢 多方（中：欧洲本土化对冲）——裁决：长周期成本项</td></tr>
+      <tr><td>低-中</td><td>治理透明度</td><td>🟡 存疑（Q2 滑坡披露、矿权提示不足、2026-08-18 会计政策变更待核）；未触发 No-Go</td></tr>
+      <tr><td>低</td><td>汇率与利率</td><td>中性（2026H1 公允 -2.65 亿含套保亏损；短债占比估算存疑）</td></tr>
+    </table>
+    <p class="chart-source">质量筛查 RED（2.6/10）背景下，高风险 3 项 + 中高 1 项均已在「投资建议：观望」中体现——不得单边乐观解读低估值。</p>
+  </div>
+</section>
+
+<!-- ==================== 15. 多空论证 ==================== -->
+<section id="bullbear">
+  <h2 class="section-title">多空论证摘要（Bull Case vs Bear Case · 摘自 deep-read 第十章）</h2>
+  <div class="card">
+    <div class="chart-container" id="chart-bullbear"></div>
+    <p class="chart-source">多空五维度证据强度对照（0-10，由 deep-read §10.1/10.2 置信度与 §10.3 强度文字转化）。Bear 在财务质量（8.5 vs 6.5）、周期/政策/国际（8 vs 6）显著占优；Bull 仅在增长量增（8 vs 7）与护城河资源/认证（8 vs 7.5）略占优但外部条件敏感。</p>
+    <table style="margin-top:var(--sp-4);">
+      <tr><th>维度</th><th>🟢 多方论点（证据强度）</th><th>🔴 空方论点（证据强度）</th><th>综合裁决（结合外围因素）</th></tr>
+      <tr><td>增长</td><td>材料端量增真实：正极 2026H1 +93%/2025 +77.29%，行业 3 倍速，长单锁定（<span class="strong">强</span>，置信度 8）</td><td>增长依赖资本开支线性投入（capex +118%）+ 金属价格周期贡献大（<span class="strong">中强</span>，置信度 7）</td><td class="up"><span class="strong">空方在增长质量上占优</span>：Q2 归母环比 -59.55% 已实证「材料翻倍难对冲资源利润收缩」</td></tr>
+      <tr><td>护城河</td><td>一体化毛利率 &gt; 同业 6pp（19.6% vs 13%/13.5%）；资源/认证卡位（<span class="strong">中强</span>，置信度 8）</td><td>硫磺断供击穿湿法成本优势（华飞停产 50%）；刚果金自有矿枯竭；三元被 LFP 挤压（<span class="strong">中</span>，置信度 7/6）</td><td><span class="strong up">空方略占优</span>：护城河中等、外部条件敏感、非自我强化型（硫磺事件证明单点依赖可瞬间击穿）</td></tr>
+      <tr><td>财务质量</td><td>收现比 97-106%、审计三年无保留、无商誉雷、2024 OCF 124 亿（<span class="strong">中</span>，置信度 6-7）</td><td>OCF/NI 归母 0.66/0.61、合并 0.53/0.42；存货 322 亿、跌价准备率 0.96%；应收 +61.07%（<span class="strong">强</span>，置信度 8）</td><td class="up"><span class="strong">空方决定性占优</span>：账面盈利强、现金实现弱——quality RED 2.6/10 核心依据</td></tr>
+      <tr><td>估值</td><td>PE 10.47x/PB 1.42x 历史低位（近 1 年 4.2% 分位）、分红回购托底（<span class="strong">中强</span>，置信度 6）</td><td>周期股盈利处高点，正常化 EPS 远低于 TTM；PB 1.42x 隐含净资产回报需持续 13%+；低 PE 或为便宜陷阱（<span class="strong">中</span>，置信度 6）</td><td><span class="strong up">空方略占优</span>：按正常化盈利 Forward PE 9.6x，中性目标仅 +4%——安全边际不足</td></tr>
+      <tr><td>周期/政策/国际</td><td>钴配额/印尼成本支撑/欧洲本土化/高端需求（<span class="strong">中</span>，置信度 6）</td><td>钴价回落 30%、碳酸锂 H2 中枢下移、印尼资源民族主义、硫磺断供、镍高库存（<span class="strong">强</span>，置信度 6-7）</td><td class="up"><span class="strong">空方占优</span>：2026H1 是「价格顺风」顶部区域，H2 起逆风增强</td></tr>
+    </table>
+    <div class="callout red">
+      <span class="strong">最大分歧点（显式标注）：「当前利润（2025 61.10 亿 / 2026H1 35.07 亿）是周期性高点还是新中枢起点」</span><br>
+      <span class="strong">裁决理由</span>：①硫磺地缘（1,250 美元/吨高位无回落信号）击穿湿法护城河 → Bear 论点 2 在 2027 年前难以证伪；②钴配额执行率 2026H1 实际出口仅配额 <span class="up">2/3</span> + 回收钴占比升至 34% → Bull「配额严格支撑钴价」被部分证伪（稀土 2010 管制结局类比）；③印尼政策（RKAB/HPM/外汇管制）抬高成本且新项目少数股东占合并净利 32.1% → 归母弹性打折；④材料放量（内因）真实但毛利率 9-17%，无法单独支撑 75-100 亿净利中枢；⑤Q2 归母环比 -59.55% 为周期回落首个官方级信号。<br>
+      <span class="strong up">综合裁决：短期（2026H2-2027）以空方框架为主、按周期正常化盈利定价（中性 75 亿 × 10x）；Bull 论点成立条件 = 硫磺回落 + 华飞复产 + 钴配额严格执行 + OCF/NI 修复——均列跟踪指标带阈值可证伪。</span><br>
+      <span class="muted">双方最脆弱论点：Bull「材料端可独立支撑估值」（材料毛利率 9-17%，Q2 已证伪）/「钴价中枢抬升」（依赖配额执行率 2/3 时瓦解）；Bear「存货跌价」（含涨价重估 + 套保对冲）/「高杠杆」（授信破千亿 + 股东支持）。多空论证出处：[[2026-09-09-华友钴业-deep-read]] 第十章。</span>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 16. 质量筛查结论 ==================== -->
+<section id="quality">
+  <h2 class="section-title">质量筛查结论</h2>
+  <div class="card">
+    <div class="kpi-row">
+      <div class="kpi"><div class="label">质量评分</div><div class="value up">2.6 / 10</div><div class="note">quality-screen 自动评分</div></div>
+      <div class="kpi"><div class="label">结论</div><div class="value up">🔴 RED</div><div class="note">质量存疑 — 审慎级跟踪（本报告：观望）</div></div>
+      <div class="kpi"><div class="label">红牌</div><div class="value">0 项</div><div class="note">基础 8 项财务红牌均未触发</div></div>
+      <div class="kpi"><div class="label">黄牌 / 绿牌</div><div class="value">5 / 3</div><div class="note">黄牌见下表；绿牌 = 估值+成长（3）</div></div>
+    </div>
+    <table>
+      <tr><th>类型</th><th>指标</th><th>数值</th><th>说明</th></tr>
+      <tr><td class="up strong">🔴 结构性低分</td><td>杠杆安全（七维分）</td><td class="num">1/10</td><td>负债率 61.85%（2025 末）/64.28%（2026H1），脚本按反向高分线计分</td></tr>
+      <tr><td class="up strong">🔴 结构性低分</td><td>现金流质量（七维分）</td><td class="num">3/10</td><td>OCF/净利 0.66（2025），2026H1 0.61——RED 主因</td></tr>
+      <tr><td class="up strong">🔴 结构性低分</td><td>生意模式护城河（七维分）</td><td class="num">4/10</td><td>毛利率 17.47% 未达 20% 高分线（弱护城河信号）</td></tr>
+      <tr><td>🟡 黄牌</td><td>毛利率</td><td class="num">17.5%</td><td>&lt;20%（弱护城河风险）</td></tr>
+      <tr><td>🟡 黄牌</td><td>经营现金流/净利润</td><td class="num">0.66</td><td>&lt;0.8（利润含金量存疑）</td></tr>
+      <tr><td>🟡 黄牌</td><td>资产负债率</td><td class="num">61.9%</td><td>&gt;50%（杠杆偏高）</td></tr>
+      <tr><td>🟡 黄牌</td><td>利息覆盖倍数</td><td class="num">数据缺失</td><td>扩展排雷未覆盖（deep-read §十二 数据缺口）</td></tr>
+      <tr><td>🟡 黄牌</td><td>短期有息负债占比</td><td class="num">数据缺失</td><td>deep-read 估算约 66-70%（格式未解析，数据缺口）</td></tr>
+      <tr><td>🟢 绿牌</td><td>PE(TTM)</td><td class="num">10.5</td><td>&lt;15，估值有一定吸引力</td></tr>
+      <tr><td>🟢 绿牌</td><td>营收 / 净利增长</td><td class="num">+32.9% / +47.1%</td><td>强成长（2025）</td></tr>
+    </table>
+    <p class="chart-source">来源：quality-screen.ts（taskId：deep-dive-华友钴业-20260909-4821）。RED 由综合分 2.6 &lt; 4.5 触发（非红牌触发）；与 deep-read §7.2 红旗（OCF&lt;净利/capex&gt;OCF 80%/存货跌价准备率 &lt;1%）及空方财务质量论点（置信度 8）一致。周期行业特性（高杠杆/低毛利）部分被机械扣分——RED 不代表排除，但要求审慎级跟踪，报告不含「值得重点跟踪」级表述。</p>
+  </div>
+</section>
+
+<!-- ==================== 附录 ==================== -->
+<section id="appendix">
+  <h2 class="section-title">附录</h2>
+
+  <div class="card">
+    <h3>附录 A · document-reader 精读笔记摘要（含多空论证摘要）</h3>
+    <p class="section-sub">精读覆盖：2023/2024/2025 三个完整财年年报 + 2026H1 半年报（pdf-texts/华友钴业/ 四份 Markdown）；2023 年报 PDF 有编码/OCR 问题（部分明细未直读，标注）；精读置信度自评 7/10（2026H1 未经审计、有息负债期限结构等附注未逐项核对）。</p>
+    <ul>
+      <li><span class="strong">增长飞轮</span>：三年业绩 V 型反转（归母 33.51→41.55→61.10 亿）；增长引擎从 2024「镍放量」切换至 2025-2026H1「钴价大涨 + 正极/前驱体放量 + 碳酸锂修复」三引擎——复利成分有限，属「线性消耗型扩张」（每增长一单位需同步投入一单位资本），金属价格波动可单期抹平多年积累（2023 归母 -14.25%）。</li>
+      <li><span class="strong">财务状况</span>：扣非归因——三年差额占比 &lt;6%（套保公允/处置/补助为主，无虚增警示）；指标波动归因——毛利率上行 = 金属价格周期驱动（钴 +21.24pp/锂 +8.71pp）；OCF 收缩 = 存货/应收营运资金占用（附补充资料外部证据）；8 项逻辑勾稽 3 处断裂/存疑（2025 营收 +33% vs OCF -68%；2026H1 应收 +61% vs 营收 +49%；净利 vs OCF）均已追因。</li>
+      <li><span class="strong">三年趋势与连贯性</span>：归母/ROE/毛利率逐年向好；OCF 与 FCF 趋势恶化；审计无保留、期初衔接无重述 → 连贯 ✅；管理层诚实 🟢（预告精准 61.10 vs 58.5-64.5 区间、停产如实披露）但 🟡 存疑（矿权提示不足、Q2 滑坡解释偏弱、2026-08-18 会计政策变更待核）。</li>
+      <li><span class="strong">多空论证摘要</span>：Bull Top5（一体化成本/置信度 8、高端放量长单/8、钴价中枢/6、锂修复/6、低估值托底/6）；Bear Top5（现金流背离/8、硫磺击穿护城河/7、重资产高杠杆/7、金属价格顶部/6、矿枯竭+政策双刃剑/6）。双方最强论点：Bear「现金流质量」vs Bull「一体化成本」；双方最脆弱论点：Bull「钴价中枢」（依赖配额执行率）vs Bear「存货跌价」（含涨价重估+套保）。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>附录 B · 50 项投资决策清单 AUTO 扫描块</h3>
+    <table>
+      <tr><th>#</th><th>级别</th><th>检查项</th><th>结果</th><th>说明（含人工核验修正）</th></tr>
+      <tr><td>4</td><td>🟠 IMPORTANT</td><td>三层结构覆盖</td><td>✅</td><td>检测到三层结构（行业+细分+公司）</td></tr>
+      <tr><td>8</td><td>⚪️ NORMAL</td><td>财报 PDF 下载</td><td>✅</td><td>pdf-texts/华友钴业/ 三年年报 + 2026H1 覆盖</td></tr>
+      <tr><td>11</td><td>🟠 IMPORTANT</td><td>毛利率/ROE 护城河信号</td><td>❌（有周期解释）</td><td>毛利率 17.5%（&lt;20%，触发质量黄牌）、ROE 13.7% ✅——毛利率偏低有金属加工薄利 + 周期位置解释</td></tr>
+      <tr><td>14</td><td>⚪️ NORMAL</td><td>重/轻资产</td><td>🟡 → 人工确认</td><td><span class="up strong">重资产</span>：2026H1 capex 99.59 亿（+118%）、在建 223.42 亿、FCF -78 亿</td></tr>
+      <tr><td>15</td><td>⚪️ NORMAL</td><td>商誉占比</td><td>✅</td><td>5.95 亿 / 508.71 亿 = 1.2%（&lt;30%）</td></tr>
+      <tr><td>25</td><td>🔴 CRITICAL</td><td>经营现金流/净利润 ≥0.8（&lt;0.5=NO-GO）</td><td>❌（⚠️ 未达 No-Go）</td><td>OCF/NI = 0.66（归母）/0.53（合并，2025）；2026H1 0.61/0.42（合并口径 &lt;0.5，<span class="up strong">边界接近 No-Go</span>）——已在风险提示（高）与质量筛查 RED 覆盖</td></tr>
+      <tr><td>26</td><td>🟠 IMPORTANT</td><td>ROE ≥12%</td><td>✅</td><td>ROE 13.7%（2025 加权）</td></tr>
+      <tr><td>27</td><td>🟠 IMPORTANT</td><td>资产负债率 ≤60%</td><td>❌</td><td>61.9%（2025 末）/64.28%（2026H1）&gt;60%，触发质量黄牌</td></tr>
+      <tr><td>28</td><td>🔴 CRITICAL</td><td>有息负债/OCF 流动性红线（&gt;5）</td><td>🟡 → <span class="up strong">❌（人工核验触发）</span></td><td>脚本未解析金额；人工核验：有息负债约 620-660 亿（2026H1 估算）÷ OCF 21.48 亿（H1）≈ 29-31（2025 全年口径 ≈ 15-16）——<span class="up">远超 5 红线</span>，已在风险提示（中高）覆盖</td></tr>
+      <tr><td>29</td><td>🟠 IMPORTANT</td><td>营收+净利双负增长</td><td>✅</td><td>营收 +32.9%、净利 +47.1%（2025）</td></tr>
+      <tr><td>30</td><td>🟠 IMPORTANT</td><td>大额减值 &gt;30% 净利</td><td>✅（边界）</td><td>2026H1 减值 3.07 + 信用 3.13 亿 ≈ 占 H1 归母 25%，未达 30% 阈值；存货跌价准备率 0.96% 为潜在敞口</td></tr>
+      <tr><td>31</td><td>🟠 IMPORTANT</td><td>PE&gt;40 无高增长</td><td>✅</td><td>PE(TTM) 10.5 ≤40；净利 +47.1%</td></tr>
+    </table>
+    <div class="callout">
+      <span class="strong">AUTO 统计：CRITICAL 2/2 关注（25 ⚠️ + 28 人工核验触发 ❌）｜ IMPORTANT 2/7 未通过（11、27）｜ NORMAL 0/3 未通过｜ 综合：⚠️ 有条件放行（退出码 0，未触发 No-Go）</span>。<span class="up strong">放行前提 = 报告「投资建议：观望」+ 跟踪指标（OCF/NI、capex/OCF、短债滚动）带阈值可证伪</span>；若金属价格下行压缩 OCF，两项 CRITICAL 将同时恶化，须即时复核 No-Go。（命令：investment-checklist-auto.ts，扫描时间 2026-09-09）
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>附录 C · 财报精读 10 项检查清单（evaluate.ts + deep-read 补充）</h3>
+    <table>
+      <tr><th>#</th><th>检查项</th><th>结果</th><th>详情/说明</th></tr>
+      <tr><td>1</td><td>ROE ≥ 12%（资本回报达标）</td><td>✅</td><td>2025 加权 ROE 13.70%（11.14%→11.69%→13.70% 逐年向好）；但杜邦显示为周转率回升 + 周期复苏，非结构性质变</td></tr>
+      <tr><td>2</td><td>经营现金流 ≥ 净利润 × 0.8</td><td class="up">❌</td><td>2025 OCF/归母 0.66、合并 0.53；2026H1 0.61/0.42——<span class="strong up">连续两期 &lt;0.8（合并口径 &lt;0.6）</span>，deep-read §4.8 高严重度断裂点</td></tr>
+      <tr><td>3</td><td>资产负债率 ≤ 60%</td><td>⚠️</td><td>61.85%（2025 末，可转债转股后）；2026H1 回升至 64.28%；短债占比约 66-70%（估算，存疑）</td></tr>
+      <tr><td>4</td><td>归母净利润为正</td><td>✅</td><td>33.51/41.55/61.10/35.07（2026H1）持续为正；但 2026Q2 单季 10.10 亿环比 -59.55% 提示周期回落</td></tr>
+      <tr><td>5</td><td>毛利率 ≥ 25%（弱护城河线）</td><td class="up">❌</td><td>17.47%（2025）/19.60%（2026H1）——高于同业 6pp 但绝对水平仍属加工薄利（&lt;20% 触发质量黄牌）</td></tr>
+      <tr><td>6</td><td>营收趋势 ≥ 2 年连续稳健</td><td>✅</td><td>2024 -8.08%（主动收缩）→ 2025 +32.94% → 2026H1 +49.39%（但增长质量 OCF 背离）</td></tr>
+      <tr><td>7</td><td>商誉 / 净资产 &lt; 30%</td><td>✅</td><td>5.95 亿 / 508.71 亿 = 1.2%（天津巴莫/众晶减值测试通过）</td></tr>
+      <tr><td>8</td><td>无大额资产减值损失（≥净利 30%）</td><td>⚠️ 边界</td><td>2026H1 资产减值 3.07 + 信用减值 3.13 + 公允价值 -2.65 亿 ≈ 8.85 亿（占 H1 归母 25%），集中于 Q2；存货跌价准备率 0.96% 为潜在敞口</td></tr>
+      <tr><td>9</td><td>审计意见标准无保留</td><td>✅</td><td><span class="badge-green" style="display:inline-block;font-size:12px;padding:1px 8px;border:1px solid #15331f;border-radius:6px;color:#7cc98f;">天健 2023/2024/2025 三年标准无保留</span>；2026H1 未经审计</td></tr>
+      <tr><td>10</td><td>MD&A 未来展望无重大风险隐瞒</td><td>🟡 存疑</td><td>华飞停产/硫磺披露及时（✅）；但刚果金矿 0-0.23 年未主动提示、Q2 滑坡以累计口径叙事、322 亿存货跌价敏感性着墨少（🟡）</td></tr>
+    </table>
+    <p class="chart-source">结论：❌ ≥2 项（OCF/NI 连续 &lt;0.8、毛利率 &lt;20%）+ ⚠️ 边界 2 项（负债率 &gt;60%、减值集中 Q2）——与质量筛查 RED 2.6/10 及 deep-read §7.2 红旗一致；✅ 项（审计、商誉、盈利为正）支撑管理层 🟢 诚实判断。</p>
+  </div>
+
+  <div class="card">
+    <h3>相关研究（双链）</h3>
+    <p class="muted">[[华友钴业-公司研究]]（知识节点，scores/估值/质量主源）｜ [[2026-09-09-华友钴业-deep-read]]（主验证源，含第十章多空论证）｜ [[2026-09-09-华友钴业-processed]]（结构化数据卡）｜ [[新能源]] ｜ [[锂电材料]] ｜ 同业参照：[[中伟股份]] ｜ [[格林美]] ｜ [[洛阳钼业]]；下游：[[宁德时代]]</p>
+    <p class="section-sub" style="margin-top:var(--sp-3);">研报共识参考（标注主体与时点，不替代财报）：东吴证券 2026-08-19（中报点评，维持买入）2026-2028E 归母下调至 54/80/104 亿、对应 PE 15/10/8x（预测时点股价口径；2027E 80 亿与中性估值锚定一致）；国信证券 2026-04-09（年报点评，优于大市）2026-2028E 102.73/121.69/144.34 亿（<span class="up">硫磺冲击前预测，未计入停产影响，参考须打折</span>）；时代周报 2026-08-23（Q2 滑坡与硫磺独立核查）；智通财经 2026-09-04（钴价回落近 30%）。</p>
+  </div>
+</section>
+
+<!-- ==================== 页脚 ==================== -->
+<footer>
+  <p><strong>免责声明</strong>：本报告由投研智能体系统基于公开信息自动生成（taskId：deep-dive-华友钴业-20260909-4821），仅供内部研究参考，不构成任何投资建议。报告数据来源于华友钴业 2023/2024/2025 年度报告、2026 年半年度报告、上市公司公告、券商研报及公开行业数据（SMM/智通财经/时代周报/华泰期货/民生邱祖学团队等），数据时点 2026-09-09；研报预测（东吴/国信）为第三方观点且时点各异（国信 2026-04-09 未计入硫磺冲击），引用须谨慎。2026H1 数据未经审计；2026Q1/Q2 单季数据为外部研报/媒体口径。</p>
+  <p style="margin-top:var(--sp-2);">置信度说明：本报告关键结论均标注置信度（高/中/低）；置信度低于 7 的内容（三情景乐观假设、MHP 损失估算、短债占比、2026-08-18 会计政策变更）显式标注「存疑」或低置信度。数据口径：归母 vs 合并（含少数股东）并列呈现——少数股东损益 2026H1 占合并净利 32.1%；质量筛查 RED（2.6/10）背景下操作建议为「观望」，不含买入式表述。投资有风险，决策需独立判断。</p>
+</footer>
+
+</div>
+
+<!-- ==================== ECharts 脚本 ==================== -->
+<script>
+/* DARK_THEME_BASE — 黑金暗色主题（design.md） */
+var DARK_THEME_BASE = {
+  backgroundColor: 'transparent',
+  textStyle: { color: '#a1a1a1', fontFamily: 'Geist, Inter, "PingFang SC", "Microsoft YaHei", sans-serif' },
+  legend: { textStyle: { color: '#a1a1a1' }, inactiveColor: '#666666', itemWidth: 14, itemHeight: 8, top: 0 },
+  tooltip: {
+    backgroundColor: '#111111', borderColor: '#1a1a1a', textStyle: { color: '#ffffff', fontSize: 13 },
+    axisPointer: { lineStyle: { color: '#666666' } }
+  },
+  grid: { left: 48, right: 48, top: 44, bottom: 36 },
+  xAxis: { axisLine: { lineStyle: { color: '#1a1a1a' } }, axisLabel: { color: '#a1a1a1' }, axisTick: { show: false }, splitLine: { show: false } },
+  yAxis: { axisLine: { show: false }, axisLabel: { color: '#666666' }, splitLine: { lineStyle: { color: '#1a1a1a' } } },
+  title: { textStyle: { color: '#ffffff', fontSize: 15, fontWeight: 600 } }
+};
+/* REPORT_PALETTE — 报告调色板（金色主色 + A股红涨绿跌） */
+var REPORT_PALETTE = ['#d4af37', '#e5484d', '#46a758', '#a1a1a1', '#e6c25c', '#666666'];
+var FIN_UP = '#e5484d';   /* 红涨 */
+var FIN_DOWN = '#46a758'; /* 绿跌 */
+
+function mergeTheme(opt) {
+  return Object.assign({}, DARK_THEME_BASE, opt,
+    { xAxis: Object.assign({}, DARK_THEME_BASE.xAxis, opt.xAxis),
+      yAxis: Array.isArray(opt.yAxis) ? opt.yAxis.map(function(y){ return Object.assign({}, DARK_THEME_BASE.yAxis, y); })
+                                      : Object.assign({}, DARK_THEME_BASE.yAxis, opt.yAxis),
+      tooltip: Object.assign({}, DARK_THEME_BASE.tooltip, opt.tooltip),
+      legend: Object.assign({}, DARK_THEME_BASE.legend, opt.legend),
+      grid: Object.assign({}, DARK_THEME_BASE.grid, opt.grid) });
+}
+
+var charts = [];
+
+/* ---------- chart-1 三年+2026H1 营收/归母/毛利率 ---------- */
+charts.push({ id: 'chart-financials', init: function(el) {
+  var opt = {
+    legend: { data: ['营收', '归母净利', '毛利率'], top: 0 },
+    tooltip: { trigger: 'axis' },
+    grid: { left: 56, right: 52, top: 44, bottom: 36 },
+    xAxis: { type: 'category', data: ['2023', '2024', '2025', '2026H1*'] },
+    yAxis: [
+      { type: 'value', name: '亿元', nameTextStyle: { color: '#666666' } },
+      { type: 'value', name: '%', nameTextStyle: { color: '#666666' }, min: 0, max: 25 }
+    ],
+    series: [
+      { name: '营收', type: 'bar', data: [663.04, 609.46, 810.19, 555.68], barWidth: 34, itemStyle: { color: '#d4af37' } },
+      { name: '归母净利', type: 'bar', data: [33.51, 41.55, 61.10, 35.07], barWidth: 20, itemStyle: { color: '#e5484d' } },
+      { name: '毛利率', type: 'line', yAxisIndex: 1, data: [14.11, 17.23, 17.47, 19.60], symbol: 'circle', symbolSize: 8, lineStyle: { width: 2, color: '#46a758' }, itemStyle: { color: '#46a758' } }
+    ]
+  };
+  el.setOption(mergeTheme(opt));
+}});
+
+/* ---------- chart-2 单季归母（周期颗粒度） ---------- */
+charts.push({ id: 'chart-quarterly', init: function(el) {
+  var opt = {
+    legend: { data: ['单季归母净利'], top: 0 },
+    tooltip: { trigger: 'axis' },
+    grid: { left: 52, right: 40, top: 44, bottom: 36 },
+    xAxis: { type: 'category', data: ['2025Q1', '2025Q2', '2025Q3', '2025Q4', '2026Q1⚠️', '2026Q2⚠️'] },
+    yAxis: { type: 'value', name: '亿元', nameTextStyle: { color: '#666666' } },
+    series: [
+      { name: '单季归母净利', type: 'bar', data: [12.52, 14.59, 15.05, 18.94, 24.97, 10.10], barWidth: 40,
+        label: { show: true, position: 'top', color: '#a1a1a1', formatter: function(p){ return p.value; } },
+        itemStyle: { color: function(p){ return p.dataIndex >= 4 ? (p.dataIndex === 5 ? '#e5484d' : '#e6c25c') : '#d4af37'; } } }
+    ]
+  };
+  el.setOption(mergeTheme(opt));
+}});
+
+/* ---------- chart-3 三情景目标价 vs 现价 ---------- */
+charts.push({ id: 'chart-valuation', init: function(el) {
+  var opt = {
+    legend: { data: ['目标价', '现价 38.19'], top: 0 },
+    tooltip: { trigger: 'axis' },
+    grid: { left: 52, right: 40, top: 44, bottom: 36 },
+    xAxis: { type: 'category', data: ['悲观情景', '中性情景', '乐观情景'] },
+    yAxis: { type: 'value', name: '元', nameTextStyle: { color: '#666666' } },
+    series: [
+      { name: '目标价', type: 'bar', data: [23.2, 39.6, 63.4], barWidth: 46,
+        label: { show: true, position: 'top', color: '#a1a1a1' }, itemStyle: { color: '#d4af37' } },
+      { name: '现价 38.19', type: 'line', data: [38.19, 38.19, 38.19],
+        symbol: 'none', lineStyle: { width: 2, color: '#e5484d', type: 'dashed' },
+        markLine: { silent: true, symbol: 'none', lineStyle: { color: '#e5484d', type: 'dashed' }, label: { show: false } } }
+    ]
+  };
+  el.setOption(mergeTheme(opt));
+}});
+
+/* ---------- chart-4 分产品毛利率（2025） ---------- */
+charts.push({ id: 'chart-gm', init: function(el) {
+  var opt = {
+    legend: { show: false },
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    grid: { left: 90, right: 44, top: 16, bottom: 30 },
+    xAxis: { type: 'value', name: '%', nameTextStyle: { color: '#666666' }, max: 45 },
+    yAxis: { type: 'category', inverse: true,
+      data: ['钴产品', '铜产品', '锂产品', '镍产品', '镍中间品', '三元前驱体', '正极材料', '贸易及其他'] },
+    series: [{
+      name: '2025 毛利率', type: 'bar', data: [36.78, 26.01, 20.65, 19.70, 19.32, 16.84, 9.36, 4.42], barWidth: 16,
+      label: { show: true, position: 'right', color: '#a1a1a1' },
+      itemStyle: { color: function(p){ var v = p.value; return v >= 25 ? '#e5484d' : (v >= 15 ? '#d4af37' : '#666666'); } }
+    }]
+  };
+  el.setOption(mergeTheme(opt));
+}});
+
+/* ---------- chart-5 多空五维证据强度雷达 ---------- */
+charts.push({ id: 'chart-bullbear', init: function(el) {
+  var opt = {
+    legend: { data: ['🟢 多方证据强度', '🔴 空方证据强度'], bottom: 0, itemWidth: 14, itemHeight: 8 },
+    tooltip: {},
+    radar: {
+      indicator: [
+        { name: '增长', max: 10 }, { name: '护城河', max: 10 }, { name: '财务质量', max: 10 },
+        { name: '估值', max: 10 }, { name: '周期/政策/国际', max: 10 }
+      ],
+      radius: '62%',
+      center: ['50%', '48%'],
+      axisName: { color: '#a1a1a1' },
+      splitLine: { lineStyle: { color: '#1a1a1a' } },
+      splitArea: { areaStyle: { color: ['#0a0a0a', '#0f0f0f'] } },
+      axisLine: { lineStyle: { color: '#1a1a1a' } }
+    },
+    series: [{
+      type: 'radar',
+      data: [
+        { name: '🟢 多方证据强度', value: [8, 8, 6.5, 7, 6], areaStyle: { color: 'rgba(212,175,55,0.18)' }, lineStyle: { color: '#d4af37', width: 2 }, itemStyle: { color: '#d4af37' } },
+        { name: '🔴 空方证据强度', value: [7, 7.5, 8.5, 7, 8], areaStyle: { color: 'rgba(229,72,77,0.15)' }, lineStyle: { color: '#e5484d', width: 2 }, itemStyle: { color: '#e5484d' } }
+      ]
+    }]
+  };
+  el.setOption(mergeTheme(opt));
+}});
+
+/* ---------- 初始化 + 降级 ---------- */
+function renderCharts() {
+  charts.forEach(function(c) {
+    var dom = document.getElementById(c.id);
+    if (!dom) return;
+    if (typeof echarts === 'undefined') { degrade(dom, c.id); return; }
+    try { c.init(echarts.init(dom)); }
+    catch (e) { degrade(dom, c.id); }
+  });
+}
+function degrade(dom, id) {
+  /* CDN 失败降级：显示数据表格 */
+  dom.innerHTML = '<div class="chart-fallback" style="display:block;padding:12px 0;">⚠️ ECharts CDN 加载失败，以下为数据替代表（来源时点：2026-09-09）：</div>';
+  var tables = {
+    'chart-financials': '<table><tr><th>年份</th><th class="num">营收(亿)</th><th class="num">归母(亿)</th><th class="num">毛利率</th></tr><tr><td>2023</td><td class="num">663.04</td><td class="num">33.51</td><td class="num">14.11%</td></tr><tr><td>2024</td><td class="num">609.46</td><td class="num">41.55</td><td class="num">17.23%</td></tr><tr><td>2025</td><td class="num">810.19</td><td class="num">61.10</td><td class="num">17.47%</td></tr><tr><td>2026H1*</td><td class="num">555.68</td><td class="num">35.07</td><td class="num">19.60%</td></tr></table>',
+    'chart-quarterly': '<table><tr><th>单季归母(亿)</th><th class="num">25Q1</th><th class="num">25Q2</th><th class="num">25Q3</th><th class="num">25Q4</th><th class="num">26Q1⚠️</th><th class="num">26Q2⚠️</th></tr><tr><td>归母</td><td class="num">12.52</td><td class="num">14.59</td><td class="num">15.05</td><td class="num">18.94</td><td class="num">24.97</td><td class="num">10.10</td></tr></table>',
+    'chart-valuation': '<table><tr><th>情景</th><th class="num">2027E净利(亿)</th><th class="num">PE(x)</th><th class="num">目标价(元)</th><th class="num">市值(亿)</th></tr><tr><td>悲观</td><td class="num">55</td><td class="num">8</td><td class="num">23.2</td><td class="num">440</td></tr><tr><td>中性</td><td class="num">75</td><td class="num">10</td><td class="num">39.6</td><td class="num">750</td></tr><tr><td>乐观</td><td class="num">100</td><td class="num">12</td><td class="num">63.4</td><td class="num">1200</td></tr></table><div style="color:#a1a1a1;font-size:12px;">现价 38.19 元 / 现市值 723.1 亿</div>',
+    'chart-gm': '<table><tr><th>产品</th><th class="num">2025毛利率</th></tr><tr><td>钴产品</td><td class="num">36.78%</td></tr><tr><td>铜产品</td><td class="num">26.01%</td></tr><tr><td>锂产品</td><td class="num">20.65%</td></tr><tr><td>镍产品</td><td class="num">19.70%</td></tr><tr><td>镍中间品</td><td class="num">19.32%</td></tr><tr><td>三元前驱体</td><td class="num">16.84%</td></tr><tr><td>正极材料</td><td class="num">9.36%</td></tr><tr><td>贸易及其他</td><td class="num">4.42%</td></tr></table>',
+    'chart-bullbear': '<table><tr><th>维度</th><th class="num">🟢 多方</th><th class="num">🔴 空方</th></tr><tr><td>增长</td><td class="num">8</td><td class="num">7</td></tr><tr><td>护城河</td><td class="num">8</td><td class="num">7.5</td></tr><tr><td>财务质量</td><td class="num">6.5</td><td class="num">8.5</td></tr><tr><td>估值</td><td class="num">7</td><td class="num">7</td></tr><tr><td>周期/政策/国际</td><td class="num">6</td><td class="num">8</td></tr></table>'
+  };
+  dom.insertAdjacentHTML('beforeend', tables[id] || '');
+}
+window.addEventListener('error', function(e) {
+  if (e.target && (e.target.src || '').indexOf('echarts') !== -1) { renderCharts(); }
+}, true);
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', renderCharts);
+else renderCharts();
+</script>
+</body>
+</html>
