@@ -1,6 +1,6 @@
 # 流程改进 Backlog
 
-> 状态真源：improvement-backlog.json · 最后更新：2026-09-09T10:15:50.506Z
+> 状态真源：improvement-backlog.json · 最后更新：2026-09-10T16:55:32.770Z
 
 | 状态 | 严重度 | 问题描述 | 目标文件 | 任务数 | 问题码 |
 |---|---|---|---|---:|---|
@@ -82,3 +82,8 @@
 | 观察 | 中 | quality-screen --mode report 从公司笔记 Markdown 解析财务指标时存在脆弱性：①现金… | .trae/scripts/quality-gate/quality-screen.ts | 1 | quality-screen-report-mode-parse-fragility |
 | 观察 | 中 | 50 项投资决策清单 AUTO 扫描存在解析缺口：第 28 项『有息负债/OCF』在（报告+公司笔记）输入下脚本未解析出… | .trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts | 1 | checklist-auto-unparsed-financial-item |
 | 观察 | 低 | evaluate.ts 品种自动判定对『周期资源+成长材料』复合型公司（钴镍锂一体化，营收高增+盈利为正）判定为『一般工… | .trae/scripts/evaluation/evaluate.ts | 1 | evaluate-valuation-type-auto-judge-mixed |
+| 候选 | 高 | quality-screen.ts --mode auto 对负值百分比参数解析存在严重缺陷：本次命令传入 --reve… | .trae/scripts/quality-gate/quality-screen.ts | 1 | quality-screen-negative-percent-parsing-error |
+| 观察 | 中 | deep-dive 流程跳过 Phase 3 cross-validator（命令步骤4由 info-alchemist… | .trae/commands/deep-dive.md | 1 | deep-dive-missing-cross-validator-for-data-conflicts |
+| 观察 | 中 | deep-dive 命令步骤2.4要求『覆盖多空分歧，至少1篇看多+1篇看空研报，如有』，但本次对动力新科查询近365天… | .trae/commands/deep-dive.md | 1 | deep-dive-zero-sell-side-coverage-bull-bear-gap |
+| 观察 | 中 | 本次 deep-dive 动力新科再次出现投资清单 AUTO 扫描对部分 CRITICAL 项的解析缺口：附录5显示第1… | .trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts | 1 | checklist-auto-unparsed-financial-item-recurring |
+| 观察 | 中 | 本次 deep-dive 动力新科再次出现 evaluate.ts 对周期股+扣非亏损公司给出失真的 PEG/PE 判读… | .trae/scripts/evaluation/evaluate.ts | 1 | evaluate-peg-pe-invalid-for-cyclical-loss-making-recurring |

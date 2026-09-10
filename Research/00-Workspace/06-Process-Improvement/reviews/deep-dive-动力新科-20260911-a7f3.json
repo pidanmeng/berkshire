@@ -1,0 +1,118 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "deep-dive-动力新科-20260911-a7f3",
+  "origin": "process-improvement",
+  "command": "deep-dive 动力新科",
+  "status": "success",
+  "params": { "company": "动力新科", "stockCode": "600841.SH" },
+  "terminalState": "succeeded",
+  "stageAcceptance": {
+    "step1_checkExistingAndLocate": "passed (no existing note, code 600841 SSE)",
+    "step2_pdfIngestion": "passed (5 PDFs → Markdown by readable names)",
+    "step3_evaluateSnapshot": "passed (PE 2.53/PB 1.28/异常: 净利率50% vs 毛利率8% 提示非经常性损益)",
+    "step4_documentReaderDeepRead": "passed (795行 deep-read, 9大精读目标全覆盖 + 第十章多空论证, 管理层诚实度🟡存疑)",
+    "step5_infoAlchemistAndQualityScreen": "passed with caveat (164条事实 + 质量筛查 RED 0.0分; 脚本误算 -11.25% → -1125% 影响成长维度评分)",
+    "step6_knowledgeArchitectWriteback": "passed (公司笔记 + 三段式目录 + MOC + frontmatter quality_verdict=RED quality_score=0.0 已回填)",
+    "step7_reportWriter": "passed (报告 704 行 20 章节 5 附录; 投资清单 No-Go 触发, OCF/NI=0.18 CRITICAL 未通过)"
+  },
+  "inputs": [
+    "Research/00-Workspace/02-Processing/pdf-texts/动力新科/2025年年度报告.md",
+    "Research/00-Workspace/02-Processing/pdf-texts/动力新科/2024年年度报告.md",
+    "Research/00-Workspace/02-Processing/pdf-texts/动力新科/2023年年度报告.md",
+    "Research/00-Workspace/02-Processing/pdf-texts/动力新科/2026年半年度报告.md",
+    "Research/00-Workspace/02-Processing/pdf-texts/动力新科/2026年半年度业绩预告.md",
+    "Research/00-Workspace/02-Processing/2026-09-11-动力新科-deep-read.md",
+    "Research/00-Workspace/02-Processing/2026-09-11-动力新科-processed.md"
+  ],
+  "outputs": [
+    "Research/10-Knowledge/03-制造业/02-公司研究/动力新科-公司研究.md",
+    "Research/10-Knowledge/03-制造业/00-行业概览/商用车动力总成-行业概览.md",
+    "Research/10-Knowledge/03-制造业/01-细分行业/商用车柴油发动机-细分行业.md",
+    "Research/10-Knowledge/00-MOC/制造业-MOC.md",
+    "Research/20-Reports/2026-09-11-动力新科-deep-dive-report.md"
+  ],
+  "issues": [
+    {
+      "problemCode": "quality-screen-negative-percent-parsing-error",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "quality-screen.ts --mode auto 对负值百分比参数解析存在严重缺陷：本次命令传入 --revenue-growth=-11.25（已用 = 形式规避 '--net-margin' 类解析错误），脚本仍把 -11.25% 误识别为 -1125.00% 输出为红牌『营收同比下降 -1125.0%，大幅萎缩』，导致 growth 评分偏低（实际 -11.25% 应判黄牌<-10%，-1125% 被当作远超红牌阈值）。同类问题在 --net-margin=-14.79、--nonrecurring-net-profit=-8.49 等参数上同样存在。脚本对负值百分比参数的折算逻辑（识别 % 后又乘以100）与符号处理未对齐，导致最终 verdict 虽方向正确（RED）但部分维度评分失真",
+      "evidence": [
+        { "grade": "A", "detail": "2026-09-11 deep-dive 动力新科 quality-screen.ts --mode auto 输出明确显示：『营收同比 -1125.00%』『净利同比 24367.00%』『净利率 -14.79% 被折算为小数 -0.1479』『ROE 58.03% 折算为 0.5803』——同次运行内 ROE/毛利率/净利率均按百分比折算为小数，但营收同比/净利同比类 growth 参数未被折算反而被乘以100放大，逻辑不一致" }
+      ],
+      "rootCauseHypothesis": "脚本对百分比类参数的折算分支（识别 XX.X% 格式→除以100）与 growth 类参数的处理分支（保留原值）未对齐；当参数以负数 + 等号形式传入时，脚本可能误把 -11.25 当作 -1125（少看一位小数点）或字符串解析时丢失小数点；脚本警示『百分比/比率类参数一律传小数（0-1）』但 info-alchemist 子 Agent 仍按 0-100 数值传入，说明文档与实际调用习惯脱节",
+      "goal": "quality-screen.ts auto 模式统一参数折算规则：①所有百分比类参数（ROE/毛利率/净利率/资产负债率/营收同比/净利同比）按相同规则识别并折算；②负值参数用 = 形式传入时正确解析符号与小数点；③参数文档与脚本默认行为一致（要么文档允许 0-100 传值+自动折算，要么脚本严格要 0-1 + 报错指引）",
+      "severity": "high",
+      "confidence": 0.9,
+      "benefit": "消除 quality-screen 评分因参数折算错误导致的维度失真，提高 quality_verdict 与 quality_score 的可信度；本次 RED 结论方向正确但 score=0.0 与成长维度 3 分均受脚本误算影响，未来同类情形可避免误报",
+      "risk": "修改折算逻辑可能影响已入库 15+ 家公司笔记的质量筛查结果（如当时传入 0-100 被正确折算的笔记不受影响，但当时传入 0-1 的笔记可能被反向折算），需对存量笔记做回归验证",
+      "acceptance": "对 --revenue-growth=-11.25 类负值百分比参数，脚本输出红牌阈值对照表正确显示 -11.25%（而非 -1125%）；维度评分与笔记明示数值一致；脚本警告『百分比参数传小数』与实际允许 0-100 传值的不一致问题被消除（二选一）"
+    },
+    {
+      "problemCode": "deep-dive-missing-cross-validator-for-data-conflicts",
+      "targetKind": "command",
+      "targetPath": ".trae/commands/deep-dive.md",
+      "symptom": "deep-dive 流程跳过 Phase 3 cross-validator（命令步骤4由 info-alchemist+quality-screen 替代），导致 info-alchemist 子 Agent 在 processed 文件中识别的数据矛盾未经独立验证就被嵌入公司笔记与最终报告。本次命令 info-alchemist 子 Agent 自汇报发现 1 项重大矛盾：年报P14原文『毛利率比上年增减 减少0.42个百分点』（即2024年毛利率12.86%）vs deep-read §4.1称『2024年~10.7%（推算）』。该矛盾仅由 info-alchemist 标注『需 CrossValidator 核实』但 deep-dive 流程无该阶段，最终公司笔记与报告直接采用了 deep-read 的推算值 10.7% 而非年报原口径 12.86%，存在口径选择偏差风险",
+      "evidence": [
+        { "grade": "B", "detail": "2026-09-11 deep-dive 动力新科：info-alchemist 子任务汇报第5项『额外发现 1 项重大矛盾』明确标注『年报P14原文毛利率比上年减少0.42个百分点（即2024年毛利率12.86%）vs deep-read §4.1称2024年~10.7%（推算）』并标注需 CrossValidator 核实；但 deep-dive 命令步骤4-7 中无 cross-validator 阶段，矛盾仅靠 deep-read 自检处理；knowledge-architect 与 report-writer 子 Agent 沿用 deep-read 推算值，未独立核验" }
+      ],
+      "rootCauseHypothesis": "deep-dive 命令设计原则是『聚焦单公司，跳过 Phase 3』以提升效率，但 info-alchemist 识别的矛盾点本应由 cross-validator 独立核验后给出最终口径；流程缺口使 deep-read 推算值（10.7%）未经核验就被采纳，可能掩盖年报原口径（12.86%）与同业对比的真实差距",
+      "goal": "deep-dive 命令在步骤4（info-alchemist）后插入可选『矛盾核验』子步骤：对 info-alchemist 标注的『重大矛盾/数据缺口』触发 document-reader 或 cross-validator 重新核验，给出最终采纳口径并说明理由；不必恢复完整 Phase 3，仅针对已识别矛盾做最小核验",
+      "severity": "medium",
+      "confidence": 0.7,
+      "benefit": "消除 deep-read 推算值未经核验就被采纳的口径偏差风险；提高公司笔记与最终报告中关键财务指标的可信度；为 info-alchemist 标注的矛盾点提供闭环处理路径",
+      "risk": "新增子步骤可能延长 deep-dive 流程时间，需限定只针对 info-alchemist 显式标注的『重大矛盾』触发，避免泛化为完整 Phase 3",
+      "acceptance": "deep-dive 命令文档步骤4后增加『矛盾核验（可选）』子步骤说明；info-alchemist 标注的重大矛盾点在公司笔记与报告中有显式裁决（采纳哪个口径+理由）"
+    },
+    {
+      "problemCode": "deep-dive-zero-sell-side-coverage-bull-bear-gap",
+      "targetKind": "command",
+      "targetPath": ".trae/commands/deep-dive.md",
+      "symptom": "deep-dive 命令步骤2.4要求『覆盖多空分歧，至少1篇看多+1篇看空研报，如有』，但本次对动力新科查询近365天券商研报共0条（无卖方覆盖）。document-reader 子 Agent 按 AGENTS.md 契约自行用 WebSearch 补充外部证据（行业协会数据+同行财报+政策原文），但严格说没有真正的『卖方多空分歧』。这导致多空论证第十章的『空方』完全基于财报原文挖掘红旗（OCF/NI=0.18、毛利率8.27%、连续3年扣非亏损等），缺乏独立第三方卖方视角；多方也只能引用行业复苏+结构性升级信号，缺卖方看多逻辑背书。流程对『零卖方覆盖公司』的多空论证依据缺口未显式说明",
+      "evidence": [
+        { "grade": "B", "detail": "2026-09-11 deep-dive 动力新科：stock.ts --reports 输出『券商研报（600841，近 365 天，共 0 条）』；document-reader 子 Agent 在精读过程中用 WebSearch 检索行业协会数据/同行财报/政策原文共15条外部证据替代，多空论证第十章完整但空方全部基于财报红旗挖掘；最终报告附录2多空对照表无卖方研报引用" }
+      ],
+      "rootCauseHypothesis": "deep-dive 命令假设大多数公司有卖方覆盖（实际A股4500+公司中约30%长期无研报覆盖），对零覆盖公司的处理未显式说明；document-reader 角色定义虽提及『研报仅作市场共识参考』但未明确『零覆盖时多空论证的外部证据替代标准』",
+      "goal": "deep-dive 命令步骤2.4 增加零卖方覆盖场景处理：①显式说明『零覆盖公司多空论证须基于财报原文挖掘 + 第三方独立来源（行业协会/同行财报/政策原文/新闻）替代』；②document-reader 角色定义补充『零研报覆盖时空方挖掘标准（如必须挖 ≥3 项财务红旗 + ≥2 项行业负面证据）』；③最终报告多空论证摘要显式标注『零卖方覆盖，多空论证依据为财报原文+独立第三方来源』",
+      "severity": "medium",
+      "confidence": 0.65,
+      "benefit": "消除零卖方覆盖公司多空论证依据的模糊性，提高空方挖掘的最低标准，避免『无研报即跳过空方』的潜在风险；让最终报告读者清楚多空论证的证据来源层级",
+      "risk": "新增标准可能增加 document-reader 子 Agent 工作量，需限定为『零覆盖公司才触发』避免对有研报公司增加冗余要求",
+      "acceptance": "deep-dive 命令文档与 document-reader 角色定义显式说明零卖方覆盖场景的多空论证依据；最终报告多空论证摘要章节显式标注证据来源层级"
+    },
+    {
+      "problemCode": "checklist-auto-unparsed-financial-item-recurring",
+      "targetKind": "script",
+      "targetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "symptom": "本次 deep-dive 动力新科再次出现投资清单 AUTO 扫描对部分 CRITICAL 项的解析缺口：附录5显示第15项『商誉占比≥30%』未通过，但实际是数据缺口（年报未单独披露商誉余额），脚本未能区分『数据缺口』与『真实未通过』；第25项 OCF/NI=0.18 触发 No-Go 是真实红旗，但其他多个项目（如有息负债/OCF、关联交易占比）也存在数据缺口被静默处理。这是华友钴业 Review（2026-09-09）中『checklist-auto-unparsed-financial-item』问题的复现，证据等级提升",
+      "evidence": [
+        { "grade": "A", "detail": "2026-09-11 deep-dive 动力新科：report-writer 子任务汇报附录5『50项投资决策清单AUTO扫描结果』显示第15项商誉占比≥30%未通过，但实际为数据缺口（年报未单独披露商誉余额，deep-read §4.4 已标注 N/A）；脚本对数据缺口与真实未通过的区分能力不足" },
+        { "grade": "B", "detail": "2026-09-09 deep-dive 华友钴业 Review issues[1] 同类问题：『第28项有息负债/OCF 脚本未解析，人工核验后修正为触发❌』；本次动力新科为复现，符合 medium 严重度需跨任务复现的 candidate 门槛" }
+      ],
+      "rootCauseHypothesis": "checklist-auto 对未解析条目缺少『数据缺口』vs『真实未通过』的区分逻辑，统一标记为未通过；脚本对『年报未披露』类缺口的提示能力不足，依赖人工核验",
+      "goal": "checklist-auto 对未解析条目显式区分『数据缺口（需补充材料）』与『真实未通过（指标超阈值）』；输出汇总注明未解析条目清单与数据缺口原因",
+      "severity": "medium",
+      "confidence": 0.7,
+      "benefit": "消除 CRITICAL 项被误判为未通过的风险，提高扫描结论的可审计性；本次为复现证据，符合 medium 严重度 candidate 门槛",
+      "risk": "新增区分逻辑需同步扫描结论聚合逻辑，防止数据缺口被误放行",
+      "acceptance": "对年报未单独披露商誉余额的公司，AUTO 扫描第15项输出『数据缺口-需补充』而非『未通过』；扫描汇总注明数据缺口条目清单"
+    },
+    {
+      "problemCode": "evaluate-peg-pe-invalid-for-cyclical-loss-making-recurring",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "symptom": "本次 deep-dive 动力新科再次出现 evaluate.ts 对周期股+扣非亏损公司给出失真的 PEG/PE 判读：脚本输出 PEG=0.01『有吸引力』+ PE-TTM 2.53『便宜』+ 净利同比 +243.67%，但 deep-read 裁决周期股+扣非-8.49亿时 PEG/PE 均失效，须用正常化 EPS + PB 辅助。这是华友钴业 Review（2026-09-09）中『evaluate-valuation-type-auto-judge-mixed』问题的复现（不同角度但同一根因：周期股+非经常性损益时 PEG/PE 自动判读失效）",
+      "evidence": [
+        { "grade": "A", "detail": "2026-09-11 deep-dive 动力新科：evaluate.ts --code 600841 --type cyclical 输出『PEG 0.01 有吸引力（隐含假设保守）』+『PE-TTM vs 净利同比：2.53 vs 243.67% 倍数低于增速，称重偏轻』；但 deep-read §4.2 扣非归因明确 2025年扣非-8.49亿，PEG/PE 失效；knowledge-architect 据此将 peg.value 设为 null，valuation_type=cyclical 主模型正常化EPS+PB" },
+        { "grade": "B", "detail": "2026-09-09 deep-dive 华友钴业 Review issues[2] 同类问题：『evaluate.ts 品种自动判定对周期资源复合型公司判定为一般工商，PEG 0.22 基于单年同比 47% 增速含金属涨价成分』；本次动力新科为复现（PEG 0.01 基于单年同比 243% 含上汽红岩出表一次性成分），符合 medium 严重度 candidate 门槛" }
+      ],
+      "rootCauseHypothesis": "evaluate.ts PEG 计算基于单年同比 yoy，对周期股繁荣期或含大额一次性损益的净利增速无法识别；自动 PEG 判读对周期股+扣非亏损/非经常性损益占比过高的公司给出失真结论",
+      "goal": "evaluate.ts 增加周期股+扣非亏损/非经常性损益占比过高（如 ≥30% 净利）的检测信号：命中时输出『PEG/PE 失效，建议用正常化EPS+PB辅助』提示，不输出 PEG 数值或显式标注失效；与华友钴业 Review 中『周期股复核提示』目标一致",
+      "severity": "medium",
+      "confidence": 0.7,
+      "benefit": "降低周期股被按成长股错误估值的风险；本次为复现证据，符合 medium 严重度 candidate 门槛；与华友钴业问题可合并为同一 candidate 处理",
+      "risk": "周期特征信号可能误伤高波动成长股，需样本验证阈值",
+      "acceptance": "对动力新科类（周期股+扣非亏损+大额一次性损益）标的，evaluate.ts 输出含 PEG/PE 失效提示或直接置空；与华友钴业问题统一处理"
+    }
+  ]
+}
