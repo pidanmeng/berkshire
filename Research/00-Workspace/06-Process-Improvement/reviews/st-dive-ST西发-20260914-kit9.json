@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "st-dive-ST西发-20260914-kit9",
+  "origin": "process-improvement",
+  "command": "st-dive *ST西发",
+  "status": "success",
+  "issues": [
+    {
+      "problemCode": "stock-announcements-pagination-limit",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/stock-data/stock.ts",
+      "symptom": "stock.ts --announcements 默认单页 20 条且不循环翻页，--days 730 长窗口截断早期重大公告；ST 一级信源（2019→2027 横跨 8 年公告链）无法基于脚本输出完整重建，当日 *ST西发 重整/戴帽/立案/问询 五类关键公告仍需编排器改用 MCP search_notice 逐事件语义检索 + pdf-texts 重整计划原文补采",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "2026-09-14 st-dive *ST西发：公告时间线（2019-04-09 → 2027 摘帽口径）由 pdf-texts 重整计划/出资人方案原文 + MCP search_notice 语义片段 + 事件时间线汇编重建（报告『ST 一级信源』注记），而非 stock.ts --announcements 全量翻页返回；与 ST天玑(ST-dive-ST天玑-20260914-a3f7)、ST京机(st-dive-ST京机-20260914-UDru)、ST臻镭(st-dive-ST臻镭-20260901-a3f8)、ST远智(st-dive-ST远智-20260914-8f3a) 为同一分页限制的第 5 次跨任务复现，本次为既有候选的强化证据（occurrenceCount 5）",
+          "taskId": "st-dive-ST西发-20260914-kit9"
+        }
+      ],
+      "rootCauseHypothesis": "复用既有候选 root cause：stock.ts queryAnnouncements 单页抓取，长窗口截断早期重大公告；本次靠 pdf-texts 重整计划原文 + MCP search_notice 语义检索规避，未新增独立 root cause",
+      "goal": "复用既有候选：stock.ts --announcements 全量分页拉取，确保 --days 730 长窗口完整返回近 2 年公告",
+      "severity": "high",
+      "confidence": 0.97,
+      "benefit": "跨任务复用既有 high 候选（occurrenceCount 5，taskIds=5）；ST 公告时间线不再依赖临时补采，五类公告信源可脚本化重建",
+      "risk": "同既有候选",
+      "acceptance": "st-dive/deep-dive 长窗口公告完整返回（引用既有候选验收口径）"
+    }
+  ]
+}
