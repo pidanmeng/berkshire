@@ -1,6 +1,6 @@
 # 流程改进 Backlog
 
-> 状态真源：improvement-backlog.json · 最后更新：2026-09-10T16:55:32.770Z
+> 状态真源：improvement-backlog.json · 最后更新：2026-09-14T03:01:51.342Z
 
 | 状态 | 严重度 | 问题描述 | 目标文件 | 任务数 | 问题码 |
 |---|---|---|---|---:|---|
@@ -52,7 +52,7 @@
 | 已验证 | 低 | quality-screen 估值维度按 PE 绝对值区间评分（PE>50→2 分），高 PE 高增长成长股系统性低分；… | .trae/scripts/quality-gate/quality-screen.ts | 3 | quality-screen-growth-valuation-bias |
 | 观察 | 低 | checklist-auto #28『有息负债/OCF 流动性红线』对零有息负债公司无法自动解析：报告/笔记明确『短期借… | .trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts | 1 | investment-checklist-interest-debt-parse-gap |
 | 观察 | 中 | 研报引用的财务数据与年报原文矛盾未被及时识别：太平洋证券 2026-06-21 研报『2025 年经营活动现金流量净额 … | deep-dive 流程·步骤 2.4（研报采集与引用） | 1 | report-data-cross-check |
-| 观察 | 中 | 同一公司两次扫描结果不一致：第一版（以 deep-read 文件作第二参数）将净利增速提取为 2.9%（实际 1088.… | .trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts | 1 | checklist-auto-growth-column-misread |
+| 候选 | 中 | investment-checklist-auto.ts 对周期股大增幅营收净利读数失真（复现）：本次 deep-div… | .trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts | 2 | checklist-auto-growth-column-misread |
 | 观察 | 低 | auto 模式传 2026Q1 资产负债率 75.1%（红牌『超 70%』）与 report 模式从笔记 frontma… | .trae/scripts/quality-gate/quality-screen.ts | 1 | quality-screen-debt-metric-period-mismatch |
 | 观察 | 低 | deep-dive 命令步骤 7 仅定义 Markdown 报告路径（company-deep-dive-templat… | deep-dive 流程·步骤 7（报告生成） | 1 | deep-dive-report-html-missing |
 | 观察 | 中 | quality-screen --mode report 对扭亏公司误判净利同比：思瑞浦 2025 年归母净利 -1.9… | .trae/scripts/quality-gate/quality-screen.ts | 1 | quality-screen-report-growth-misparse |
@@ -81,8 +81,8 @@
 | 观察 | 低 | deep-dive 命令要求研报采集覆盖多空分歧『至少 1 篇看多 + 1 篇看空/谨慎（如有）』，但 stock.ts… | AGENTS.md | 1 | research-report-bear-view-sourcing |
 | 观察 | 中 | quality-screen --mode report 从公司笔记 Markdown 解析财务指标时存在脆弱性：①现金… | .trae/scripts/quality-gate/quality-screen.ts | 1 | quality-screen-report-mode-parse-fragility |
 | 观察 | 中 | 50 项投资决策清单 AUTO 扫描存在解析缺口：第 28 项『有息负债/OCF』在（报告+公司笔记）输入下脚本未解析出… | .trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts | 1 | checklist-auto-unparsed-financial-item |
-| 观察 | 低 | evaluate.ts 品种自动判定对『周期资源+成长材料』复合型公司（钴镍锂一体化，营收高增+盈利为正）判定为『一般工… | .trae/scripts/evaluation/evaluate.ts | 1 | evaluate-valuation-type-auto-judge-mixed |
-| 候选 | 高 | quality-screen.ts --mode auto 对负值百分比参数解析存在严重缺陷：本次命令传入 --reve… | .trae/scripts/quality-gate/quality-screen.ts | 1 | quality-screen-negative-percent-parsing-error |
+| 候选 | 中 | evaluate.ts 对周期股自动判成长/PEG 误判持续（复现）：本次 deep-dive 豫能控股 evaluat… | .trae/scripts/evaluation/evaluate.ts | 2 | evaluate-valuation-type-auto-judge-mixed |
+| 候选 | 高 | quality-screen.ts 对周期股负值/大增幅百分比参数解析持续失真（复现）：本次 deep-dive 豫能控… | .trae/scripts/quality-gate/quality-screen.ts | 2 | quality-screen-negative-percent-parsing-error |
 | 观察 | 中 | deep-dive 流程跳过 Phase 3 cross-validator（命令步骤4由 info-alchemist… | .trae/commands/deep-dive.md | 1 | deep-dive-missing-cross-validator-for-data-conflicts |
 | 观察 | 中 | deep-dive 命令步骤2.4要求『覆盖多空分歧，至少1篇看多+1篇看空研报，如有』，但本次对动力新科查询近365天… | .trae/commands/deep-dive.md | 1 | deep-dive-zero-sell-side-coverage-bull-bear-gap |
 | 观察 | 中 | 本次 deep-dive 动力新科再次出现投资清单 AUTO 扫描对部分 CRITICAL 项的解析缺口：附录5显示第1… | .trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts | 1 | checklist-auto-unparsed-financial-item-recurring |

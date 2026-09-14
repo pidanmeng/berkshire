@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0",
-  "updatedAt": "2026-09-10T16:55:32.770Z",
+  "updatedAt": "2026-09-14T03:01:51.342Z",
   "items": [
     {
       "problemCode": "qs-report-regex-range-misparse",
@@ -1877,31 +1877,37 @@
       "problemCode": "checklist-auto-growth-column-misread",
       "targetKind": "script",
       "targetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
-      "symptom": "同一公司两次扫描结果不一致：第一版（以 deep-read 文件作第二参数）将净利增速提取为 2.9%（实际 1088.6%），导致 #31『PE>40 无高增长』误判 ❌（实际应 ✅）且 #29 说明列错误；知识节点入库后重跑提取 1088.6% 才正确",
+      "symptom": "investment-checklist-auto.ts 对周期股大增幅营收净利读数失真（复现）：本次 deep-dive 豫能控股 50 项清单 AUTO 扫描对 OCR/PDF 下载记录、营收净利大增幅周期股相关条目读数失真（营收 -7.61%/净利 +421.54% 这类大幅背离读数未被稳定提取），但硬伤项（有息负债/OCF=6.36>5 流动性红线、负债率 86.8%>70%）识别准确。扫描块与 YELLOW 定性互洽，说明关键 CRITICAL 硬伤可被正确捕获，但大增幅增速相关条目的读数稳定性不足",
       "evidence": [
         {
           "grade": "A",
           "detail": "2026-08-17 investment-checklist-auto.ts 对利通电子报告+deep-read 第一版输出『净利=2.9%』判 #31 ❌、#29 误标；公司笔记入库后以报告+笔记重跑输出『净利=1088.6%』判 #31 ✅，两次运行结果差异由表格列匹配误差导致",
           "taskId": "deep-dive-利通电子-20260817-k7x2"
+        },
+        {
+          "grade": "C",
+          "detail": "2026-09-14 deep-dive 豫能控股 step7 验收：50 项清单 AUTO 扫描在营收净利大增幅/OCR-PDF 记录条目上读数失真，但硬伤项（有息负债/OCF 6.36、负债率 86.8%）准确；同根因增速/列头读取失真已在 deep-dive-利通电子-20260817-k7x2（净利增速 2.9% vs 实际 1088.6%）记录，本次为又一实例（观察级证据，跨 2 taskId 构成复现）",
+          "taskId": "deep-dive-豫能控股-20260914-3413"
         }
       ],
-      "rootCauseHypothesis": "扫描器按表格行列正则提取增速字段，deep-read 与公司笔记的表格行结构不同（匹配到净利数值行而非增速行），缺乏跨文件结构健壮的列头校验",
-      "goal": "AUTO 扫描增速字段提取增加列头校验与数值合理性校验（增速方向/量级与上下文不符时提示人工核对），保证不同输入文件结构下结果一致",
+      "rootCauseHypothesis": "checklist-auto 按表格行列正则提取增速/营收净利字段，对周期股营收净利大幅背离、或涉及 OCR/PDF 下载记录等非常规条目时缺乏跨文件结构健壮的列头校验与数值合理性判定，导致大增幅读数不稳定；但资金/偿债类硬伤条目提取逻辑成熟，识别准确",
+      "goal": "checklist-auto 增速/营收净利字段提取增加列头校验与数值合理性校验（增速方向/量级与上下文不符时提示人工核对）；对周期股营收净利大幅背离场景稳定提取真实数值，保证不同输入文件结构下结果一致",
       "severity": "medium",
       "confidence": 0.85,
-      "benefit": "50 项投资决策清单 AUTO 结论跨输入文件结构的一致性，减少误判与人工核验成本",
-      "risk": "校验规则过严可能漏检真实数据，需测试覆盖",
-      "acceptance": "同一报告以任意输入文件扫描，增速与 PE 相关项（#29/#31）结论一致且与事实相符",
+      "benefit": "50 项投资决策清单 AUTO 观测值可信度提升，减少大增幅读数失真；同时保留对硬伤条目的准确识别（改造不得破坏有息负债/OCF、负债率等 CRITICAL 项判定）",
+      "risk": "校验规则过严可能漏检真实数据，需测试覆盖；改动需回归 checklist-auto 对硬伤条目的既有准确捕获能力",
+      "acceptance": "对豫能控股类（营收 -7.61%/净利 +421.54% 大幅背离）标的，AUTO 扫描增速/营收净利条目显示真实数值且稳定；已有息负债/OCF、负债率等硬伤 CRITICAL 项判定不受影响仍准确",
       "fingerprint": "f5f36266252f7ce254a8",
       "canonicalTargetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
-      "status": "observing",
+      "status": "candidate",
       "taskIds": [
-        "deep-dive-利通电子-20260817-k7x2"
+        "deep-dive-利通电子-20260817-k7x2",
+        "deep-dive-豫能控股-20260914-3413"
       ],
-      "occurrenceCount": 1,
+      "occurrenceCount": 2,
       "highestSeverity": "medium",
       "firstSeenAt": "2026-08-17T04:11:55.053Z",
-      "lastSeenAt": "2026-08-17T04:11:55.053Z",
+      "lastSeenAt": "2026-09-14T03:01:51.342Z",
       "batchIds": []
     },
     {
@@ -2794,62 +2800,74 @@
       "problemCode": "evaluate-valuation-type-auto-judge-mixed",
       "targetKind": "script",
       "targetPath": ".trae/scripts/evaluation/evaluate.ts",
-      "symptom": "evaluate.ts 品种自动判定对『周期资源+成长材料』复合型公司（钴镍锂一体化，营收高增+盈利为正）判定为『一般工商』，而华友钴业盈利实质由金属价格周期主导（钴/镍/锂价格波动、硫磺成本冲击），须按 deep-read 裁决人工修正为周期股正常化 EPS 定价；自动 PEG 0.22 基于单年同比 47% 增速（含金属涨价一次性成分），高成长判读对周期股具误导性，需 Agent 强制复核",
+      "symptom": "evaluate.ts 对周期股自动判成长/PEG 误判持续（复现）：本次 deep-dive 豫能控股 evaluate 估值快照自动判定为『高成长』并给出 PE-TTM 56.21/PB 5.48（隐含成长溢价），但 deep-read 裁决其为火电周期股（煤价/电价周期驱动，2025 +421% 为煤价下行+财务费用下降的周期顶部，2026H1 已回落 -36.57%）须按正常化 EPS 定价；编排器据此将其覆盖为 valuation_type=cyclical。自动品种路由对区域能源平台/周期资源类公司仍偏向 growth/general，需人工强制复核",
       "evidence": [
         {
           "grade": "A",
           "detail": "2026-09-09 deep-dive 华友钴业：evaluate.ts --code 603799 输出『当前标的判定：一般工商（EPS≥0，增速 47%）』与 PEG 0.22『有吸引力』，但 deep-read §八/§十裁决华友为三重周期叠加应按周期股正常化盈利定价、PEG 0.22 增速口径含金属涨价成分不可作主锚；knowledge-architect 据此将品种人工修正为 cyclical（正常化EPS×PE + Forward PE 校验），valuation_type 与脚本自动判定不一致",
           "taskId": "deep-dive-华友钴业-20260909-4821"
+        },
+        {
+          "grade": "A",
+          "detail": "2026-09-14 deep-dive 豫能控股 step3 验收 + step4 deep-read：evaluate.ts 自动判定成长/给出 PE-TTM 56.21 高估值，但 deep-read §八/§10 明确豫能控股为火电周期股（净利 +421% 由煤价下行 -18.4% + 财务费用 -23.70% 驱动，2026H1 已回落 -36.57%），估值应正常化 EPS 而非成长溢价；knowledge-architect 覆盖为 valuation_type=cyclical。同根因在 deep-dive-华友钴业-20260909-4821（资源周期判 general）与 deep-dive-动力新科-20260911-a7f3（周期股 auto PEG 失真）已记录",
+          "taskId": "deep-dive-豫能控股-20260914-3413"
         }
       ],
-      "rootCauseHypothesis": "品种自动判定仅用 EPS 符号+单年增速两个信号，无法识别『利润由金属/大宗价格周期性驱动』的结构特征（缺价格敏感性/毛利率波动/历史净利序列信号），周期股在繁荣期的高增速使自动判定偏向 general/growth",
-      "goal": "evaluate.ts 自动判定增加周期特征信号（近 3 年净利/毛利率波动率、行业属性关键词如资源/金属/冶炼），命中时输出『疑似周期/资源股，请人工确认 --type』提示而非直接判 general；PEG 判读对疑似周期股加注『增速含周期成分，建议用正常化盈利』",
+      "rootCauseHypothesis": "evaluate.ts 品种自动判定仅用 EPS 符号+单年净利增速信号，无法识别利润由煤价/金属价/燃料成本等周期因子驱动、高增速不可持续的结构特征；区域能源平台/周期资源类公司在周期顶部的高增速使其被误判为成长股并采用成长估值模型",
+      "goal": "evaluate.ts 自动判定增加周期特征信号（行业属性关键词如火电/煤炭/发电/能源平台、近 3 年净利波动率、毛利率对大宗价格敏感性），命中时输出『疑似周期股，请人工确认 --type cyclical 用正常化 EPS』提示而非直接给成长估值；PE 快照对疑似周期股加注增速含周期成分",
       "severity": "low",
-      "confidence": 0.6,
-      "benefit": "降低周期股被按成长股错误估值的风险，减少 Agent 人工修正环节；估值快照的品种路由与后续估值模型选择一致性提升",
-      "risk": "周期特征信号可能误伤高波动成长股，需样本验证阈值；修改仅影响提示层不改变已入库结论",
-      "acceptance": "对华友钴业类（资源+材料一体化、净利随金属价大幅波动）标的，evaluate.ts 输出含周期股复核提示或直接路由 cyclical",
+      "confidence": 0.7,
+      "benefit": "降低周期股被按成长股错误估值的风险，减少 Agent/编排器人工覆盖环节；估值快照品种路由与后续正常化 EPS 定价一致性提升",
+      "risk": "周期特征信号可能误伤高波动成长股，需样本验证阈值；修改仅影响提示/路由层，不改变已入库结论",
+      "acceptance": "对豫能控股类（火电/区域能源平台、净利随煤价/电价周期波动）标的，evaluate.ts 自动判定输出周期股复核提示或直接路由 cyclical（正常化 EPS），PE-TTM 不再作为成长估值主锚",
       "fingerprint": "9dfd25a4596c43798d75",
       "canonicalTargetPath": ".trae/scripts/evaluation/evaluate.ts",
-      "status": "observing",
+      "status": "candidate",
       "taskIds": [
-        "deep-dive-华友钴业-20260909-4821"
+        "deep-dive-华友钴业-20260909-4821",
+        "deep-dive-豫能控股-20260914-3413"
       ],
-      "occurrenceCount": 1,
-      "highestSeverity": "low",
+      "occurrenceCount": 2,
+      "highestSeverity": "medium",
       "firstSeenAt": "2026-09-09T10:15:50.506Z",
-      "lastSeenAt": "2026-09-09T10:15:50.506Z",
+      "lastSeenAt": "2026-09-14T03:01:51.342Z",
       "batchIds": []
     },
     {
       "problemCode": "quality-screen-negative-percent-parsing-error",
       "targetKind": "script",
       "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
-      "symptom": "quality-screen.ts --mode auto 对负值百分比参数解析存在严重缺陷：本次命令传入 --revenue-growth=-11.25（已用 = 形式规避 '--net-margin' 类解析错误），脚本仍把 -11.25% 误识别为 -1125.00% 输出为红牌『营收同比下降 -1125.0%，大幅萎缩』，导致 growth 评分偏低（实际 -11.25% 应判黄牌<-10%，-1125% 被当作远超红牌阈值）。同类问题在 --net-margin=-14.79、--nonrecurring-net-profit=-8.49 等参数上同样存在。脚本对负值百分比参数的折算逻辑（识别 % 后又乘以100）与符号处理未对齐，导致最终 verdict 虽方向正确（RED）但部分维度评分失真",
+      "symptom": "quality-screen.ts 对周期股负值/大增幅百分比参数解析持续失真（复现）：本次 deep-dive 豫能控股 --mode auto 与 --mode report 两模式均失真——营收 -7.61% 被读为 -761%（放大 100 倍），净利同比 +421.54% 被当作『大额一次性收益』命中 nonrecurring 判定并下调估值/成长维度，导致脚本输出 RED 0.0/0.1 分与事实（扣非占归母 96%、利润全为经常性经营改善）严重相悖；需编排器人工定性校正为 YELLOW 5.5 后才与报告/笔记一致。高置信度可复现，连续两次 deep-dive 复发",
       "evidence": [
         {
           "grade": "A",
           "detail": "2026-09-11 deep-dive 动力新科 quality-screen.ts --mode auto 输出明确显示：『营收同比 -1125.00%』『净利同比 24367.00%』『净利率 -14.79% 被折算为小数 -0.1479』『ROE 58.03% 折算为 0.5803』——同次运行内 ROE/毛利率/净利率均按百分比折算为小数，但营收同比/净利同比类 growth 参数未被折算反而被乘以100放大，逻辑不一致",
           "taskId": "deep-dive-动力新科-20260911-a7f3"
+        },
+        {
+          "grade": "A",
+          "detail": "2026-09-14 deep-dive 豫能控股 step5 验收：quality-screen --mode auto 与 --mode report 均把营收 -7.61% 解析为 -761%、把净利同比 +421.54% 判定为一次性损益命中 nonrecurring 红牌，输出 RED 0.0/0.1；而 deep-read §4.2 明确扣非 3.75 亿占归母 96%、差额外非经常性损益仅 1513.5 万，非一次性驱动；人工定性校正为 YELLOW 5.5。同型复发在 deep-dive-动力新科-20260911-a7f3 已给出 A 级证据（-11.25%→-1125%）",
+          "taskId": "deep-dive-豫能控股-20260914-3413"
         }
       ],
-      "rootCauseHypothesis": "脚本对百分比类参数的折算分支（识别 XX.X% 格式→除以100）与 growth 类参数的处理分支（保留原值）未对齐；当参数以负数 + 等号形式传入时，脚本可能误把 -11.25 当作 -1125（少看一位小数点）或字符串解析时丢失小数点；脚本警示『百分比/比率类参数一律传小数（0-1）』但 info-alchemist 子 Agent 仍按 0-100 数值传入，说明文档与实际调用习惯脱节",
-      "goal": "quality-screen.ts auto 模式统一参数折算规则：①所有百分比类参数（ROE/毛利率/净利率/资产负债率/营收同比/净利同比）按相同规则识别并折算；②负值参数用 = 形式传入时正确解析符号与小数点；③参数文档与脚本默认行为一致（要么文档允许 0-100 传值+自动折算，要么脚本严格要 0-1 + 报错指引）",
+      "rootCauseHypothesis": "quality-screen 对 growth 类（营收同比/净利同比）与 nonrecurring 类参数的解析分支未对齐：百分比数值（含负数与大幅正值）可能被乘以 100 放大，或大幅正值净利被误判为一次性损益（oneshot 判定未排除经常性高增长场景）；脚本对周期股『低营收增速+高净利增速』的背离结构无法识别，导致自动结论失真依赖人工校正",
+      "goal": "quality-screen.ts 统一百分比/成长类参数折算规则：①verification 负数（-7.61%）不被放大为 -761%；②净利同比大幅正值（+421.54%）在扣非占比高（≥90%）时不得被误判为一次性损益；③周期股营收/净利增速背离时自动结论与人工定性的偏差应显式提示而非静默输出错误 RED",
       "severity": "high",
       "confidence": 0.9,
-      "benefit": "消除 quality-screen 评分因参数折算错误导致的维度失真，提高 quality_verdict 与 quality_score 的可信度；本次 RED 结论方向正确但 score=0.0 与成长维度 3 分均受脚本误算影响，未来同类情形可避免误报",
-      "risk": "修改折算逻辑可能影响已入库 15+ 家公司笔记的质量筛查结果（如当时传入 0-100 被正确折算的笔记不受影响，但当时传入 0-1 的笔记可能被反向折算），需对存量笔记做回归验证",
-      "acceptance": "对 --revenue-growth=-11.25 类负值百分比参数，脚本输出红牌阈值对照表正确显示 -11.25%（而非 -1125%）；维度评分与笔记明示数值一致；脚本警告『百分比参数传小数』与实际允许 0-100 传值的不一致问题被消除（二选一）",
+      "benefit": "消除 quality-screen 对周期股百分百锤的 RED 误判，减少编排器人工定性校正环节；提高 quality_verdict/quality_score 直接可信度，避免自动 RED 误导 Phase 4 入库门禁",
+      "risk": "修改折算/oneshot 判定逻辑可能影响已入库周期股笔记的筛查结果，需对存量火电/煤炭/有色类笔记回归验证；大幅正值增速不再触发 oneshot 需确保真实一次性收益场景仍被识别",
+      "acceptance": "对豫能控股类（营收 -7.61%、净利 +421.54%、扣非占比 96%）标的，quality-screen auto/report 输出 YELLOW 级（非 RED 0.x），营收/净利同比显示真实数值（-7.61%/+421.54%），不误判 one-time；与人工定性 5.5 一致",
       "fingerprint": "d5fd6202563d347687e4",
       "canonicalTargetPath": ".trae/scripts/quality-gate/quality-screen.ts",
       "status": "candidate",
       "taskIds": [
-        "deep-dive-动力新科-20260911-a7f3"
+        "deep-dive-动力新科-20260911-a7f3",
+        "deep-dive-豫能控股-20260914-3413"
       ],
-      "occurrenceCount": 1,
+      "occurrenceCount": 2,
       "highestSeverity": "high",
       "firstSeenAt": "2026-09-10T16:55:32.770Z",
-      "lastSeenAt": "2026-09-10T16:55:32.770Z",
+      "lastSeenAt": "2026-09-14T03:01:51.342Z",
       "batchIds": []
     },
     {

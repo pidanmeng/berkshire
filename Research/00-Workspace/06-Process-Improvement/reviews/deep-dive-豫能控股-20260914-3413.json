@@ -1,0 +1,82 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "deep-dive-豫能控股-20260914-3413",
+  "origin": "process-improvement",
+  "command": "deep-dive 豫能控股",
+  "status": "success",
+  "params": { "company": "豫能控股", "stockCode": "001896.SZ" },
+  "terminalState": "succeeded",
+  "stageAcceptance": {
+    "step1_checkExistingAndLocate": "passed (no existing note, code 001896 SZSE)",
+    "step2_pdfIngestion": "passed (4 PDFs: 2023/2024/2025 annual + 2026 semi, parse_confidence=1, readable titles saved)",
+    "step3_evaluateSnapshot": "passed (PE-TTM 56.21/PB 5.48; auto-judged as growth but actually cyclical, attributed to coal price cycle)",
+    "step4_documentReaderDeepRead": "passed (339-line deep-read, 9 goals + Chapter 10 bull/bear, Mgmt honesty GREEN, cyclical type, 3-year improving trend)",
+    "step5_infoAlchemistAndQualityScreen": "passed with caveat (both auto & report modes distorted: -7.61% read as -761%, +421.54% misread as one-time gain -> RED 0.0/0.1; manually corrected to YELLOW 5.5, consistent with report/note)",
+    "step6_knowledgeArchitectWriteback": "passed (company note + industry overview + sub-industry + MOC, three-tier complete, frontmatter quality_verdict=YELLOW quality_score=5.5 valuation_type=cyclical backfilled; industry double-link corrected to [[电力-行业概览]])",
+    "step7_reportWriter": "passed (report with exec summary/4-masters/quality screen/valuation model details/growth-driver analysis A/core-advantage analysis B/bull-bear adjudication (bear leads)/tracking metrics/4 appendices; 50-item checklist AUTO scan = conditional pass, 1 CRITICAL (interest-bearing debt/OCF 6.36>5 liquidity redline) + 1 IMPORTANT (debt ratio 86.8%>70%) not passed, consistent with YELLOW qualitative)"
+  },
+  "inputs": [
+    "Research/00-Workspace/02-Processing/pdf-texts/豫能控股/2023年年度报告.md",
+    "Research/00-Workspace/02-Processing/pdf-texts/豫能控股/2024年年度报告.md",
+    "Research/00-Workspace/02-Processing/pdf-texts/豫能控股/2025年年度报告.md",
+    "Research/00-Workspace/02-Processing/pdf-texts/豫能控股/2026年半年度报告.md",
+    "Research/00-Workspace/02-Processing/2026-09-14-豫能控股-deep-read.md"
+  ],
+  "outputs": [
+    "Research/10-Knowledge/12-电力/02-公司研究/豫能控股-公司研究.md",
+    "Research/10-Knowledge/12-电力/00-行业概览/电力-行业概览.md",
+    "Research/10-Knowledge/12-电力/01-细分行业/火电与区域能源平台-细分行业.md",
+    "Research/10-Knowledge/00-MOC/电力-MOC.md",
+    "Research/20-Reports/2026-09-14-豫能控股-deep-dive-report.md"
+  ],
+  "issues": [
+    {
+      "problemCode": "quality-screen-negative-percent-parsing-error",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "quality-screen.ts 对周期股负值/大增幅百分比参数解析持续失真（复现）：本次 deep-dive 豫能控股 --mode auto 与 --mode report 两模式均失真——营收 -7.61% 被读为 -761%（放大 100 倍），净利同比 +421.54% 被当作『大额一次性收益』命中 nonrecurring 判定并下调估值/成长维度，导致脚本输出 RED 0.0/0.1 分与事实（扣非占归母 96%、利润全为经常性经营改善）严重相悖；需编排器人工定性校正为 YELLOW 5.5 后才与报告/笔记一致。高置信度可复现，连续两次 deep-dive 复发",
+      "evidence": [
+        { "grade": "A", "detail": "2026-09-14 deep-dive 豫能控股 step5 验收：quality-screen --mode auto 与 --mode report 均把营收 -7.61% 解析为 -761%、把净利同比 +421.54% 判定为一次性损益命中 nonrecurring 红牌，输出 RED 0.0/0.1；而 deep-read §4.2 明确扣非 3.75 亿占归母 96%、差额外非经常性损益仅 1513.5 万，非一次性驱动；人工定性校正为 YELLOW 5.5。同型复发在 deep-dive-动力新科-20260911-a7f3 已给出 A 级证据（-11.25%→-1125%）" }
+      ],
+      "rootCauseHypothesis": "quality-screen 对 growth 类（营收同比/净利同比）与 nonrecurring 类参数的解析分支未对齐：百分比数值（含负数与大幅正值）可能被乘以 100 放大，或大幅正值净利被误判为一次性损益（oneshot 判定未排除经常性高增长场景）；脚本对周期股『低营收增速+高净利增速』的背离结构无法识别，导致自动结论失真依赖人工校正",
+      "goal": "quality-screen.ts 统一百分比/成长类参数折算规则：①verification 负数（-7.61%）不被放大为 -761%；②净利同比大幅正值（+421.54%）在扣非占比高（≥90%）时不得被误判为一次性损益；③周期股营收/净利增速背离时自动结论与人工定性的偏差应显式提示而非静默输出错误 RED",
+      "severity": "high",
+      "confidence": 0.9,
+      "benefit": "消除 quality-screen 对周期股百分百锤的 RED 误判，减少编排器人工定性校正环节；提高 quality_verdict/quality_score 直接可信度，避免自动 RED 误导 Phase 4 入库门禁",
+      "risk": "修改折算/oneshot 判定逻辑可能影响已入库周期股笔记的筛查结果，需对存量火电/煤炭/有色类笔记回归验证；大幅正值增速不再触发 oneshot 需确保真实一次性收益场景仍被识别",
+      "acceptance": "对豫能控股类（营收 -7.61%、净利 +421.54%、扣非占比 96%）标的，quality-screen auto/report 输出 YELLOW 级（非 RED 0.x），营收/净利同比显示真实数值（-7.61%/+421.54%），不误判 one-time；与人工定性 5.5 一致"
+    },
+    {
+      "problemCode": "evaluate-valuation-type-auto-judge-mixed",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "symptom": "evaluate.ts 对周期股自动判成长/PEG 误判持续（复现）：本次 deep-dive 豫能控股 evaluate 估值快照自动判定为『高成长』并给出 PE-TTM 56.21/PB 5.48（隐含成长溢价），但 deep-read 裁决其为火电周期股（煤价/电价周期驱动，2025 +421% 为煤价下行+财务费用下降的周期顶部，2026H1 已回落 -36.57%）须按正常化 EPS 定价；编排器据此将其覆盖为 valuation_type=cyclical。自动品种路由对区域能源平台/周期资源类公司仍偏向 growth/general，需人工强制复核",
+      "evidence": [
+        { "grade": "A", "detail": "2026-09-14 deep-dive 豫能控股 step3 验收 + step4 deep-read：evaluate.ts 自动判定成长/给出 PE-TTM 56.21 高估值，但 deep-read §八/§10 明确豫能控股为火电周期股（净利 +421% 由煤价下行 -18.4% + 财务费用 -23.70% 驱动，2026H1 已回落 -36.57%），估值应正常化 EPS 而非成长溢价；knowledge-architect 覆盖为 valuation_type=cyclical。同根因在 deep-dive-华友钴业-20260909-4821（资源周期判 general）与 deep-dive-动力新科-20260911-a7f3（周期股 auto PEG 失真）已记录" }
+      ],
+      "rootCauseHypothesis": "evaluate.ts 品种自动判定仅用 EPS 符号+单年净利增速信号，无法识别利润由煤价/金属价/燃料成本等周期因子驱动、高增速不可持续的结构特征；区域能源平台/周期资源类公司在周期顶部的高增速使其被误判为成长股并采用成长估值模型",
+      "goal": "evaluate.ts 自动判定增加周期特征信号（行业属性关键词如火电/煤炭/发电/能源平台、近 3 年净利波动率、毛利率对大宗价格敏感性），命中时输出『疑似周期股，请人工确认 --type cyclical 用正常化 EPS』提示而非直接给成长估值；PE 快照对疑似周期股加注增速含周期成分",
+      "severity": "medium",
+      "confidence": 0.7,
+      "benefit": "降低周期股被按成长股错误估值的风险，减少 Agent/编排器人工覆盖环节；估值快照品种路由与后续正常化 EPS 定价一致性提升",
+      "risk": "周期特征信号可能误伤高波动成长股，需样本验证阈值；修改仅影响提示/路由层，不改变已入库结论",
+      "acceptance": "对豫能控股类（火电/区域能源平台、净利随煤价/电价周期波动）标的，evaluate.ts 自动判定输出周期股复核提示或直接路由 cyclical（正常化 EPS），PE-TTM 不再作为成长估值主锚"
+    },
+    {
+      "problemCode": "checklist-auto-growth-column-misread",
+      "targetKind": "script",
+      "targetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "symptom": "investment-checklist-auto.ts 对周期股大增幅营收净利读数失真（复现）：本次 deep-dive 豫能控股 50 项清单 AUTO 扫描对 OCR/PDF 下载记录、营收净利大增幅周期股相关条目读数失真（营收 -7.61%/净利 +421.54% 这类大幅背离读数未被稳定提取），但硬伤项（有息负债/OCF=6.36>5 流动性红线、负债率 86.8%>70%）识别准确。扫描块与 YELLOW 定性互洽，说明关键 CRITICAL 硬伤可被正确捕获，但大增幅增速相关条目的读数稳定性不足",
+      "evidence": [
+        { "grade": "C", "detail": "2026-09-14 deep-dive 豫能控股 step7 验收：50 项清单 AUTO 扫描在营收净利大增幅/OCR-PDF 记录条目上读数失真，但硬伤项（有息负债/OCF 6.36、负债率 86.8%）准确；同根因增速/列头读取失真已在 deep-dive-利通电子-20260817-k7x2（净利增速 2.9% vs 实际 1088.6%）记录，本次为又一实例（观察级证据，跨 2 taskId 构成复现）" }
+      ],
+      "rootCauseHypothesis": "checklist-auto 按表格行列正则提取增速/营收净利字段，对周期股营收净利大幅背离、或涉及 OCR/PDF 下载记录等非常规条目时缺乏跨文件结构健壮的列头校验与数值合理性判定，导致大增幅读数不稳定；但资金/偿债类硬伤条目提取逻辑成熟，识别准确",
+      "goal": "checklist-auto 增速/营收净利字段提取增加列头校验与数值合理性校验（增速方向/量级与上下文不符时提示人工核对）；对周期股营收净利大幅背离场景稳定提取真实数值，保证不同输入文件结构下结果一致",
+      "severity": "medium",
+      "confidence": 0.7,
+      "benefit": "50 项投资决策清单 AUTO 观测值可信度提升，减少大增幅读数失真；同时保留对硬伤条目的准确识别（改造不得破坏有息负债/OCF、负债率等 CRITICAL 项判定）",
+      "risk": "校验规则过严可能漏检真实数据，需测试覆盖；改动需回归 checklist-auto 对硬伤条目的既有准确捕获能力",
+      "acceptance": "对豫能控股类（营收 -7.61%/净利 +421.54% 大幅背离）标的，AUTO 扫描增速/营收净利条目显示真实数值且稳定；已有息负债/OCF、负债率等硬伤 CRITICAL 项判定不受影响仍准确"
+    }
+  ]
+}
