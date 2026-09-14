@@ -1,0 +1,49 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "st-dive-ST天玑-20260914-a3f7",
+  "origin": "process-improvement",
+  "command": "st-dive ST天玑",
+  "status": "success",
+  "issues": [
+    {
+      "problemCode": "financial-pdf-403-forces-degradation",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/file-ingestion/fetch-file.ts",
+      "symptom": "stock.ts --financial 返回三年年报/中报 PDF 链接后，fetch-file.ts 全部 HTTP 403（巨潮/东财/cninfo 下载接口在本环境封禁），无法落地 pdf-texts/<公司名>/ 目录与三年年报 Markdown；document-reader 无从逐页精读，全流程降级到 MCP search_notice（语义公告片段）+ get_stock_financials（数值接口），deep-read 置信度被打到 4/10，2023/2024 多项财务字段（毛利率/净利率/ROE/资产负债率）永久标为『数据缺口』",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "2026-09-14 st-dive ST天玑：stock.ts --financial 链接全部 403，fetch-file.ts 无法下载任何年报 PDF，pdf-texts/ST天玑/ 目录未建立；随后全流程启用数据源降级（raw 包基于 MCP search_notice + get_stock_financials），深度读/结构化均受限于语义片段与数值；deep-read frontmatter 显式标注 data_degradation: true，置信度统一 ≤6；与 ST京机/ST臻镭/ST远智 三次 ST deep-dive 为同一 PDF 403 环境封禁的连续复现（本任务为第四次），且 ST 命令『财报精读 40%』在无 PDF 下退化到仅数值+公告语义，直接影响三年连贯性与内控/收入确认等需逐页核对项",
+          "taskId": "st-dive-ST天玑-20260914-a3f7"
+        }
+      ],
+      "rootCauseHypothesis": "cninfo/东财/巨潮 PDF/CDN 下载接口在当前执行环境（Windows，无特定 UA/Referer/Cookie）对所有直接 HTTP 请求拦截返回 403；fetch-file.ts 未内置合规请求头（如浏览器 UA、站点 Referer）或备用镜像源，也未在失败时自动切换降级链路；st-dive/deep-dive 命令文档未把『PDF 全缺 → 强制降级 + 置信度上限』建成标准流程，导致字段级缺口与置信度惩罚成为常态",
+      "goal": "fetch-file.ts 增加合规请求头（UA/Referer/Cookie）或备用下载通道，尽可能恢复 PDF 落地；当仍 403 时，st-dive/deep-dive 命令标准内置『强制降级到 MCP 语义检索 + frontmatter data_degradation + 置信度≤6/字段缺口标注』的处理模板，而不是靠编排器临时应变",
+      "severity": "high",
+      "confidence": 0.95,
+      "benefit": "ST（财报精读 40%）与 deep-dive 的三年年报逐页精读可恢复，三年连贯性/内控/收入确认等关键项置信度从 4/10 抬升；即便仍降级，标准化的降级模板也能保证 frontmatter 字段不缺失、缺口显式化、置信度规则一致，避免靠人工每次重写降级声明",
+      "risk": "合规请求头可能仍被反爬拦截（非代码可完全解决）；改降级模板需同步 st-dive.md 与 deep-dive.md 命令文档与 AGENTS.md 共享脚本表；需与既有 category/date 过滤兼容",
+      "acceptance": "1) fetch-file.ts 带上浏览器 UA/Referer 后至少一个源可下载年报 PDF 或给出明确失败原因；2) st-dive.md 含标准降级处理模板（降级标记 + 置信度上限 + 字段缺口规范）"
+    },
+    {
+      "problemCode": "stock-announcements-pagination-limit",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/stock-data/stock.ts",
+      "symptom": "stock.ts --announcements 默认 pageSize=20 且不循环翻页，长窗口（--days 730）只返回最近一页近期公告；ST 一级信源（--days 730）重大公告（2024-02-27 苏玉军辞任/2025-12-22 串标起诉/2026-04-29 ST/2026-07-08 判决）无法基于脚本输出完整重建，编排器须改用 MCP search_notice 按事件逐条补采",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "2026-09-14 st-dive ST天玑：stock.ts --announcements 长窗口分页截断，重大公告时间线改由 MCP search_notice 逐事件语义检索重建；同 ST京机 2026-09-14（st-dive-ST京机-20260914-UDru）、ST臻镭 2026-09-01（st-dive-ST臻镭-20260901-a3f8）、ST远智 2026-09-14（st-dive-ST远智-20260914-8f3a）为同一分页限制的第四次 A 级跨任务复现；该问题已在 ST京机 review 记为 high 候选，本任务确认为既有 candidate 的强化证据",
+          "taskId": "st-dive-ST天玑-20260914-a3f7"
+        }
+      ],
+      "rootCauseHypothesis": "stock.ts queryAnnouncements 单页抓取，长窗口截断早期重大公告（同既有候选），本任务复用 MCP 语义检索规避，未新增独立 root cause",
+      "goal": "复用既有候选：stock.ts --announcements 全量分页拉取，确保 --days 730 长窗口完整返回近 2 年公告",
+      "severity": "high",
+      "confidence": 0.97,
+      "benefit": "跨任务复用既有 high 候选；ST 公告时间线不再依赖临时补采",
+      "risk": "同既有候选",
+      "acceptance": "st-dive/deep-dive 长窗口公告完整返回（引用既有候选验收口径）"
+    }
+  ]
+}

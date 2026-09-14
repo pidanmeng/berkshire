@@ -1,0 +1,69 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "st-dive-ST京机-20260914-UDru",
+  "origin": "process-improvement",
+  "command": "st-dive ST京机",
+  "status": "success",
+  "issues": [
+    {
+      "problemCode": "stock-announcements-pagination-limit",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/stock-data/stock.ts",
+      "symptom": "stock.ts --announcements 默认 pageSize=20 且不循环翻页，长窗口（--days 730/1100）只返回最近 20 条近期公告；ST 一级信源重大公告（立案/告知书/戴帽等）全部缺失，ST 命令（公告权重 40%）的公告时间线重建无法基于脚本输出完成，编排器须改用 web 搜索补充 URL 定向下载",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "2026-09-14 st-dive ST京机：bun run stock.ts --code 000821 --announcements --days 730 仅返回约 20 条近期公告，ST 关键公告（2024-11-01 立案/2026-01-16 告知书/2026-01-20 戴帽）零返回；随后改用 web 搜索确定 ST 原因与事件时间线（子公司慧大成 2018 年报虚假记载、追溯重述、9.8.1 条第(八)项 S2）后才重建公告时间线；与 ST臻镭 2026-09-01（st-dive-ST臻镭-20260901-a3f8）、ST远智 2026-09-14（st-dive-ST远智-20260914-8f3a）为同一分页限制的第三次 A 级跨任务复现，三个 ST deep-dive 连续复现",
+          "taskId": "st-dive-ST京机-20260914-UDru"
+        }
+      ],
+      "rootCauseHypothesis": "stock.ts 的 queryAnnouncements 仅取单页（pageSize 默认 20，sortType 缺省按时间倒序），未实现分页循环，导致大时间窗口（--days 730/1100）下只返回最新一页，早期重大公告被截断；deep-dive/st-dive 命令按 --days 拉长窗口的用法未被脚本支持",
+      "goal": "stock.ts --announcements 支持全量分页拉取（循环翻页至 totalAnnouncement 或提供 --page-size 与 --max-pages 参数），确保 --days 730/1100 等长窗口下返回全部公告而非单页；或至少将默认 pageSize 提升并明确返回条数上限",
+      "severity": "high",
+      "confidence": 0.97,
+      "benefit": "ST/事件驱动研究（公告权重 40%）的重大公告采集不再依赖临时脚本与 web 搜索补采；公告时间线重建覆盖完整，避免戴帽/立案等关键公告漏采导致误判；该问题已在三个 ST deep-dive 连续复现，且第三个任务仅确认不新增为 batch 所需新证据，修复收益跨任务且具确定性",
+      "risk": "分页循环增加巨潮 API 调用次数，需控制速率与总页数上限，避免被限流；与既有 category 过滤逻辑需保持兼容",
+      "acceptance": "stock.ts --code X --announcements --days 1100 返回近 1100 天全部公告（含早期重大公告），并附总条数说明"
+    },
+    {
+      "problemCode": "quality-screen-negative-value-parse-ambiguity",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "quality-screen --mode auto 传负值参数（如 --earnings-growth -91 / --revenue-growth -40.04）报 ERR_PARSE_ARGS_INVALID_OPTION_VALUE『argument is ambiguous』并退出；需改用 --earnings-growth=-91 等号语法，脚本注释虽说明但 CLI 报错不友好，首次使用者易误以为参数名错误",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "2026-09-14 st-dive ST京机：bun run quality-screen.ts --mode auto --revenue-growth -40.04 ... 报 argument is ambiguous 退出；改用 --revenue-growth=-40.04 等号语法后成功；与 ST臻镭 2026-09-01（st-dive-ST臻镭-20260901-a3f8）、ST远智 2026-09-14（st-dive-ST远智-20260914-8f3a）为同一负值解析歧义的第三次跨任务复现，证据等级提升至 A（连续三任务复现）",
+          "taskId": "st-dive-ST京机-20260914-UDru"
+        }
+      ],
+      "rootCauseHypothesis": "脚本使用 bun 内置 parseArgs，以 '-' 开头的负值参数值被误解析为未知选项；报错信息未包含『负值请用 --x=-v』的提示，脚本文档中的说明未同步到运行时错误信息；且负值误用常与 growth 单位（百分数/小数）误用同发，进一步放大定位成本",
+      "goal": "quality-screen 对负值参数的报错信息补充『负值参数请使用 --<name>=<负值> 语法（如 --earnings-growth=-0.91）』的引导，或在 README/用法示例中显式覆盖负值 + growth 单位双场景",
+      "severity": "low",
+      "confidence": 0.8,
+      "benefit": "减少负值参数（净利负增长等高增长筛查常见场景）使用时的踩坑与重试成本；与 growth 单位问题合并提示可显著降低编排器多次重跑（本任务已多次重跑）",
+      "risk": "低，仅影响错误提示与文档，不改变评分逻辑",
+      "acceptance": "传负值参数时脚本给出明确语法引导而非 ambiguous 报错"
+    },
+    {
+      "problemCode": "quality-screen-auto-growth-param-unit",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "quality-screen --mode auto 的 growth 参数单位与负值格式易误用：百分数被当小数会放大 100 倍（--revenue-growth 40.04 被显示为 4004%），负值参数须用等号格式（--x=-v）；AGENTS.md 共享脚本表未标注单位约定，编排器需翻源码确认并多轮重跑",
+      "evidence": [
+        {
+          "grade": "B",
+          "detail": "2026-09-14 st-dive ST京机：quality-screen --mode auto 传 --revenue-growth=-40.04（百分数值）输出『营收增长 -4004.0%』（×100 显示），筛查结论失真；源码诊断确认真实增长 -40.04% 对应小数 -0.4004，改传小数后结论仍 RED/0.0（成长维度已近 0），方向稳健；与长电科技 2026-08-17（deep-dive-长电科技-20260817-7k2m）、ST远智 2026-09-14（st-dive-ST远智-20260914-8f3a）为同一 growth 参数单位问题的第四次跨任务复现（百分数当小数放大 10/100 倍）",
+          "taskId": "st-dive-ST京机-20260914-UDru"
+        }
+      ],
+      "rootCauseHypothesis": "quality-screen auto 模式 growth 参数单位约定仅写在脚本头部注释，未同步至 AGENTS.md 共享脚本表与命令文档；bun parseArgs 对以 - 开头的选项值需等号格式的限制未在用法说明中提示；编排器按百分比直觉传参导致首轮结论失真并须重跑",
+      "goal": "AGENTS.md 共享脚本表补充 quality-screen auto 模式参数单位说明（growth 传小数、负值用等号格式）；或脚本内对 growth>|5| 显式警告疑似百分比误传",
+      "severity": "medium",
+      "confidence": 0.85,
+      "benefit": "降低编排器/Agent 使用 quality-screen auto 模式的参数误用率，避免质量筛查首轮失真与重复执行，并减少对筛查结论可信度与实际得分的解释成本（本次百分数误用虽未改 RED 结论，但已造成多轮重跑）",
+      "risk": "改动小，需同步文档与脚本帮助文本",
+      "acceptance": "AGENTS.md 共享脚本表含 growth 单位说明；或脚本对 growth>|5| 的疑似误传给出显式警告"
+    }
+  ]
+}

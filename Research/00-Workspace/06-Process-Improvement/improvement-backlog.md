@@ -1,6 +1,6 @@
 # 流程改进 Backlog
 
-> 状态真源：improvement-backlog.json · 最后更新：2026-09-14T03:01:51.342Z
+> 状态真源：improvement-backlog.json · 最后更新：2026-09-14T15:55:58.680Z
 
 | 状态 | 严重度 | 问题描述 | 目标文件 | 任务数 | 问题码 |
 |---|---|---|---|---:|---|
@@ -43,7 +43,7 @@
 | 候选 | 高 | document-reader 角色无同名 .self-check.ts 自检脚本，deep-read 产出（9 大精读… | .trae/agents/document-reader.md | 4 | document-reader-selfcheck-missing |
 | 观察 | 低 | evaluate.ts 输出『利息覆盖倍数 N/A』（未从财报附注提取利息支出），quality-screen repo… | .trae/scripts/evaluation/evaluate.ts | 1 | quality-screen-interest-coverage-missing |
 | 观察 | 中 | quality-screen.ts --mode auto 的 growth 类参数按倍数解析（--revenue-gr… | .trae/scripts/quality-gate/quality-screen.ts | 1 | quality-screen-growth-param-scale |
-| 观察 | 中 | quality-screen --mode auto 的 growth 参数单位与负值格式易误用：`--earnings… | .trae/scripts/quality-gate/quality-screen.ts | 1 | quality-screen-auto-growth-param-unit |
+| 候选 | 中 | quality-screen --mode auto 的 growth 参数单位与负值格式易误用：百分数被当小数会放大 … | .trae/scripts/quality-gate/quality-screen.ts | 3 | quality-screen-auto-growth-param-unit |
 | 已拒绝 | 低 | deep-dive 命令流程步骤 4 仅含 info-alchemist + quality-screen，无 /res… | deep-dive 流程·步骤 4（结构化提取与质量筛查） | 4 | deep-dive-no-cross-validator |
 | 观察 | 低 | quality-screen 对低毛利重资产强周期行业（封测 OSAT）机械评分系统性低估：长电科技毛利率 14.15%… | .trae/scripts/quality-gate/quality-screen.ts | 1 | quality-screen-industry-threshold-bias |
 | 观察 | 低 | evaluate.ts 调用同花顺 hithink API 首次运行返回 HTTP 429 Too Many Reque… | .trae/scripts/evaluation/evaluate.ts | 1 | evaluate-api-rate-limit |
@@ -72,9 +72,9 @@
 | 观察 | 中 | quality-screen --mode report 在 frontmatter financials 块显式提供 … | .trae/scripts/quality-gate/quality-screen.ts | 1 | quality-screen-nonrecurring-field-mistrigger |
 | 观察 | 中 | leverageSafety 仅由资产负债率单变量反向评分（score(debtRatio, 0.25, 0.55, t… | .trae/scripts/quality-gate/quality-screen.ts | 1 | quality-screen-leverage-score-bias |
 | 观察 | 低 | stock.ts --reports 输出的研报详情页为东财 jshtml 动态页，fetch-file.ts 因 Co… | .trae/scripts/stock-data/stock.ts | 1 | research-report-pdf-link-format |
-| 候选 | 高 | stock.ts --announcements 默认 pageSize=20 且不循环翻页，近 730 天只返回最近 … | .trae/scripts/stock-data/stock.ts | 1 | stock-announcements-pagination-limit |
-| 观察 | 低 | quality-screen --mode auto 传负值参数（如 --inventory-growth -0.01）… | .trae/scripts/quality-gate/quality-screen.ts | 1 | quality-screen-negative-value-parse-ambiguity |
-| 观察 | 低 | st-dive 定向抓取公告 PDF 时，编排器首次按记忆/推断的 finalpage URL 下载（如立案告知书猜为 … | .trae/commands/st-dive.md | 1 | st-dive-announcement-url-copy-discipline |
+| 候选 | 高 | stock.ts --announcements 默认 pageSize=20 且不循环翻页，长窗口（--days 73… | .trae/scripts/stock-data/stock.ts | 4 | stock-announcements-pagination-limit |
+| 候选 | 低 | quality-screen --mode auto 传负值参数（如 --earnings-growth -91 / -… | .trae/scripts/quality-gate/quality-screen.ts | 3 | quality-screen-negative-value-parse-ambiguity |
+| 候选 | 低 | st-dive 定向抓取公告 PDF 时，编排器首次按记忆/推断的 finalpage URL 下载返回 HTTP 40… | .trae/commands/st-dive.md | 2 | st-dive-announcement-url-copy-discipline |
 | 观察 | 中 | quality-screen --mode report 在公司笔记 frontmatter 缺 growth 字段（或… | .trae/scripts/quality-gate/quality-screen.ts | 1 | quality-screen-report-mode-absolute-value-as-growth |
 | 观察 | 中 | quality-screen --mode auto 传增速参数 --revenue-growth 45.64 --ea… | .trae/scripts/quality-gate/quality-screen.ts | 1 | quality-screen-growth-param-display-times100 |
 | 观察 | 中 | 50 项投资决策清单 AUTO 扫描第 15 项『商誉/净资产 <30%』把宝丰能源商誉占比解析为 30.0% 触发黄牌… | .trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts | 1 | checklist-auto-goodwill-parse-error |
@@ -87,3 +87,5 @@
 | 观察 | 中 | deep-dive 命令步骤2.4要求『覆盖多空分歧，至少1篇看多+1篇看空研报，如有』，但本次对动力新科查询近365天… | .trae/commands/deep-dive.md | 1 | deep-dive-zero-sell-side-coverage-bull-bear-gap |
 | 观察 | 中 | 本次 deep-dive 动力新科再次出现投资清单 AUTO 扫描对部分 CRITICAL 项的解析缺口：附录5显示第1… | .trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts | 1 | checklist-auto-unparsed-financial-item-recurring |
 | 观察 | 中 | 本次 deep-dive 动力新科再次出现 evaluate.ts 对周期股+扣非亏损公司给出失真的 PEG/PE 判读… | .trae/scripts/evaluation/evaluate.ts | 1 | evaluate-peg-pe-invalid-for-cyclical-loss-making-recurring |
+| 观察 | 中 | quality-screen --mode report 指向 info-alchemist 产出的 processed… | .trae/scripts/quality-gate/quality-screen.ts | 1 | quality-screen-report-mode-n-a-on-processed-input |
+| 候选 | 高 | stock.ts --financial 返回三年年报/中报 PDF 链接后，fetch-file.ts 全部 HTTP… | .trae/scripts/file-ingestion/fetch-file.ts | 1 | financial-pdf-403-forces-degradation |

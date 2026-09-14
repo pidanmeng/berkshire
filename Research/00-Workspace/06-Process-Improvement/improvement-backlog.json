@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0",
-  "updatedAt": "2026-09-14T03:01:51.342Z",
+  "updatedAt": "2026-09-14T15:55:58.680Z",
   "items": [
     {
       "problemCode": "qs-report-regex-range-misparse",
@@ -1545,31 +1545,43 @@
       "problemCode": "quality-screen-auto-growth-param-unit",
       "targetKind": "script",
       "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
-      "symptom": "quality-screen --mode auto 的 growth 参数单位与负值格式易误用：`--earnings-growth -2.75` 因 bun parseArgs 将负值误判为选项报 ERR_PARSE_ARGS_INVALID_OPTION_VALUE（须用 `--earnings-growth=-2.75` 等号格式）；`--revenue-growth 8.09` 被当作 809% 强成长（须传小数 0.0809）；AGENTS.md 共享脚本表未标注单位约定，编排器需翻源码确认",
+      "symptom": "quality-screen --mode auto 的 growth 参数单位与负值格式易误用：百分数被当小数会放大 100 倍（--revenue-growth 40.04 被显示为 4004%），负值参数须用等号格式（--x=-v）；AGENTS.md 共享脚本表未标注单位约定，编排器需翻源码确认并多轮重跑",
       "evidence": [
         {
           "grade": "A",
           "detail": "2026-08-17 两次运行 quality-screen.ts --mode auto（长电科技 QS-1~QS-8 数据）：首次 `--earnings-growth -2.75` 报错 exit 1；二次 `--revenue-growth 8.09 --earnings-growth=-2.75` 输出营收同比 809.00%（误判强成长绿牌）；改传 0.0809/-0.0275 后输出正确 8.09%/-2.75%；脚本头部注释虽标注『--revenue-growth 0.12（12%）』但 AGENTS.md 共享脚本表未载明，且负值等号格式为 bun parseArgs 硬限制",
           "taskId": "deep-dive-长电科技-20260817-7k2m"
+        },
+        {
+          "grade": "B",
+          "detail": "2026-09-14 st-dive ST远智：首发 quality-screen --mode auto 用百分数传参（--revenue-growth 14.34 --earnings-growth=-91）输出『营收增长 1434.0%』『净利下降 -9100.0%』红牌，筛查结论失真；改为小数传参（--revenue-growth 0.1434 --earnings-growth=-0.91）后输出正确 RED 3.6（营收+14.34%/净利-91%）；ST 语境需保留该真实得分并解释与既有笔记 0.0 占位差异，额外承担口径说明成本；与长电科技 2026-08-17（deep-dive-长电科技-20260817-7k2m，quality-screen-auto-growth-param-unit）为同一 growth 参数单位问题的第三次跨任务复现（证据等级 B）",
+          "taskId": "st-dive-ST远智-20260914-8f3a"
+        },
+        {
+          "grade": "B",
+          "detail": "2026-09-14 st-dive ST京机：quality-screen --mode auto 传 --revenue-growth=-40.04（百分数值）输出『营收增长 -4004.0%』（×100 显示），筛查结论失真；源码诊断确认真实增长 -40.04% 对应小数 -0.4004，改传小数后结论仍 RED/0.0（成长维度已近 0），方向稳健；与长电科技 2026-08-17（deep-dive-长电科技-20260817-7k2m）、ST远智 2026-09-14（st-dive-ST远智-20260914-8f3a）为同一 growth 参数单位问题的第四次跨任务复现（百分数当小数放大 10/100 倍）",
+          "taskId": "st-dive-ST京机-20260914-UDru"
         }
       ],
-      "rootCauseHypothesis": "quality-screen auto 模式 growth 参数单位约定仅写在脚本头部注释，未同步至 AGENTS.md 共享脚本表与命令文档；bun parseArgs 对以 - 开头的选项值需等号格式的限制未在用法说明中提示",
-      "goal": "AGENTS.md 共享脚本表补充 quality-screen auto 模式参数单位说明（growth 传小数、负值用等号格式）；或脚本内对 growth>1（如 >5）显式警告疑似百分比误传",
+      "rootCauseHypothesis": "quality-screen auto 模式 growth 参数单位约定仅写在脚本头部注释，未同步至 AGENTS.md 共享脚本表与命令文档；bun parseArgs 对以 - 开头的选项值需等号格式的限制未在用法说明中提示；编排器按百分比直觉传参导致首轮结论失真并须重跑",
+      "goal": "AGENTS.md 共享脚本表补充 quality-screen auto 模式参数单位说明（growth 传小数、负值用等号格式）；或脚本内对 growth>|5| 显式警告疑似百分比误传",
       "severity": "medium",
-      "confidence": 0.8,
-      "benefit": "降低编排器/Agent 使用 quality-screen auto 模式的参数误用率，避免质量筛查结论失真",
+      "confidence": 0.85,
+      "benefit": "降低编排器/Agent 使用 quality-screen auto 模式的参数误用率，避免质量筛查首轮失真与重复执行，并减少对筛查结论可信度与实际得分的解释成本（本次百分数误用虽未改 RED 结论，但已造成多轮重跑）",
       "risk": "改动小，需同步文档与脚本帮助文本",
-      "acceptance": "AGENTS.md 共享脚本表含 growth 单位说明；或脚本对 growth>5 的疑似误传给出显式警告",
+      "acceptance": "AGENTS.md 共享脚本表含 growth 单位说明；或脚本对 growth>|5| 的疑似误传给出显式警告",
       "fingerprint": "18ed3bfe4c03948f3acb",
       "canonicalTargetPath": ".trae/scripts/quality-gate/quality-screen.ts",
-      "status": "observing",
+      "status": "candidate",
       "taskIds": [
-        "deep-dive-长电科技-20260817-7k2m"
+        "deep-dive-长电科技-20260817-7k2m",
+        "st-dive-ST远智-20260914-8f3a",
+        "st-dive-ST京机-20260914-UDru"
       ],
-      "occurrenceCount": 1,
+      "occurrenceCount": 3,
       "highestSeverity": "medium",
       "firstSeenAt": "2026-08-17T03:26:57.838Z",
-      "lastSeenAt": "2026-08-17T03:26:57.838Z",
+      "lastSeenAt": "2026-09-14T08:39:28.089Z",
       "batchIds": []
     },
     {
@@ -2521,78 +2533,113 @@
       "problemCode": "stock-announcements-pagination-limit",
       "targetKind": "script",
       "targetPath": ".trae/scripts/stock-data/stock.ts",
-      "symptom": "stock.ts --announcements 默认 pageSize=20 且不循环翻页，近 730 天只返回最近 20 条（本次全是 2026 年 7-8 月公告）；戴帽公告（2026-04-18 实施其他风险警示暨停牌）、行政处罚事先告知书（2026-04-18）、行政处罚决定书（2026-05-09）、立案告知书（2025-12-27）、前期会计差错更正（2025-12-25）等 ST 一级信源重大公告全部缺失，ST 命令（公告权重 40%）的公告时间线重建无法基于脚本输出完成",
+      "symptom": "stock.ts --announcements 默认 pageSize=20 且不循环翻页，长窗口（--days 730）只返回最近一页近期公告；ST 一级信源（--days 730）重大公告（2024-02-27 苏玉军辞任/2025-12-22 串标起诉/2026-04-29 ST/2026-07-08 判决）无法基于脚本输出完整重建，编排器须改用 MCP search_notice 按事件逐条补采",
       "evidence": [
         {
           "grade": "A",
           "detail": "2026-09-01 st-dive ST臻镭：bun run stock.ts --code 688270 --announcements --days 730 仅返回 20 条（全部 2026-07~08，董事会换届/半年报类），戴帽/立案/差错更正/处罚等重大公告零返回；随后以 pageSize=30 循环翻页直调巨潮 hisAnnouncement（.trae/scripts/stock-data/fetch-announcements.ts，临时脚本）得到完整 203 条，含全部关键公告",
           "taskId": "st-dive-ST臻镭-20260901-a3f8"
+        },
+        {
+          "grade": "A",
+          "detail": "2026-09-14 st-dive ST远智：bun run stock.ts --code 002689 --announcements --days 1100 仅返回 20 条（全部 2026-04~09，其中多条为半年报/经营数据类），戴帽/处罚决定书/问询函专项说明等关键 ST 公告零返回；随后以 web 搜索补充关键公告 URL，经 fetch-file.ts 定向下载（戴帽公告2025-11-29/行政处罚决定书公告2025-12-20/2023年报问询函专项说明/异常波动公告2026-07-04/境外子公司进展2026-08/半年报计提减值公告）后才重建公告时间线；与 ST臻镭 2026-09-01 review（st-dive-ST臻镭-20260901-a3f8，同一 problemCode）为同一分页限制的第二次 A 级跨任务复现",
+          "taskId": "st-dive-ST远智-20260914-8f3a"
+        },
+        {
+          "grade": "A",
+          "detail": "2026-09-14 st-dive ST京机：bun run stock.ts --code 000821 --announcements --days 730 仅返回约 20 条近期公告，ST 关键公告（2024-11-01 立案/2026-01-16 告知书/2026-01-20 戴帽）零返回；随后改用 web 搜索确定 ST 原因与事件时间线（子公司慧大成 2018 年报虚假记载、追溯重述、9.8.1 条第(八)项 S2）后才重建公告时间线；与 ST臻镭 2026-09-01（st-dive-ST臻镭-20260901-a3f8）、ST远智 2026-09-14（st-dive-ST远智-20260914-8f3a）为同一分页限制的第三次 A 级跨任务复现，三个 ST deep-dive 连续复现",
+          "taskId": "st-dive-ST京机-20260914-UDru"
+        },
+        {
+          "grade": "A",
+          "detail": "2026-09-14 st-dive ST天玑：stock.ts --announcements 长窗口分页截断，重大公告时间线改由 MCP search_notice 逐事件语义检索重建；同 ST京机 2026-09-14（st-dive-ST京机-20260914-UDru）、ST臻镭 2026-09-01（st-dive-ST臻镭-20260901-a3f8）、ST远智 2026-09-14（st-dive-ST远智-20260914-8f3a）为同一分页限制的第四次 A 级跨任务复现；该问题已在 ST京机 review 记为 high 候选，本任务确认为既有 candidate 的强化证据",
+          "taskId": "st-dive-ST天玑-20260914-a3f7"
         }
       ],
-      "rootCauseHypothesis": "stock.ts 的 queryAnnouncements 仅取单页（pageSize 默认 20，sortType 缺省按时间倒序），未实现分页循环，导致大时间窗口（--days 730）下只返回最新一页，早期重大公告被截断；deep-dive/st-dive 命令按 --days 拉长窗口的用法未被脚本支持",
-      "goal": "stock.ts --announcements 支持全量分页拉取（循环翻页至 totalAnnouncement 或提供 --page-size 与 --max-pages 参数），确保 --days 730 等长窗口下返回全部公告而非单页；或至少将默认 pageSize 提升并明确返回条数上限",
+      "rootCauseHypothesis": "stock.ts queryAnnouncements 单页抓取，长窗口截断早期重大公告（同既有候选），本任务复用 MCP 语义检索规避，未新增独立 root cause",
+      "goal": "复用既有候选：stock.ts --announcements 全量分页拉取，确保 --days 730 长窗口完整返回近 2 年公告",
       "severity": "high",
-      "confidence": 0.95,
-      "benefit": "ST/事件驱动研究（公告权重 40%）的重大公告采集不再依赖临时脚本；公告时间线重建覆盖完整，避免戴帽/立案等关键公告漏采导致误判",
-      "risk": "分页循环增加巨潮 API 调用次数，需控制速率与总页数上限，避免被限流；与既有 category 过滤逻辑需保持兼容",
-      "acceptance": "stock.ts --code X --announcements --days 730 返回近 730 天全部公告（含早期重大公告），并附总条数说明",
+      "confidence": 0.97,
+      "benefit": "跨任务复用既有 high 候选；ST 公告时间线不再依赖临时补采",
+      "risk": "同既有候选",
+      "acceptance": "st-dive/deep-dive 长窗口公告完整返回（引用既有候选验收口径）",
       "fingerprint": "93b2667c6128ec298d72",
       "canonicalTargetPath": ".trae/scripts/stock-data/stock.ts",
       "status": "candidate",
       "taskIds": [
-        "st-dive-ST臻镭-20260901-a3f8"
+        "st-dive-ST臻镭-20260901-a3f8",
+        "st-dive-ST远智-20260914-8f3a",
+        "st-dive-ST京机-20260914-UDru",
+        "st-dive-ST天玑-20260914-a3f7"
       ],
-      "occurrenceCount": 1,
+      "occurrenceCount": 4,
       "highestSeverity": "high",
       "firstSeenAt": "2026-09-01T04:23:03.847Z",
-      "lastSeenAt": "2026-09-01T04:23:03.847Z",
+      "lastSeenAt": "2026-09-14T15:55:58.680Z",
       "batchIds": []
     },
     {
       "problemCode": "quality-screen-negative-value-parse-ambiguity",
       "targetKind": "script",
       "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
-      "symptom": "quality-screen --mode auto 传负值参数（如 --inventory-growth -0.01）报 ERR_PARSE_ARGS_INVALID_OPTION_VALUE『argument is ambiguous』并退出；需改用 --inventory-growth=-0.01 语法，脚本注释虽说明但 CLI 报错不友好，首次使用者易误以为参数名错误",
+      "symptom": "quality-screen --mode auto 传负值参数（如 --earnings-growth -91 / --revenue-growth -40.04）报 ERR_PARSE_ARGS_INVALID_OPTION_VALUE『argument is ambiguous』并退出；需改用 --earnings-growth=-91 等号语法，脚本注释虽说明但 CLI 报错不友好，首次使用者易误以为参数名错误",
       "evidence": [
         {
           "grade": "C",
           "detail": "2026-09-01 st-dive ST臻镭：bun run quality-screen.ts --mode auto ... --inventory-growth -0.01 报 ERR_PARSE_ARGS_INVALID_OPTION_VALUE 退出码 1；改为 --inventory-growth=-0.01 后成功（RED 0.0 分）；脚本头部注释已记载负值参数需 --x=-v 语法，但报错信息未提示该解决方式",
           "taskId": "st-dive-ST臻镭-20260901-a3f8"
+        },
+        {
+          "grade": "B",
+          "detail": "2026-09-14 st-dive ST远智：bun run quality-screen.ts --mode auto ... --earnings-growth -91 报 ERR_PARSE_ARGS_INVALID_OPTION_VALUE 退出；改用 --earnings-growth=-91 语法后成功；错误日志含 'To specify an option argument starting with a dash use --earnings-growth=-XYZ' 提示，但在 growth 首轮传百分数（-91）误当小数后产生 -9100% 放大显示时才暴露，说明负值参数常与单位误用叠加出现；与 ST臻镭 2026-09-01 review（st-dive-ST臻镭-20260901-a3f8，同一 problemCode）为同一解析问题的第二次跨任务复现（证据等级 C→B）",
+          "taskId": "st-dive-ST远智-20260914-8f3a"
+        },
+        {
+          "grade": "A",
+          "detail": "2026-09-14 st-dive ST京机：bun run quality-screen.ts --mode auto --revenue-growth -40.04 ... 报 argument is ambiguous 退出；改用 --revenue-growth=-40.04 等号语法后成功；与 ST臻镭 2026-09-01（st-dive-ST臻镭-20260901-a3f8）、ST远智 2026-09-14（st-dive-ST远智-20260914-8f3a）为同一负值解析歧义的第三次跨任务复现，证据等级提升至 A（连续三任务复现）",
+          "taskId": "st-dive-ST京机-20260914-UDru"
         }
       ],
-      "rootCauseHypothesis": "脚本使用 bun 内置 parseArgs，以 '-' 开头的负值参数值被误解析为未知选项；报错信息未包含『负值请用 --x=-v』的提示，脚本文档中的说明未同步到运行时错误信息",
-      "goal": "quality-screen 对负值参数的报错信息补充『负值参数请使用 --<name>=<负值> 语法（如 --inventory-growth=-0.01）』的引导，或在 README/用法示例中显式覆盖负值场景",
+      "rootCauseHypothesis": "脚本使用 bun 内置 parseArgs，以 '-' 开头的负值参数值被误解析为未知选项；报错信息未包含『负值请用 --x=-v』的提示，脚本文档中的说明未同步到运行时错误信息；且负值误用常与 growth 单位（百分数/小数）误用同发，进一步放大定位成本",
+      "goal": "quality-screen 对负值参数的报错信息补充『负值参数请使用 --<name>=<负值> 语法（如 --earnings-growth=-0.91）』的引导，或在 README/用法示例中显式覆盖负值 + growth 单位双场景",
       "severity": "low",
-      "confidence": 0.6,
-      "benefit": "减少负值参数（存货/净利负增长场景常见）使用时的踩坑与重试成本",
+      "confidence": 0.8,
+      "benefit": "减少负值参数（净利负增长等高增长筛查常见场景）使用时的踩坑与重试成本；与 growth 单位问题合并提示可显著降低编排器多次重跑（本任务已多次重跑）",
       "risk": "低，仅影响错误提示与文档，不改变评分逻辑",
       "acceptance": "传负值参数时脚本给出明确语法引导而非 ambiguous 报错",
       "fingerprint": "f409e83ffb9fb4fb79e9",
       "canonicalTargetPath": ".trae/scripts/quality-gate/quality-screen.ts",
-      "status": "observing",
+      "status": "candidate",
       "taskIds": [
-        "st-dive-ST臻镭-20260901-a3f8"
+        "st-dive-ST臻镭-20260901-a3f8",
+        "st-dive-ST远智-20260914-8f3a",
+        "st-dive-ST京机-20260914-UDru"
       ],
-      "occurrenceCount": 1,
+      "occurrenceCount": 3,
       "highestSeverity": "low",
       "firstSeenAt": "2026-09-01T04:23:03.847Z",
-      "lastSeenAt": "2026-09-01T04:23:03.847Z",
+      "lastSeenAt": "2026-09-14T08:39:28.089Z",
       "batchIds": []
     },
     {
       "problemCode": "st-dive-announcement-url-copy-discipline",
       "targetKind": "command",
       "targetPath": ".trae/commands/st-dive.md",
-      "symptom": "st-dive 定向抓取公告 PDF 时，编排器首次按记忆/推断的 finalpage URL 下载（如立案告知书猜为 1224931090）返回 HTTP 404，需先从巨潮公告清单精确复制 adjunctUrl 才能成功；公告 PDF URL 无稳定规律可推断",
+      "symptom": "st-dive 定向抓取公告 PDF 时，编排器首次按记忆/推断的 finalpage URL 下载返回 HTTP 404 或错页，需先从巨潮公告清单精确复制 adjunctUrl 才能成功；公告 PDF URL 无稳定规律可推断",
       "evidence": [
         {
           "grade": "C",
           "detail": "2026-09-01 st-dive ST臻镭：fetch-file.ts 用臆测 URL（https://static.cninfo.com.cn/finalpage/2025-12-27/1224931090.PDF）下载立案告知书报 404；从 announcements-list.txt 清单核对实际 URL（1224902453.PDF）后成功",
           "taskId": "st-dive-ST臻镭-20260901-a3f8"
+        },
+        {
+          "grade": "C",
+          "detail": "2026-09-14 st-dive ST远智：公告 PDF（含 ST 事件时间线所需的 2023 年报审计报告、各期年报/半年报）下载经历数次 URL 核对/替换，2023 年年度审计报告 PDF 解析失败留待 OCR，部分公告 URL 需从巨潮公告清单二次核对；与 ST臻镭 2026-09-01 review（st-dive-ST臻镭-20260901-a3f8，同一 problemCode）方向一致，为公告 URL 精确复制纪律的第二次跨任务复现",
+          "taskId": "st-dive-ST远智-20260914-8f3a"
         }
       ],
-      "rootCauseHypothesis": "st-dive 命令文档未强调『公告 PDF URL 必须从巨潮公告清单精确复制、禁止按日期/序号推断』，编排器在公告清单未落盘前凭模式猜测 URL 导致 404",
-      "goal": "st-dive 命令文档（或共享脚本用法表）补充约束：公告 PDF 下载前先拉取公告清单并将 URL 落盘，fetch-file 一律使用清单中的 adjunctUrl，禁止推断 finalpage 序号",
+      "rootCauseHypothesis": "st-dive 命令文档未强调『公告 PDF URL 必须从巨潮公告清单精确复制、禁止按日期/序号推断』，编排器在公告清单未落盘前凭模式猜测 URL 导致 404/错页，重复下载与核对增加阶段耗时",
+      "goal": "st-dive 命令文档（或共享脚本用法表）补充约束：公告 PDF 下载前先拉取公告清单并将 URL 落盘，fetch-file 一律使用清单中的 adjunctUrl，禁止推断 finalpage 序号；配合 stock-announcements-pagination-limit 修复后的完整公告清单使用",
       "severity": "low",
       "confidence": 0.6,
       "benefit": "减少 ST 公告采集阶段的无效下载与重试，保障公告原文落盘完整",
@@ -2600,14 +2647,15 @@
       "acceptance": "st-dive 流程中公告 URL 均取自已落盘的公告清单，无臆测 URL 下载",
       "fingerprint": "7b5b5695b38d328a35a0",
       "canonicalTargetPath": ".trae/commands/st-dive.md",
-      "status": "observing",
+      "status": "candidate",
       "taskIds": [
-        "st-dive-ST臻镭-20260901-a3f8"
+        "st-dive-ST臻镭-20260901-a3f8",
+        "st-dive-ST远智-20260914-8f3a"
       ],
-      "occurrenceCount": 1,
+      "occurrenceCount": 2,
       "highestSeverity": "low",
       "firstSeenAt": "2026-09-01T04:23:03.847Z",
-      "lastSeenAt": "2026-09-01T04:23:03.847Z",
+      "lastSeenAt": "2026-09-14T08:10:32.770Z",
       "batchIds": []
     },
     {
@@ -3002,6 +3050,68 @@
       "highestSeverity": "medium",
       "firstSeenAt": "2026-09-10T16:55:32.770Z",
       "lastSeenAt": "2026-09-10T16:55:32.770Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "quality-screen-report-mode-n-a-on-processed-input",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "quality-screen --mode report 指向 info-alchemist 产出的 processed 文件时，因 processed 文件 YAML 字段名与脚本期望不匹配（缺结构化 growth/OCF 字段），营收/净利同比、OCF/净利被判 N/A，得 RED 3.2 低分；改用 --mode auto 显式传同一批指标（ROE 8.19%/毛利率35.95%/净利率7.32%/OCF-NI 2.11/负债率35.05%/PE 37.3/营收+14.34%/净利-91%）后得 RED 3.6。同源数据两种模式结论 3.2↔3.6 不一致，N/A 判分失真，掩盖了 OCF-NI 2.11 这一绿牌",
+      "evidence": [
+        {
+          "grade": "B",
+          "detail": "2026-09-14 st-dive ST远智：首跑 quality-screen --mode report --file（2026-09-14-ST远智-processed.md）因子段营收/净利同比、OCF/NI 均 N/A，得 RED 3.2（emit 2）；同日 --mode auto 显式传同一批指标得 RED 3.6 且 OCF/NI 2.11 给出绿牌；processed 文件 YAML 使用 info-alchemist 的字段命名（非 quality-screen 期望的 growth/financials 结构），两模式读同文件却得不同分",
+          "taskId": "st-dive-ST远智-20260914-8f3a"
+        }
+      ],
+      "rootCauseHypothesis": "quality-screen report 模式设计为读取『公司笔记』frontmatter（结构化 scores/financials 块），对 info-alchemist 的 processed 中间产物字段命名不兼容，缺字段时静默判 N/A 并按其权重计低分，而非显式提示『输入文件结构不匹配，请用 --mode auto 传参』；编排器在 report 前不经校验直接用 processed 文件时产生与 auto 模式不一致的失真结论",
+      "goal": "quality-screen report 模式对缺失必填字段（growth/OCF 等）时显式告警『输入文件字段不匹配或缺失，建议 --mode auto 显式传参』并避免静默 N/A 计低分；或兼容 info-alchemist processed 文件的字段命名",
+      "severity": "medium",
+      "confidence": 0.65,
+      "benefit": "消除 report 模式对非公司笔记结构输入的静默 N/A 低分失真，避免编排器/用户因解析口径得到错误筛查结论（3.2 掩盖绿牌）；减少两种模式结论不一致的核对与解释成本",
+      "risk": "需与既有 report 模式公司笔记解析路径保持兼容，防止误伤正常读取",
+      "acceptance": "report 模式输入文件缺字段时给出明确告警并说明正确用法，而非静默 N/A 计低分",
+      "fingerprint": "0f6d2b50a018f9ef6a0b",
+      "canonicalTargetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "status": "observing",
+      "taskIds": [
+        "st-dive-ST远智-20260914-8f3a"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "medium",
+      "firstSeenAt": "2026-09-14T08:10:32.770Z",
+      "lastSeenAt": "2026-09-14T08:10:32.770Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "financial-pdf-403-forces-degradation",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/file-ingestion/fetch-file.ts",
+      "symptom": "stock.ts --financial 返回三年年报/中报 PDF 链接后，fetch-file.ts 全部 HTTP 403（巨潮/东财/cninfo 下载接口在本环境封禁），无法落地 pdf-texts/<公司名>/ 目录与三年年报 Markdown；document-reader 无从逐页精读，全流程降级到 MCP search_notice（语义公告片段）+ get_stock_financials（数值接口），deep-read 置信度被打到 4/10，2023/2024 多项财务字段（毛利率/净利率/ROE/资产负债率）永久标为『数据缺口』",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "2026-09-14 st-dive ST天玑：stock.ts --financial 链接全部 403，fetch-file.ts 无法下载任何年报 PDF，pdf-texts/ST天玑/ 目录未建立；随后全流程启用数据源降级（raw 包基于 MCP search_notice + get_stock_financials），深度读/结构化均受限于语义片段与数值；deep-read frontmatter 显式标注 data_degradation: true，置信度统一 ≤6；与 ST京机/ST臻镭/ST远智 三次 ST deep-dive 为同一 PDF 403 环境封禁的连续复现（本任务为第四次），且 ST 命令『财报精读 40%』在无 PDF 下退化到仅数值+公告语义，直接影响三年连贯性与内控/收入确认等需逐页核对项",
+          "taskId": "st-dive-ST天玑-20260914-a3f7"
+        }
+      ],
+      "rootCauseHypothesis": "cninfo/东财/巨潮 PDF/CDN 下载接口在当前执行环境（Windows，无特定 UA/Referer/Cookie）对所有直接 HTTP 请求拦截返回 403；fetch-file.ts 未内置合规请求头（如浏览器 UA、站点 Referer）或备用镜像源，也未在失败时自动切换降级链路；st-dive/deep-dive 命令文档未把『PDF 全缺 → 强制降级 + 置信度上限』建成标准流程，导致字段级缺口与置信度惩罚成为常态",
+      "goal": "fetch-file.ts 增加合规请求头（UA/Referer/Cookie）或备用下载通道，尽可能恢复 PDF 落地；当仍 403 时，st-dive/deep-dive 命令标准内置『强制降级到 MCP 语义检索 + frontmatter data_degradation + 置信度≤6/字段缺口标注』的处理模板，而不是靠编排器临时应变",
+      "severity": "high",
+      "confidence": 0.95,
+      "benefit": "ST（财报精读 40%）与 deep-dive 的三年年报逐页精读可恢复，三年连贯性/内控/收入确认等关键项置信度从 4/10 抬升；即便仍降级，标准化的降级模板也能保证 frontmatter 字段不缺失、缺口显式化、置信度规则一致，避免靠人工每次重写降级声明",
+      "risk": "合规请求头可能仍被反爬拦截（非代码可完全解决）；改降级模板需同步 st-dive.md 与 deep-dive.md 命令文档与 AGENTS.md 共享脚本表；需与既有 category/date 过滤兼容",
+      "acceptance": "1) fetch-file.ts 带上浏览器 UA/Referer 后至少一个源可下载年报 PDF 或给出明确失败原因；2) st-dive.md 含标准降级处理模板（降级标记 + 置信度上限 + 字段缺口规范）",
+      "fingerprint": "2607d9ac540410a9d5b3",
+      "canonicalTargetPath": ".trae/scripts/file-ingestion/fetch-file.ts",
+      "status": "candidate",
+      "taskIds": [
+        "st-dive-ST天玑-20260914-a3f7"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "high",
+      "firstSeenAt": "2026-09-14T15:55:58.680Z",
+      "lastSeenAt": "2026-09-14T15:55:58.680Z",
       "batchIds": []
     }
   ],
