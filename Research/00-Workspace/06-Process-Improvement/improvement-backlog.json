@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0",
-  "updatedAt": "2026-09-14T16:09:28.422Z",
+  "updatedAt": "2026-09-16T10:43:22.816Z",
   "items": [
     {
       "problemCode": "qs-report-regex-range-misparse",
@@ -3118,6 +3118,254 @@
       "highestSeverity": "high",
       "firstSeenAt": "2026-09-14T15:55:58.680Z",
       "lastSeenAt": "2026-09-14T15:55:58.680Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "cninfo-http403-forcing-semantic-downgrade",
+      "targetKind": "command",
+      "targetPath": ".trae/commands/deep-dive.md",
+      "symptom": "国盛智科 cninfo/巨潮 PDF 接口返回 HTTP 403 系统性阻断（stock.ts --financial 及裸/--code 调用均失败），无法下载三年年报与半年报 PDF 原文精读，被迫改用同花顺 iFind MCP search_notice 公告语义摘录源材料（parse_confidence=medium、无页码、无附注全文、2023 年报未单独落盘而并入 2025 摘录序列）。直接影响：deep-read 置信度仅 6，凡依赖附注全文的结论（现金收入比、会计政策、关联交易明细、产能与台单价）只能显式标注证据不足；多空论证中『华为/人形机器人叙事』等无法用附注量化。",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "2026-09-16 deep-dive 国盛智科：stock.ts --financial 连续返回 cninfo HTTP 403；deep-read frontmatter 显式标注『数据源降级：无法下载 PDF 精读全文，改为同花顺 iFind 官方公告语义摘录，parse_confidence=medium，无页码、无完整附注全文』，且置信度自评 6。",
+          "taskId": "deep-dive-国盛智科-20260916-qf3k"
+        }
+      ],
+      "rootCauseHypothesis": "cninfo 公开 PDF 接口存在 IP/UA 级反爬封禁，stock.ts 未内置 403 自动切换备用源（同花顺/东财）的兜底；降级路径存在但产出规范未要求显式输出『受影响结论 + 证据等级』清单，导致表外结论在笔记/报告中的证据层级不透明。",
+      "goal": "deep-dive.md 在财报 PDF 获取 403/失败时，强制输出『受影响结论清单（结论 + 证据等级 + 替代来源）』；源材料 frontmatter 显式标注降级原因与 parse_confidence；置信度 ≤6 的结论在报告/笔记显式标『存疑』。",
+      "severity": "low",
+      "confidence": 0.7,
+      "benefit": "使『cninfo 阻断→语义摘录』降级路径下，每一条依赖附注全文的结论都有明确的证据等级与存疑标注，避免读者误把中置信度结论当作高置信原文结论；为后续 403 自动切源提供改进输入。",
+      "risk": "过度标注可能使深度报告显得不确定；需限定只对『依赖附注全文的结论』标注，不泛化到表内三表数字（表内数字多源可核验、置信度高）。",
+      "acceptance": "对国盛智科类（cninfo 403）标的，deep-read/processed 含『受影响结论+证据等级』清单；置信度≤6 的结论在笔记与报告显式标存疑；源材料 frontmatter 含降级原因+parse_confidence。",
+      "fingerprint": "befe52ba1f131e67ee18",
+      "canonicalTargetPath": ".trae/commands/deep-dive.md",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-国盛智科-20260916-qf3k"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "low",
+      "firstSeenAt": "2026-09-16T10:18:24.720Z",
+      "lastSeenAt": "2026-09-16T10:18:24.720Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "deep-dive-report-template-missing-historical-analogy-section",
+      "targetKind": "template",
+      "targetPath": "Research/99-Templates/company-deep-dive-template.md",
+      "symptom": "company-deep-dive-template.md 正文无独立『历史类比』章节（仅在四大师评分卡那行出现『历史类比与时间框架』字样），但 quality-scorecard.ts Phase5 对正文 /历史类比/ 有硬性判定（投资视角权重），导致本报告首轮评分 25/30 判定『缺少历史类比』扣分，需事后在 md 与 html 双份补写历史类比段落并重跑评分卡才达 30/30。模板与下游评分卡判定项不同步，造成一次返工。",
+      "evidence": [
+        {
+          "grade": "C",
+          "detail": "2026-09-16 deep-dive 国盛智科：quality-scorecard.ts --phase 5 首跑输出『❌ 缺少 历史类比』总分25较30，补写『历史类比（李录框架）』小节并同步到 md/html 后重跑得 30/30 ✅；模板第32行仅评分卡出现『历史类比与时间框架』字样，正文无该章节。",
+          "taskId": "deep-dive-国盛智科-20260916-qf3k"
+        }
+      ],
+      "rootCauseHypothesis": "report-writer 严格按 template 章节生成报告，而模板正文未内置『历史类比』这一 AGENTS.md 要求的三层调研/四大师覆盖项；评分卡按质量契约判定该内容缺失，形成模板与验收的不一致。",
+      "goal": "在 company-deep-dive-template.md 正文增加『周期位置』后的一节『历史类比（李录框架）』（包含成熟龙头盈利轨迹/国内历史周期/海外对标估值中枢/时间框架启示占位），使 report-writer 一次成型，评分卡不再因缺历史类比误判。",
+      "severity": "low",
+      "confidence": 0.6,
+      "benefit": "消除日报模板与评分卡判定项的不一致，减少报告生成后因缺历史类比章节导致的一次返工与 md/html 同步成本。",
+      "risk": "模板增节可能与其他已生成报告章节编号冲突，需同步核对模板内章节序号；属纯文档模板改动，无脚本影响。",
+      "acceptance": "company-deep-dive-template.md 正文包含『历史类比』章节占位；新生成 deep-dive 报告包含该章节且评分卡 Phase5 不因缺历史类比扣分。",
+      "fingerprint": "36d5cf4f7ca79e795e54",
+      "canonicalTargetPath": "Research/99-Templates/company-deep-dive-template.md",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-国盛智科-20260916-qf3k"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "low",
+      "firstSeenAt": "2026-09-16T10:18:24.720Z",
+      "lastSeenAt": "2026-09-16T10:18:24.720Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "investment-checklist-auto-unit-misread",
+      "targetKind": "script",
+      "targetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "symptom": "50项投资决策清单 AUTO 扫描器在解析公司笔记/报告时发生财务口径单位误读：营收『20.34亿』被读成 2034%、净利『0.32亿』被读成 142%，导致按原始百分比判定成长/估值类条目失真。本任务 report-writer 只能『仅采信关键词级判定』规避，片段性削弱了该发布门禁（CRITICAL>1 不发布）对财务类条目的自动判定可靠性。",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "2026-09-16 deep-dive 东箭科技 report-writer 交付回报：『50项 AUTO 扫描——自动扫描器存在单位误读（营收=2034%/净利=142% 为 20.34亿/0.32亿 误读），仅采信关键词级判定』，职能清单最终以 quality-screen RED 兜底而非清单自动化判定。",
+          "taskId": "deep-dive-东箭科技-20260916-4832"
+        }
+      ],
+      "rootCauseHypothesis": "investment-checklist-auto.ts 正则将『X.XX亿元』数字未剥离单位直接乘以100换算为百分比，或对无百分号的数值默认按百分比处理，缺少元/亿/万元等金额单位识别与归一化。",
+      "goal": "investment-checklist-auto.ts 增加金额单位识别：『X亿元/X万元/X元』按金额归一化为亿元并转同比口径，仅对带%或明确增幅语义的数值做百分比判定；单元测试覆盖『20.34亿→营收20.34、增速字段仍需原文』与『营收-7.1%→-0.071』两组边界。",
+      "severity": "high",
+      "confidence": 0.8,
+      "benefit": "修复发布门禁的核心数据解析缺陷，使 50项清单对成长/估值类条目能可靠自动判定，避免依赖报告侧人工关键词兜底；作为多仓自动化 right-sourcing 的关键一环。",
+      "risk": "金额与百分比语义区分需谨慎，避免误将真百分比（如增速 -7.1%）当金额归一化而反向出错；需配套单元测试锁定。",
+      "acceptance": "对含『营收20.34亿/净利0.32亿』与『同比-7.1%』混合文本的目标，脚本正确区分金额单位与百分比；新增 2 组单测；重跑东箭报告清单不再出现 2034%/142% 误读。",
+      "fingerprint": "9a1fc3e2c44732c6df70",
+      "canonicalTargetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "status": "candidate",
+      "taskIds": [
+        "deep-dive-东箭科技-20260916-4832"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "high",
+      "firstSeenAt": "2026-09-16T10:25:35.271Z",
+      "lastSeenAt": "2026-09-16T10:25:35.271Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "quality-screen-red-score-collapses-on-growth-flag",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "quality-screen 对『营收/净利双负增长 + PE>30』标的直接触发『戴维斯双杀』红牌并把综合分压至极低（东箭 0.9/10），而同期该标的现金流质量(10)/盈利质量(8.4)/杠杆(7)均佳、无财务造假嫌疑、海外高毛利(40.22%)真实——0.9 分与生意现金流基本面明显背离，主要由 growth=1 与 businessMoat=3.8 主导权重拖拽所致。在『成长能力下滑是否持续』聚焦主题下，低分是正确的强信号，但绝对值被压缩到接近 0 可能令 valuation-tracker 看板过度失真地展示『质量极差』而非『成长承压但现金流稳健』。",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "2026-09-16 deep-dive 东箭科技 quality-screen 输出 overallScore 0.9、RED、红牌『戴维斯双杀』，而 sevenQuality.cashQuality=10/earningsQuality=8.4/leverageSafety=7/greenHighlights=经营现金流/净利润2.25 高含金量，七维内部明显撕裂。",
+          "taskId": "deep-dive-东箭科技-20260916-4832"
+        }
+      ],
+      "rootCauseHypothesis": "quality-screen 综合分对 growth 与 businessMoat 两维当前为『负增长直接给1分』+ 高PE估值的离散化打分，缺少将『现金流含金量/海外高毛利结构性亮点』纳入 growth 或综合对冲的分档；0.9 分梯度跨度过大。",
+      "goal": "quality-screen 对『盈利真实、现金流强、负增长但结构化(如海外高毛利/细分龙头)』标的，综合分设置下限或 growth 维度引入『负增长但现金流/毛利结构性解释』的分档，避免 0.9 极端值；并输出 growth 低分的结构性归因说明。",
+      "severity": "medium",
+      "confidence": 0.6,
+      "benefit": "改善 quality-score 作为看板唯一质量信号的解读保真度，避免『成长承压』与『质量崩塌』混淆；对周期/结构失速类标的评分更稳健。",
+      "risk": "引入下限可能为真实质量差的标的托底分，需以现金流/非经常性损益正负为硬前提；属评分口径调整，需回归既有任务（国盛6.6/动力新科等）不跳变。",
+      "acceptance": "在东箭类(现金流佳+负增长)标的综合分不再逼近0（建议≥2）；growth 维度报告附结构性注释；既有样例评分回归不跳变。",
+      "fingerprint": "2d09da2aa8b9e856c777",
+      "canonicalTargetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-东箭科技-20260916-4832"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "medium",
+      "firstSeenAt": "2026-09-16T10:25:35.271Z",
+      "lastSeenAt": "2026-09-16T10:25:35.271Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "cninfo-http403-forcing-mirror-downgrade",
+      "targetKind": "command",
+      "targetPath": ".trae/commands/deep-dive.md",
+      "symptom": "东箭2024年报巨潮(cninfo)PDF 接口返回 HTTP 403，被迫改用新浪财经镜像才完成下载；与 2026-09-16 国盛智科(qf3k) 记录的 cninfo-http403 属同一可复现现象，本次为新增复现证据，但本次同时存在官网 dongjian.cc 与深交所 disc 直连成功路径（东箭官网/深交所未封）。",
+      "evidence": [
+        {
+          "grade": "C",
+          "detail": "2026-09-16 deep-dive 东箭科技：巨潮 static.cninfo.com.cn/finalpage/.../1223322685.PDF HTTP403，改新浪镜像 file.finance.sina.com.cn/.../11009105.PDF 成功；公司官网与深交所 disc 链接未受影响。",
+          "taskId": "deep-dive-东箭科技-20260916-4832"
+        }
+      ],
+      "rootCauseHypothesis": "cninfo 公开 PDF 接口存在 IP/UA 级反爬封禁（同国盛 qf3k）；stock.ts 未内置 403 自动切新浪/东财备用源，而官网/交易所直连在三方并存时仍可成功，说明降级策略可先于 cninfo 完成。",
+      "goal": "支持国盛 qf3k 已提出的『cninfo 403 自动切备用源 + 受影响结论/证据等级清单』改进；东箭为 16-汽车/官网直连可行场景补充『官网直连优先』的取数顺序建议。",
+      "severity": "low",
+      "confidence": 0.7,
+      "benefit": "为已进入 candidate 的 cninfo 403 问题补齐第二个独立复现证据（国盛+东箭），且提示官网直连可作为低成本优先路径。",
+      "risk": "不新增行为，仅补充证据与取数优先级建议，无破坏面。",
+      "acceptance": "cninfo 403 candidates 的 evidence 汇总包含国盛(2026-09-16)+东箭(2026-09-16)两个独立 taskId；若实施自动切源，东箭类官网可直连标的优先走官网/交易所直连，cninfo 作为后备。",
+      "fingerprint": "cf56e8487812164b1f17",
+      "canonicalTargetPath": ".trae/commands/deep-dive.md",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-东箭科技-20260916-4832"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "low",
+      "firstSeenAt": "2026-09-16T10:25:35.271Z",
+      "lastSeenAt": "2026-09-16T10:25:35.271Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "cninfo-waf-distributed-denial-http403",
+      "targetKind": "command",
+      "targetPath": ".trae/commands/deep-dive.md",
+      "symptom": "cninfo 公开接口本次遭全站 WAF 封禁：topSearch、hisAnnouncement 及 finalpage PDF 等所有 www.cninfo.com.cn 端点均返回 HTTP 403，迫使 stock.ts 全部 cninfo 相关功能失效（名称搜索、公告、研报、定期报告PDF）。本任务以『东财 np-anotice-stock.eastmoney.com 公告接口 + pdf.dfcfw.com PDF + reportapi.eastmoney.com 研报』全量替代才完成采集。",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "2026-09-16 deep-dive 睿创微纳：stock.ts --code 688002 --financial 触发后所有 www.cninfo.com.cn 端点（topSearch/hisAnnouncement/finalpage PDF）返回 HTTP 403 Forbidden，诊断确认全站封禁非单端点；改用东财公告接口与 pdf.dfcfw.com 后采集全部成功。此前 2026-09-16 东箭科技/国盛智科 亦复现 cninfo 403（single-endpoint），本次为全站性封禁的强化证据（grade 升级）。",
+          "taskId": "deep-dive-睿创微纳-20260916-8391"
+        }
+      ],
+      "rootCauseHypothesis": "cninfo 对数据中心/高频请求 IP 实施分布式反爬封禁，表现为从单接口退化到全站 403；stock.ts 未内置 cninfo 403 自动降级到东财/新浪镜像的逻辑，仍需人工切换。",
+      "goal": "在 stock.ts 内置 cninfo 403 自动备用源切换（东财公告+pdf.dfcfw.com 优先，新浪镜像兜底），覆盖名称/代码定位、公告、研报、定期报告PDF四类操作并输出『数据源降级』标记；补充受影响结论与证据等级清单。",
+      "severity": "high",
+      "confidence": 0.9,
+      "benefit": "把本次人工完成、已验证可行的东财替代工作流固化为脚本自动降级，使后续 deep-dive 在 cninfo 封禁期不再依赖人工绕路，显著提升采集链路韧性。",
+      "risk": "备用源字段/口径与 cninfo 不完全一致需在 frontmatter 标注数据源降级；需做东财接口返回结构与 cninfo 对齐的映射与单测。",
+      "acceptance": "当 cninfo 返回 403 时 stock.ts 自动切东财源完成同功能采集并输出『数据源降级』标记；重跑睿创微纳/东箭/国盛类案例可复现自动切源。",
+      "fingerprint": "78a175e0e4ed61b6f8aa",
+      "canonicalTargetPath": ".trae/commands/deep-dive.md",
+      "status": "candidate",
+      "taskIds": [
+        "deep-dive-睿创微纳-20260916-8391"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "high",
+      "firstSeenAt": "2026-09-16T10:43:22.816Z",
+      "lastSeenAt": "2026-09-16T10:43:22.816Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "hithink-evaluate5003-data-source-unavailable",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "symptom": "evaluate.ts 调用 hithink 数据源返回 code=5003『Data source unavailable』，连试 2 次均失败，导致标准估值快照（品种路由、10项财报精读检查表、PEG判读）无法生成，本任务降级用手动套用品种路由 + 同花顺MCP get_stock_financials/get_stock_summary 补齐财务与估值快照。",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "2026-09-16 deep-dive 睿创微纳：`bun run .trae/scripts/evaluation/evaluate.ts --code 688002 --forward-growth 0.30` 两次返回 `API error: code=5003, message=Data source unavailable`；改用同花顺MCP(hexin-ifind-ds-stock-mcp)成功取得 ROE/毛利率/净利率/负债率/OCF/营收净利增速及 PE42.61/PB11.09/PS10.62/PEG0.79。",
+          "taskId": "deep-dive-睿创微纳-20260916-8391"
+        }
+      ],
+      "rootCauseHypothesis": "hithink 开放API数据源临时性/区域性不可用（服务端状态），非本系统代码缺陷；但 evaluate.ts 缺少「失败后提示可降级到同花顺MCP」的引导，编排器需自行判断替代路径。",
+      "goal": "evaluate.ts 捕获 5003/网络错误时在输出中显式提示『hithink数据源不可用，可降级：同花顺MCP get_stock_financials/get_stock_summary 或东财接口』，并标注结果数据源状态；长期可考虑 evaluate.ts 内置多源回退。",
+      "severity": "medium",
+      "confidence": 0.7,
+      "benefit": "降低 hithink 故障时的采集阻塞，将本任务人工摸索的 MCP 降级路径文档化引导，缩短停滞时间。",
+      "risk": "仅加引导提示，不改 evaluate.ts 数据计算逻辑，回归风险低。",
+      "acceptance": "evaluate.ts 遇 5003/连接错误时输出可落地的降级替代指引；本任务同类 hithink 故障可更快续跑。",
+      "fingerprint": "ebecd4206ccbf3bdf350",
+      "canonicalTargetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-睿创微纳-20260916-8391"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "medium",
+      "firstSeenAt": "2026-09-16T10:43:22.816Z",
+      "lastSeenAt": "2026-09-16T10:43:22.816Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "legacy-company-notes-missing-valuation-model",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/valuation/backfill.ts",
+      "symptom": "knowledge-architect 写库时自检发现 03-半导体 目录下 ST臻镭/太极/思瑞浦/澜起/炬芯/盛科/长电 等 2026-08 存量公司笔记缺少 `valuation_model` 字段与『估值模型与参数明细』章节，与本轮睿创微纳（已回填）口径不一致，估值追踪系统无法对陈旧笔记执行统一估值维度展示。",
+      "evidence": [
+        {
+          "grade": "A",
+          "detail": "2026-09-16 deep-dive 睿创微纳 knowledge-architect 交付回报：`knowledge-architect.md.self-check.ts` 对 03-半导体 全目录返回 8/10 通过，唯一缺口为上述 7 家公司 2026-08 老笔记缺少 valuation_model 字段的历史遗留，睿创微纳笔记零问题。",
+          "taskId": "deep-dive-睿创微纳-20260916-8391"
+        }
+      ],
+      "rootCauseHypothesis": "2026-08 期间写入的老笔记早于『valuation_model + 估值模型与参数明细』统一规范（backfill.ts 口径）落地，存量未批量回填。",
+      "goal": "以 backfill.ts 口径对缺字段的存量公司笔记批量回填 valuation_model、target_market_cap_yi、forward_pe、peg 及『估值模型与参数明细』章节，使 03-半导体 乃至全库公司笔记与最新规范一致。",
+      "severity": "medium",
+      "confidence": 0.6,
+      "benefit": "统一全库公司笔记估值 schema，保障 valuation-tracker 估值维度对存量标的同样可用，消除新旧口径分裂。",
+      "risk": "回填需从对应 deep-read/processed/报告反推估值参数，个别无多空论证佐证的旧标的估值参数依据可能偏弱，需标注置信度并人工抽查。",
+      "acceptance": "全库缺 valuation_model 的存量公司笔记经 backfill.ts 批量补齐并通过 knowledge-architect 自检；抽查 2-3 家与旧报告口径一致。",
+      "fingerprint": "b7f436e6e50d52d33e1c",
+      "canonicalTargetPath": ".trae/scripts/valuation/backfill.ts",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-睿创微纳-20260916-8391"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "medium",
+      "firstSeenAt": "2026-09-16T10:43:22.816Z",
+      "lastSeenAt": "2026-09-16T10:43:22.816Z",
       "batchIds": []
     }
   ],

@@ -1,0 +1,85 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "deep-dive-睿创微纳-20260916-8391",
+  "origin": "process-improvement",
+  "command": "deep-dive 睿创微纳",
+  "status": "success",
+  "params": { "company": "睿创微纳", "stockCode": "688002.SH", "mode": "deep", "focus": "红外热成像+微波半导体，三年财报精读+多空论证+估值安全边际" },
+  "terminalState": "succeeded",
+  "stageAcceptance": {
+    "step1_checkExistingAndLocate": "passed (知识库无任何睿创历史笔记=全新公司；名称搜索归类为科创板不可命中，改用 --code 688002.SH 定位)",
+    "step2_dataCollection": "passed with caveat (cninfo全站WAF封禁403→改用东财接口 np-anotice-stock.eastmoney.com + pdf.dfcfw.com 成功下载并提取 2023/2024/2025年报+2026半年报+2026H1业绩预增公告为Markdown；evaluate.ts/hithink code=5003 连试2次失败→降级改用同花顺MCP hexin-ifind-ds-stock-mcp 获取财务与估值快照，落盘估值采集快照)",
+    "step3_documentReaderDeepRead": "passed (deep-read含9大精读目标+第十章节多空论证；三红线全绿：基本面逐年变好🟢/三年连贯🟢/管理层诚实🟢不触发No-Go；毛利率50%→57.76%归因良性成本驱动；扣非/归母 88%→93.7%→97.9%走强，2026H1扣非依赖度仅2.1%)",
+    "step4_infoAlchemistAndQualityScreen": "passed (processed落盘，8项指标齐全；估值三情景 悲观500/合理960/乐观1440亿；PEG重判 LYR0.79失真[隐含g≈54%]→可持续25-40%重判为1.1-1.7，PEG<1便宜不成立、安全边际薄)",
+    "step6_knowledgeArchitectWriteback": "passed (03-半导体 新建三段式：00-行业概览/半导体-行业概览、01-细分行业/红外热成像与多维感知芯片-行业分析、02-公司研究/睿创微纳-公司研究；MOC更新；frontmatter回填 quality_verdict=GREEN quality_score=8.8、target_market_cap_yi=500/960/1440、forward_pe=36.1、valuation_model=growth+PEG+Forward PE；双链闭合无断链)",
+    "step7_reportWriter": "passed (md+html双份；黑金专业风3个ECharts图表；综合裁决=观察🟡现价安全边际薄；最大多空分歧57.76%高毛利可持续性已综合产业/周期/政策/国际裁决；增长驱动与核心优势可持续性分析完成；质量筛查GREEN/8.8；附录50项清单AUTO退出码0放行无CRITICAL未过)"
+  },
+  "inputs": [
+    "Research/00-Workspace/02-Processing/pdf-texts/睿创微纳/2023年年度报告.md",
+    "Research/00-Workspace/02-Processing/pdf-texts/睿创微纳/2024年年度报告.md",
+    "Research/00-Workspace/02-Processing/pdf-texts/睿创微纳/2025年年度报告.md",
+    "Research/00-Workspace/02-Processing/pdf-texts/睿创微纳/2026年半年度报告.md",
+    "Research/00-Workspace/02-Processing/pdf-texts/睿创微纳/2026年半年度业绩预增公告.md",
+    "Research/00-Workspace/02-Processing/2026-09-16-睿创微纳估值采集快照.md",
+    "Research/00-Workspace/02-Processing/2026-09-16-睿创微纳-deep-read.md",
+    "Research/00-Workspace/02-Processing/2026-09-16-睿创微纳-processed.md"
+  ],
+  "outputs": [
+    "Research/10-Knowledge/03-半导体/00-行业概览/半导体-行业概览.md",
+    "Research/10-Knowledge/03-半导体/01-细分行业/红外热成像与多维感知芯片-行业分析.md",
+    "Research/10-Knowledge/03-半导体/02-公司研究/睿创微纳-公司研究.md",
+    "Research/10-Knowledge/00-MOC/半导体-MOC.md",
+    "Research/20-Reports/2026-09-16-睿创微纳-deep-dive-report.md",
+    "Research/20-Reports/2026-09-16-睿创微纳-deep-dive-report.html"
+  ],
+  "issues": [
+    {
+      "problemCode": "cninfo-waf-distributed-denial-http403",
+      "targetKind": "command",
+      "targetPath": ".trae/commands/deep-dive.md",
+      "symptom": "cninfo 公开接口本次遭全站 WAF 封禁：topSearch、hisAnnouncement 及 finalpage PDF 等所有 www.cninfo.com.cn 端点均返回 HTTP 403，迫使 stock.ts 全部 cninfo 相关功能失效（名称搜索、公告、研报、定期报告PDF）。本任务以『东财 np-anotice-stock.eastmoney.com 公告接口 + pdf.dfcfw.com PDF + reportapi.eastmoney.com 研报』全量替代才完成采集。",
+      "evidence": [
+        { "grade": "A", "detail": "2026-09-16 deep-dive 睿创微纳：stock.ts --code 688002 --financial 触发后所有 www.cninfo.com.cn 端点（topSearch/hisAnnouncement/finalpage PDF）返回 HTTP 403 Forbidden，诊断确认全站封禁非单端点；改用东财公告接口与 pdf.dfcfw.com 后采集全部成功。此前 2026-09-16 东箭科技/国盛智科 亦复现 cninfo 403（single-endpoint），本次为全站性封禁的强化证据（grade 升级）。" }
+      ],
+      "rootCauseHypothesis": "cninfo 对数据中心/高频请求 IP 实施分布式反爬封禁，表现为从单接口退化到全站 403；stock.ts 未内置 cninfo 403 自动降级到东财/新浪镜像的逻辑，仍需人工切换。",
+      "goal": "在 stock.ts 内置 cninfo 403 自动备用源切换（东财公告+pdf.dfcfw.com 优先，新浪镜像兜底），覆盖名称/代码定位、公告、研报、定期报告PDF四类操作并输出『数据源降级』标记；补充受影响结论与证据等级清单。",
+      "severity": "high",
+      "confidence": 0.9,
+      "benefit": "把本次人工完成、已验证可行的东财替代工作流固化为脚本自动降级，使后续 deep-dive 在 cninfo 封禁期不再依赖人工绕路，显著提升采集链路韧性。",
+      "risk": "备用源字段/口径与 cninfo 不完全一致需在 frontmatter 标注数据源降级；需做东财接口返回结构与 cninfo 对齐的映射与单测。",
+      "acceptance": "当 cninfo 返回 403 时 stock.ts 自动切东财源完成同功能采集并输出『数据源降级』标记；重跑睿创微纳/东箭/国盛类案例可复现自动切源。"
+    },
+    {
+      "problemCode": "hithink-evaluate5003-data-source-unavailable",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/evaluation/evaluate.ts",
+      "symptom": "evaluate.ts 调用 hithink 数据源返回 code=5003『Data source unavailable』，连试 2 次均失败，导致标准估值快照（品种路由、10项财报精读检查表、PEG判读）无法生成，本任务降级用手动套用品种路由 + 同花顺MCP get_stock_financials/get_stock_summary 补齐财务与估值快照。",
+      "evidence": [
+        { "grade": "A", "detail": "2026-09-16 deep-dive 睿创微纳：`bun run .trae/scripts/evaluation/evaluate.ts --code 688002 --forward-growth 0.30` 两次返回 `API error: code=5003, message=Data source unavailable`；改用同花顺MCP(hexin-ifind-ds-stock-mcp)成功取得 ROE/毛利率/净利率/负债率/OCF/营收净利增速及 PE42.61/PB11.09/PS10.62/PEG0.79。" }
+      ],
+      "rootCauseHypothesis": "hithink 开放API数据源临时性/区域性不可用（服务端状态），非本系统代码缺陷；但 evaluate.ts 缺少「失败后提示可降级到同花顺MCP」的引导，编排器需自行判断替代路径。",
+      "goal": "evaluate.ts 捕获 5003/网络错误时在输出中显式提示『hithink数据源不可用，可降级：同花顺MCP get_stock_financials/get_stock_summary 或东财接口』，并标注结果数据源状态；长期可考虑 evaluate.ts 内置多源回退。",
+      "severity": "medium",
+      "confidence": 0.7,
+      "benefit": "降低 hithink 故障时的采集阻塞，将本任务人工摸索的 MCP 降级路径文档化引导，缩短停滞时间。",
+      "risk": "仅加引导提示，不改 evaluate.ts 数据计算逻辑，回归风险低。",
+      "acceptance": "evaluate.ts 遇 5003/连接错误时输出可落地的降级替代指引；本任务同类 hithink 故障可更快续跑。"
+    },
+    {
+      "problemCode": "legacy-company-notes-missing-valuation-model",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/valuation/backfill.ts",
+      "symptom": "knowledge-architect 写库时自检发现 03-半导体 目录下 ST臻镭/太极/思瑞浦/澜起/炬芯/盛科/长电 等 2026-08 存量公司笔记缺少 `valuation_model` 字段与『估值模型与参数明细』章节，与本轮睿创微纳（已回填）口径不一致，估值追踪系统无法对陈旧笔记执行统一估值维度展示。",
+      "evidence": [
+        { "grade": "A", "detail": "2026-09-16 deep-dive 睿创微纳 knowledge-architect 交付回报：`knowledge-architect.md.self-check.ts` 对 03-半导体 全目录返回 8/10 通过，唯一缺口为上述 7 家公司 2026-08 老笔记缺少 valuation_model 字段的历史遗留，睿创微纳笔记零问题。" }
+      ],
+      "rootCauseHypothesis": "2026-08 期间写入的老笔记早于『valuation_model + 估值模型与参数明细』统一规范（backfill.ts 口径）落地，存量未批量回填。",
+      "goal": "以 backfill.ts 口径对缺字段的存量公司笔记批量回填 valuation_model、target_market_cap_yi、forward_pe、peg 及『估值模型与参数明细』章节，使 03-半导体 乃至全库公司笔记与最新规范一致。",
+      "severity": "medium",
+      "confidence": 0.6,
+      "benefit": "统一全库公司笔记估值 schema，保障 valuation-tracker 估值维度对存量标的同样可用，消除新旧口径分裂。",
+      "risk": "回填需从对应 deep-read/processed/报告反推估值参数，个别无多空论证佐证的旧标的估值参数依据可能偏弱，需标注置信度并人工抽查。",
+      "acceptance": "全库缺 valuation_model 的存量公司笔记经 backfill.ts 批量补齐并通过 knowledge-architect 自检；抽查 2-3 家与旧报告口径一致。"
+    }
+  ]
+}

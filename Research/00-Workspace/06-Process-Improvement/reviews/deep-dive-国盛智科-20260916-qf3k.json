@@ -1,0 +1,67 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "deep-dive-国盛智科-20260916-qf3k",
+  "origin": "process-improvement",
+  "command": "deep-dive 国盛智科",
+  "status": "success",
+  "params": { "company": "国盛智科", "stockCode": "688558.SH" },
+  "terminalState": "succeeded",
+  "stageAcceptance": {
+    "step1_checkExistingAndLocate": "passed (no existing note, code 688558 STAR/科创版)",
+    "step2_pdfIngestion": "passed with caveat (cninfo HTTP403 阻断, 三年年报+26半年报经同花顺 iFind MCP 公告语义摘录为源材料, parse_confidence=medium)",
+    "step3_reportsAndEvaluateSnapshot": "passed (华鑫/东吴 2份研报温和看多; evaluate.ts PE 25.25/PB 2.49/分位62.9%, 品种=一般工商 PEG 1.10)",
+    "step4_documentReaderDeepRead": "passed (deep-read 含第十章多空论证, 管理层诚实度🟢, 数据源降级显式标注, 置信度6)",
+    "step5_infoAlchemistAndQualityScreen": "passed (processed 落盘; quality-screen YELLOW 6.6 无红牌; 首次跑传百分比数值误判一次性损益, 修正后重跑)",
+    "step6_knowledgeArchitectWriteback": "passed (公司笔记+行业概览+细分行业+MOC 4文件; frontmatter quality_verdict=YELLOW quality_score=6.6 回填)",
+    "step7_reportWriter": "passed (md+html 双份, ECharts CDN; Phase5评分卡首跑25/30补历史类比后30/30 ✅; 投资清单AUTO扫描放行, 无No-Go)"
+  },
+  "inputs": [
+    "Research/00-Workspace/02-Processing/pdf-texts/国盛智科/2024年年度报告-摘录源材料.md",
+    "Research/00-Workspace/02-Processing/pdf-texts/国盛智科/2025年年度报告-摘录源材料.md",
+    "Research/00-Workspace/02-Processing/pdf-texts/国盛智科/2026年半年度报告-摘录源材料.md",
+    "Research/00-Workspace/02-Processing/2026-09-16-国盛智科-deep-read.md",
+    "Research/00-Workspace/02-Processing/2026-09-16-国盛智科-processed.md"
+  ],
+  "outputs": [
+    "Research/10-Knowledge/15-机床/02-公司研究/国盛智科-公司研究.md",
+    "Research/10-Knowledge/15-机床/00-行业概览/机床（金属切削）-行业概览.md",
+    "Research/10-Knowledge/15-机床/01-细分行业/数控机床-行业分析.md",
+    "Research/10-Knowledge/00-MOC/机床-MOC.md",
+    "Research/20-Reports/2026-09-16-国盛智科-deep-dive-report.md",
+    "Research/20-Reports/2026-09-16-国盛智科-deep-dive-report.html"
+  ],
+  "issues": [
+    {
+      "problemCode": "cninfo-http403-forcing-semantic-downgrade",
+      "targetKind": "command",
+      "targetPath": ".trae/commands/deep-dive.md",
+      "symptom": "国盛智科 cninfo/巨潮 PDF 接口返回 HTTP 403 系统性阻断（stock.ts --financial 及裸/--code 调用均失败），无法下载三年年报与半年报 PDF 原文精读，被迫改用同花顺 iFind MCP search_notice 公告语义摘录源材料（parse_confidence=medium、无页码、无附注全文、2023 年报未单独落盘而并入 2025 摘录序列）。直接影响：deep-read 置信度仅 6，凡依赖附注全文的结论（现金收入比、会计政策、关联交易明细、产能与台单价）只能显式标注证据不足；多空论证中『华为/人形机器人叙事』等无法用附注量化。",
+      "evidence": [
+        { "grade": "A", "detail": "2026-09-16 deep-dive 国盛智科：stock.ts --financial 连续返回 cninfo HTTP 403；deep-read frontmatter 显式标注『数据源降级：无法下载 PDF 精读全文，改为同花顺 iFind 官方公告语义摘录，parse_confidence=medium，无页码、无完整附注全文』，且置信度自评 6。" }
+      ],
+      "rootCauseHypothesis": "cninfo 公开 PDF 接口存在 IP/UA 级反爬封禁，stock.ts 未内置 403 自动切换备用源（同花顺/东财）的兜底；降级路径存在但产出规范未要求显式输出『受影响结论 + 证据等级』清单，导致表外结论在笔记/报告中的证据层级不透明。",
+      "goal": "deep-dive.md 在财报 PDF 获取 403/失败时，强制输出『受影响结论清单（结论 + 证据等级 + 替代来源）』；源材料 frontmatter 显式标注降级原因与 parse_confidence；置信度 ≤6 的结论在报告/笔记显式标『存疑』。",
+      "severity": "low",
+      "confidence": 0.7,
+      "benefit": "使『cninfo 阻断→语义摘录』降级路径下，每一条依赖附注全文的结论都有明确的证据等级与存疑标注，避免读者误把中置信度结论当作高置信原文结论；为后续 403 自动切源提供改进输入。",
+      "risk": "过度标注可能使深度报告显得不确定；需限定只对『依赖附注全文的结论』标注，不泛化到表内三表数字（表内数字多源可核验、置信度高）。",
+      "acceptance": "对国盛智科类（cninfo 403）标的，deep-read/processed 含『受影响结论+证据等级』清单；置信度≤6 的结论在笔记与报告显式标存疑；源材料 frontmatter 含降级原因+parse_confidence。"
+    },
+    {
+      "problemCode": "deep-dive-report-template-missing-historical-analogy-section",
+      "targetKind": "template",
+      "targetPath": "Research/99-Templates/company-deep-dive-template.md",
+      "symptom": "company-deep-dive-template.md 正文无独立『历史类比』章节（仅在四大师评分卡那行出现『历史类比与时间框架』字样），但 quality-scorecard.ts Phase5 对正文 /历史类比/ 有硬性判定（投资视角权重），导致本报告首轮评分 25/30 判定『缺少历史类比』扣分，需事后在 md 与 html 双份补写历史类比段落并重跑评分卡才达 30/30。模板与下游评分卡判定项不同步，造成一次返工。",
+      "evidence": [
+        { "grade": "C", "detail": "2026-09-16 deep-dive 国盛智科：quality-scorecard.ts --phase 5 首跑输出『❌ 缺少 历史类比』总分25较30，补写『历史类比（李录框架）』小节并同步到 md/html 后重跑得 30/30 ✅；模板第32行仅评分卡出现『历史类比与时间框架』字样，正文无该章节。" }
+      ],
+      "rootCauseHypothesis": "report-writer 严格按 template 章节生成报告，而模板正文未内置『历史类比』这一 AGENTS.md 要求的三层调研/四大师覆盖项；评分卡按质量契约判定该内容缺失，形成模板与验收的不一致。",
+      "goal": "在 company-deep-dive-template.md 正文增加『周期位置』后的一节『历史类比（李录框架）』（包含成熟龙头盈利轨迹/国内历史周期/海外对标估值中枢/时间框架启示占位），使 report-writer 一次成型，评分卡不再因缺历史类比误判。",
+      "severity": "low",
+      "confidence": 0.6,
+      "benefit": "消除日报模板与评分卡判定项的不一致，减少报告生成后因缺历史类比章节导致的一次返工与 md/html 同步成本。",
+      "risk": "模板增节可能与其他已生成报告章节编号冲突，需同步核对模板内章节序号；属纯文档模板改动，无脚本影响。",
+      "acceptance": "company-deep-dive-template.md 正文包含『历史类比』章节占位；新生成 deep-dive 报告包含该章节且评分卡 Phase5 不因缺历史类比扣分。"
+    }
+  ]
+}

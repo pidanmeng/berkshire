@@ -1,0 +1,83 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "deep-dive-东箭科技-20260916-4832",
+  "origin": "process-improvement",
+  "command": "deep-dive 东箭科技",
+  "status": "success",
+  "params": { "company": "东箭科技", "stockCode": "300978.SZ", "focus": "2026Q1净利同比下滑原因与成长能力持续性" },
+  "terminalState": "succeeded",
+  "stageAcceptance": {
+    "step1_checkExistingAndLocate": "passed (no existing note, code 300978 深交所创业板/2021上市；目标期间经澄清确认=2026Q1)",
+    "step2_pdfIngestion": "passed with caveat (官网/深交所/新浪镜像成功下载2023/2024/2025年报+2026Q1报告全文；巨潮2024年报 HTTP403→新浪镜像规避；2026H1业绩来自WebSearch公告摘要非PDF原文)",
+    "step3_evaluateSnapshot": "passed (PE-TTM 30.13/PB 2.39/总市值37.7亿/ROE 8.61%/毛利率28.75%/净利率7.85%/OCF-NI 2.25/负债率35.31%；品种 general 主 PE，PEG 因净利负增长不适用)",
+    "step4_documentReaderDeepRead": "passed (deep-read含第十章多空论证；2026Q1归因 收入端约-2000万[国内改装-55%结构失速+海外-9.5%关税]为主动因、利润端财务费用/汇兑+772万[-972万拖累]为次主因、减值正向；收入归因置信8/利润7/管理层诚实7；成长下滑=结构性国内后装失速+周期性关税汇率)",
+    "step5_infoAlchemistAndQualityScreen": "passed (processed落盘；quality-screen RED 0.9[戴维斯双杀预警：营收-7%+净利-5%+PE>30]当场执行产出；company-draft frontmatter 回填 quality_verdict=RED quality_score=0.9)",
+    "step6_knowledgeArchitectWriteback": "passed (16-汽车 新建 公司笔记+行业概览+细分行业+MOC；RED 未标注『值得跟踪』，置顶Banner+第十八章质量筛查预警；估值模型 三情景 18/30/45亿 与 frontmatter target_market_cap_yi/forward_pe 严格一致)",
+    "step7_reportWriter": "passed (简版md报告含『估值模型与参数明细』子节+5项附录；AUTO清单退出码0放行、无CRITICAL未过；报告方识别 investment-checklist-auto 单位误读)"
+  },
+  "inputs": [
+    "Research/00-Workspace/02-Processing/pdf-texts/东箭科技/2023年年度报告.md",
+    "Research/00-Workspace/02-Processing/pdf-texts/东箭科技/2024年年度报告.md",
+    "Research/00-Workspace/02-Processing/pdf-texts/东箭科技/2025年年度报告.md",
+    "Research/00-Workspace/02-Processing/pdf-texts/东箭科技/2026年第一季度报告.md",
+    "Research/00-Workspace/02-Processing/2026-09-16-东箭科技-deep-read.md",
+    "Research/00-Workspace/02-Processing/2026-09-16-东箭科技-processed.md"
+  ],
+  "outputs": [
+    "Research/10-Knowledge/16-汽车/02-公司研究/东箭科技-公司研究.md",
+    "Research/10-Knowledge/16-汽车/00-行业概览/汽车-行业概览.md",
+    "Research/10-Knowledge/16-汽车/01-细分行业/汽车改装与智能座舱-细分行业.md",
+    "Research/10-Knowledge/00-MOC/汽车-MOC.md",
+    "Research/20-Reports/2026-09-16-东箭科技-deep-dive-report.md"
+  ],
+  "issues": [
+    {
+      "problemCode": "investment-checklist-auto-unit-misread",
+      "targetKind": "script",
+      "targetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "symptom": "50项投资决策清单 AUTO 扫描器在解析公司笔记/报告时发生财务口径单位误读：营收『20.34亿』被读成 2034%、净利『0.32亿』被读成 142%，导致按原始百分比判定成长/估值类条目失真。本任务 report-writer 只能『仅采信关键词级判定』规避，片段性削弱了该发布门禁（CRITICAL>1 不发布）对财务类条目的自动判定可靠性。",
+      "evidence": [
+        { "grade": "A", "detail": "2026-09-16 deep-dive 东箭科技 report-writer 交付回报：『50项 AUTO 扫描——自动扫描器存在单位误读（营收=2034%/净利=142% 为 20.34亿/0.32亿 误读），仅采信关键词级判定』，职能清单最终以 quality-screen RED 兜底而非清单自动化判定。" }
+      ],
+      "rootCauseHypothesis": "investment-checklist-auto.ts 正则将『X.XX亿元』数字未剥离单位直接乘以100换算为百分比，或对无百分号的数值默认按百分比处理，缺少元/亿/万元等金额单位识别与归一化。",
+      "goal": "investment-checklist-auto.ts 增加金额单位识别：『X亿元/X万元/X元』按金额归一化为亿元并转同比口径，仅对带%或明确增幅语义的数值做百分比判定；单元测试覆盖『20.34亿→营收20.34、增速字段仍需原文』与『营收-7.1%→-0.071』两组边界。",
+      "severity": "high",
+      "confidence": 0.8,
+      "benefit": "修复发布门禁的核心数据解析缺陷，使 50项清单对成长/估值类条目能可靠自动判定，避免依赖报告侧人工关键词兜底；作为多仓自动化 right-sourcing 的关键一环。",
+      "risk": "金额与百分比语义区分需谨慎，避免误将真百分比（如增速 -7.1%）当金额归一化而反向出错；需配套单元测试锁定。",
+      "acceptance": "对含『营收20.34亿/净利0.32亿』与『同比-7.1%』混合文本的目标，脚本正确区分金额单位与百分比；新增 2 组单测；重跑东箭报告清单不再出现 2034%/142% 误读。"
+    },
+    {
+      "problemCode": "quality-screen-red-score-collapses-on-growth-flag",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "quality-screen 对『营收/净利双负增长 + PE>30』标的直接触发『戴维斯双杀』红牌并把综合分压至极低（东箭 0.9/10），而同期该标的现金流质量(10)/盈利质量(8.4)/杠杆(7)均佳、无财务造假嫌疑、海外高毛利(40.22%)真实——0.9 分与生意现金流基本面明显背离，主要由 growth=1 与 businessMoat=3.8 主导权重拖拽所致。在『成长能力下滑是否持续』聚焦主题下，低分是正确的强信号，但绝对值被压缩到接近 0 可能令 valuation-tracker 看板过度失真地展示『质量极差』而非『成长承压但现金流稳健』。",
+      "evidence": [
+        { "grade": "A", "detail": "2026-09-16 deep-dive 东箭科技 quality-screen 输出 overallScore 0.9、RED、红牌『戴维斯双杀』，而 sevenQuality.cashQuality=10/earningsQuality=8.4/leverageSafety=7/greenHighlights=经营现金流/净利润2.25 高含金量，七维内部明显撕裂。" }
+      ],
+      "rootCauseHypothesis": "quality-screen 综合分对 growth 与 businessMoat 两维当前为『负增长直接给1分』+ 高PE估值的离散化打分，缺少将『现金流含金量/海外高毛利结构性亮点』纳入 growth 或综合对冲的分档；0.9 分梯度跨度过大。",
+      "goal": "quality-screen 对『盈利真实、现金流强、负增长但结构化(如海外高毛利/细分龙头)』标的，综合分设置下限或 growth 维度引入『负增长但现金流/毛利结构性解释』的分档，避免 0.9 极端值；并输出 growth 低分的结构性归因说明。",
+      "severity": "medium",
+      "confidence": 0.6,
+      "benefit": "改善 quality-score 作为看板唯一质量信号的解读保真度，避免『成长承压』与『质量崩塌』混淆；对周期/结构失速类标的评分更稳健。",
+      "risk": "引入下限可能为真实质量差的标的托底分，需以现金流/非经常性损益正负为硬前提；属评分口径调整，需回归既有任务（国盛6.6/动力新科等）不跳变。",
+      "acceptance": "在东箭类(现金流佳+负增长)标的综合分不再逼近0（建议≥2）；growth 维度报告附结构性注释；既有样例评分回归不跳变。"
+    },
+    {
+      "problemCode": "cninfo-http403-forcing-mirror-downgrade",
+      "targetKind": "command",
+      "targetPath": ".trae/commands/deep-dive.md",
+      "symptom": "东箭2024年报巨潮(cninfo)PDF 接口返回 HTTP 403，被迫改用新浪财经镜像才完成下载；与 2026-09-16 国盛智科(qf3k) 记录的 cninfo-http403 属同一可复现现象，本次为新增复现证据，但本次同时存在官网 dongjian.cc 与深交所 disc 直连成功路径（东箭官网/深交所未封）。",
+      "evidence": [
+        { "grade": "C", "detail": "2026-09-16 deep-dive 东箭科技：巨潮 static.cninfo.com.cn/finalpage/.../1223322685.PDF HTTP403，改新浪镜像 file.finance.sina.com.cn/.../11009105.PDF 成功；公司官网与深交所 disc 链接未受影响。" }
+      ],
+      "rootCauseHypothesis": "cninfo 公开 PDF 接口存在 IP/UA 级反爬封禁（同国盛 qf3k）；stock.ts 未内置 403 自动切新浪/东财备用源，而官网/交易所直连在三方并存时仍可成功，说明降级策略可先于 cninfo 完成。",
+      "goal": "支持国盛 qf3k 已提出的『cninfo 403 自动切备用源 + 受影响结论/证据等级清单』改进；东箭为 16-汽车/官网直连可行场景补充『官网直连优先』的取数顺序建议。",
+      "severity": "low",
+      "confidence": 0.7,
+      "benefit": "为已进入 candidate 的 cninfo 403 问题补齐第二个独立复现证据（国盛+东箭），且提示官网直连可作为低成本优先路径。",
+      "risk": "不新增行为，仅补充证据与取数优先级建议，无破坏面。",
+      "acceptance": "cninfo 403 candidates 的 evidence 汇总包含国盛(2026-09-16)+东箭(2026-09-16)两个独立 taskId；若实施自动切源，东箭类官网可直连标的优先走官网/交易所直连，cninfo 作为后备。"
+    }
+  ]
+}

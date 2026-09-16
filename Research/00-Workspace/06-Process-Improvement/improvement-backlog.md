@@ -1,6 +1,6 @@
 # 流程改进 Backlog
 
-> 状态真源：improvement-backlog.json · 最后更新：2026-09-14T16:09:28.422Z
+> 状态真源：improvement-backlog.json · 最后更新：2026-09-16T10:43:22.816Z
 
 | 状态 | 严重度 | 问题描述 | 目标文件 | 任务数 | 问题码 |
 |---|---|---|---|---:|---|
@@ -89,3 +89,11 @@
 | 观察 | 中 | 本次 deep-dive 动力新科再次出现 evaluate.ts 对周期股+扣非亏损公司给出失真的 PEG/PE 判读… | .trae/scripts/evaluation/evaluate.ts | 1 | evaluate-peg-pe-invalid-for-cyclical-loss-making-recurring |
 | 观察 | 中 | quality-screen --mode report 指向 info-alchemist 产出的 processed… | .trae/scripts/quality-gate/quality-screen.ts | 1 | quality-screen-report-mode-n-a-on-processed-input |
 | 候选 | 高 | stock.ts --financial 返回三年年报/中报 PDF 链接后，fetch-file.ts 全部 HTTP… | .trae/scripts/file-ingestion/fetch-file.ts | 1 | financial-pdf-403-forces-degradation |
+| 观察 | 低 | 国盛智科 cninfo/巨潮 PDF 接口返回 HTTP 403 系统性阻断（stock.ts --financial … | .trae/commands/deep-dive.md | 1 | cninfo-http403-forcing-semantic-downgrade |
+| 观察 | 低 | company-deep-dive-template.md 正文无独立『历史类比』章节（仅在四大师评分卡那行出现『历史类… | Research/99-Templates/company-deep-dive-template.md | 1 | deep-dive-report-template-missing-historical-analogy-section |
+| 候选 | 高 | 50项投资决策清单 AUTO 扫描器在解析公司笔记/报告时发生财务口径单位误读：营收『20.34亿』被读成 2034%、… | .trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts | 1 | investment-checklist-auto-unit-misread |
+| 观察 | 中 | quality-screen 对『营收/净利双负增长 + PE>30』标的直接触发『戴维斯双杀』红牌并把综合分压至极低（… | .trae/scripts/quality-gate/quality-screen.ts | 1 | quality-screen-red-score-collapses-on-growth-flag |
+| 观察 | 低 | 东箭2024年报巨潮(cninfo)PDF 接口返回 HTTP 403，被迫改用新浪财经镜像才完成下载；与 2026-0… | .trae/commands/deep-dive.md | 1 | cninfo-http403-forcing-mirror-downgrade |
+| 候选 | 高 | cninfo 公开接口本次遭全站 WAF 封禁：topSearch、hisAnnouncement 及 finalpag… | .trae/commands/deep-dive.md | 1 | cninfo-waf-distributed-denial-http403 |
+| 观察 | 中 | evaluate.ts 调用 hithink 数据源返回 code=5003『Data source unavailab… | .trae/scripts/evaluation/evaluate.ts | 1 | hithink-evaluate5003-data-source-unavailable |
+| 观察 | 中 | knowledge-architect 写库时自检发现 03-半导体 目录下 ST臻镭/太极/思瑞浦/澜起/炬芯/盛科/… | .trae/scripts/valuation/backfill.ts | 1 | legacy-company-notes-missing-valuation-model |

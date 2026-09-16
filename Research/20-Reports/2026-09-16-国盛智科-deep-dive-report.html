@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>国盛智科（688558.SH）深度调研报告</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+<style>
+:root{
+  --color-canvas:#000000;
+  --color-surface:#0a0a0a;
+  --color-surface-2:#121212;
+  --color-border:#1a1a1a;
+  --color-border-2:#262626;
+  --color-ink:#ffffff;
+  --color-muted:#a1a1a1;
+  --color-subtle:#666666;
+  --color-accent:#d4af37;
+  --color-accent-soft:rgba(212,175,55,0.12);
+  --color-danger:#ee0000;
+  --color-warn:#e58e00;
+  --color-ok:#46a758;
+  --fin-up:#e5484d;
+  --fin-down:#46a758;
+  --radius:12px;
+  --radius-sm:6px;
+  --font:"Geist","Segoe UI","PingFang SC","Microsoft YaHei",-apple-system,sans-serif;
+  --mono:"Geist Mono","JetBrains Mono",ui-monospace,SFMono-Regular,Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--color-canvas);color:var(--color-ink);font-family:var(--font);line-height:1.7;font-size:15px;-webkit-font-smoothing:antialiased}
+a{color:var(--color-accent);text-decoration:none}
+.wrap{max-width:1080px;margin:0 auto;padding:24px 20px 80px}
+.hero{border-bottom:1px solid var(--color-border);padding-bottom:28px;margin-bottom:28px}
+.eyebrow{color:var(--color-accent);font-size:12px;letter-spacing:0.18em;text-transform:uppercase;margin-bottom:10px}
+h1{font-size:30px;font-weight:700;letter-spacing:-0.02em;line-height:1.25}
+.sub-hero{color:var(--color-muted);font-size:14px;margin-top:10px}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-top:22px}
+.kpi{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius);padding:14px 16px}
+.kpi .lab{color:var(--color-subtle);font-size:12px}
+.kpi .val{font-size:20px;font-weight:600;margin-top:4px;font-family:var(--mono)}
+.kpi .val.up{color:var(--fin-up)}.kpi .val.down{color:var(--fin-down)}
+.card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius);padding:24px;margin-bottom:20px}
+.card h2{font-size:19px;font-weight:650;margin-bottom:18px;display:flex;align-items:center;gap:10px}
+.card h2 .no{color:var(--color-accent);font-family:var(--mono);font-size:13px;background:var(--color-accent-soft);border:1px solid var(--color-border-2);padding:2px 8px;border-radius:var(--radius-sm)}
+.card h3{font-size:15px;font-weight:600;margin:16px 0 10px;color:var(--color-ink)}
+.card p{color:var(--color-muted);margin-bottom:10px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--color-border);vertical-align:top}
+th{color:var(--color-subtle);font-weight:500;font-size:12px;white-space:nowrap}
+td{color:var(--color-muted)}td strong{color:var(--color-ink)}
+.conclusion{background:linear-gradient(135deg,rgba(212,175,55,0.10),rgba(0,0,0,0) 60%);border:1px solid var(--color-accent);border-radius:var(--radius);padding:20px 22px;margin-bottom:20px}
+.conclusion .tag{display:inline-block;background:var(--color-accent);color:#000;font-weight:600;font-size:12px;padding:2px 10px;border-radius:var(--radius-sm);margin-bottom:10px}
+.conclusion p{color:var(--color-muted)}
+.conclusion p b{color:var(--color-ink)}
+.chart-box{background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:var(--radius);padding:12px;margin:12px 0}
+.chart-container{width:100%;height:340px}
+.chart-fallback{display:none;width:100%;overflow-x:auto}
+.chart-fallback.show{display:block}
+.badge{display:inline-block;font-size:12px;font-weight:600;padding:2px 9px;border-radius:var(--radius-sm)}
+.badge-g{background:rgba(70,167,88,0.15);color:var(--ok)}
+.badge-y{background:rgba(229,142,0,0.15);color:var(--warn)}
+.badge-r{background:rgba(238,0,0,0.15);color:var(--danger)}
+.stars{color:var(--color-accent);letter-spacing:1px}
+.callout{border-left:3px solid var(--color-accent);background:var(--color-surface-2);padding:12px 16px;border-radius:0 var(--radius-sm) var(--radius-sm) 0;margin:12px 0;color:var(--color-muted);font-size:13.5px}
+.callout.warn{border-color:var(--color-warn)}
+.callout.danger{border-color:var(--color-danger)}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:720px){.grid-2{grid-template-columns:1fr}.kpi-row{grid-template-columns:repeat(2,1fr)}}
+.four-phil th,.four-phil td{text-align:center;font-size:22px}
+.four-phil th:first-child,.four-phil td:first-child{text-align:left;font-size:13px;color:var(--color-ink)}
+.footer{border-top:1px solid var(--color-border);margin-top:28px;padding-top:20px;color:var(--color-subtle);font-size:12.5px;line-height:1.8}
+.bull td.g{color:var(--fin-up)}.bear td.r{color:var(--fin-down)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hero">
+  <div class="eyebrow">Deep-Dive Research Report · 2026-09-16</div>
+  <h1>国盛智科（688558.SH）单公司深度调研报告</h1>
+  <div class="sub-hero">机床（金属切削）行业 · 数控机床细分 · 数据时点 2026-09-16 · 基于公开信息生成，非投资建议</div>
+  <div class="kpi-row">
+    <div class="kpi"><div class="lab">现价</div><div class="val">32.29 元</div></div>
+    <div class="kpi"><div class="lab">总市值</div><div class="val">42.62 亿</div></div>
+    <div class="kpi"><div class="lab">PE-TTM</div><div class="val up">25.25</div></div>
+    <div class="kpi"><div class="lab">PB</div><div class="val">2.49</div></div>
+    <div class="kpi"><div class="lab">历史分位</div><div class="val">62.9%</div></div>
+    <div class="kpi"><div class="lab">质量筛查</div><div class="val" style="font-size:16px"><span class="badge badge-y">YELLOW</span> 6.6</div></div>
+  </div>
+</div>
+
+<div class="conclusion">
+  <div class="tag">核心结论 · 值得跟踪、等待深度回调</div>
+  <p>当前 <b>42.6 亿市值处于合理区间上沿（合理值 52 亿下方），安全边际不足，风险收益比对空方略有利</b>（置信度 7）。公司为<b>中等偏窄护城河</b>的中高端数控机床整机商，核心壁垒来自<b>纵向一体化成本优势</b>（毛利率 25.26%，约为行业平均利润率 4.0% 的 6 倍），财务健康（三年 OCF/归母&gt;1、无商誉、低负债），但兼具<b>强周期属性</b>与<b>高估值</b>张力。当前 25.25x PE / 62.9% 分位为对「国产替代 + 人形机器人/AI 机床」叙事的定价，该叙事尚无订单/收入量化证据。质量结论 YELLOW，可跟踪，暂不构成买入条件。</p>
+</div>
+
+<div class="card four-phil">
+  <h2><span class="no">02</span>四大师评分卡</h2>
+  <table>
+    <thead><tr><th>维度</th><th>巴菲特·护城河</th><th>芒格·逆向/能力圈</th><th>段永平·本分</th><th>李录·时间框架</th></tr></thead>
+    <tbody>
+      <tr><td>评分</td><td>5<span class="stars">/10</span></td><td>4<span class="stars">/10</span></td><td>7<span class="stars">/10</span></td><td>4<span class="stars">/10</span></td></tr>
+      <tr><td>判断</td><td>成本优势护城河，中等偏窄</td><td>能力圈理解有限</td><td>管理层诚信高</td><td>安全边际不足</td></tr>
+    </tbody>
+  </table>
+  <div class="callout">六维评分（frontmatter 同源）：<b>护城河 5 / 成长 7 / 财务 8 / 估值 5 / 管理层 7 / 确定性 6</b></div>
+</div>
+
+<div class="card">
+  <h2><span class="no">01</span>估值与目标价快照</h2>
+  <div class="chart-box"><div id="chart-valuation" class="chart-container"></div><div class="chart-fallback" id="fb-valuation"><table><thead><tr><th>情景</th><th>目标市值</th><th>隐含PE</th><th>对应股价</th></tr></thead><tbody><tr><td>悲观</td><td>37亿</td><td>≈17.7x</td><td>≈28.0元</td></tr><tr><td>合理</td><td>52亿</td><td>≈25.3x</td><td>≈39.4元</td></tr><tr><td>乐观</td><td>68亿</td><td>≈32.8x</td><td>≈51.5元</td></tr><tr><td><b>当前</b></td><td><b>42.6亿</b></td><td><b>25.25x</b></td><td><b>32.29元</b></td></tr></tbody></table></div></div>
+  <div class="callout warn">当前 42.62 亿介于悲观与合理之间、贴近合理偏上，<b>处于合理区间上沿，无安全边际</b>。</div>
+</div>
+
+<div class="card">
+  <h2><span class="no">03</span>估值模型与参数明细</h2>
+  <p><b>主模型</b>：PE + Forward PE（品种=一般工商）｜辅助 EV/EBITDA 与 PEG｜<b>三重锚定</b>：PEG 1.10 + 同业机床头部 + 历史分位。</p>
+  <table>
+    <thead><tr><th>参数</th><th>取值</th><th>锚定方法</th></tr></thead>
+    <tbody>
+      <tr><td>2026E 预测净利</td><td>≈2.1 亿元</td><td>2025 净利 ×(1+增速)，结合合同负债 +37.7% 前置订单</td></tr>
+      <tr><td>合理 PE 倍数</td><td>25.3x</td><td>PEG=1.10、同业、历史分位三重锚定</td></tr>
+      <tr><td>Forward PE</td><td>20.6</td><td>42.62 / 2.1</td></tr>
+    </tbody>
+  </table>
+  <div class="callout">参数敏感性：<b>政策</b>（设备更新退坡→盈利反复）｜<b>竞争</b>（价格战→毛利率侵蚀）｜<b>技术代际</b>（五轴放量/机器人落地节奏）｜<b>原材料</b>（一体化平滑）｜<b>汇率</b>（出口敞口有限）。frontmatter 已同步回填。</div>
+</div>
+
+<div class="card">
+  <h2><span class="no">04</span>财务数据摘要（2023–2025 + 2026H1）</h2>
+  <div class="chart-box"><div id="chart-financials" class="chart-container"></div><div class="chart-fallback" id="fb-financials"><table><thead><tr><th>项目</th><th>2023</th><th>2024</th><th>2025</th><th>2026H1</th></tr></thead><tbody><tr><td>营收(亿)</td><td>11.04</td><td>10.37</td><td>12.69</td><td>7.38</td></tr><tr><td>归母(亿)</td><td>1.427</td><td>1.280</td><td>1.573</td><td>0.936</td></tr><tr><td>扣非(亿)</td><td>1.32</td><td>1.17</td><td>1.42</td><td>0.88</td></tr><tr><td>毛利率</td><td>23.99%</td><td>24.07%</td><td>25.26%</td><td>24.9%</td></tr><tr><td>OCF(亿)</td><td>1.92</td><td>2.09</td><td>2.01</td><td>0.865</td></tr><tr><td>负债率</td><td>21.51%</td><td>23.11%</td><td>26.37%</td><td>—</td></tr></tbody></table></div></div>
+  <div class="chart-box"><div id="chart-revstruct" class="chart-container"></div><div class="chart-fallback" id="fb-revstruct"><table><thead><tr><th>2025 分产品</th><th>营收</th><th>同比</th></tr></thead><tbody><tr><td>数控机床</td><td>10.52亿</td><td>+26.6%</td></tr><tr><td>自动化</td><td>0.65亿</td><td>-17.3%</td></tr><tr><td>装备部件</td><td>1.43亿</td><td>+21.2%</td></tr></tbody></table></div></div>
+  <div class="callout">8 项质量指标：ROE 9.42% / 毛利率 25.26% / 净利率 12.55% / OCF-NI 1.28 / 负债率 26.37% / PE-TTM 25.25 / 营收增速 22.34% / 净利增速 22.87%。<b>扣非归因（2025）</b>：差额 1496 万 = 政府补助 472 + 委托理财 1313 + 公允 33 + 处置 5；理财占归母 8.3%。</div>
+</div>
+
+<div class="card">
+  <h2><span class="no">05</span>公司概览与生意模式</h2>
+  <p><b>怎么赚钱</b>：中高端数控机床整机商，向汽车零部件/模具/军工/半导体/人形机器人等下游销售整机，通过纵向一体化自产装备部件压低成本。<b>谁付钱</b>：制造业客户（前五集中度约 61%）。<b>为什么选它</b>：成本控制强（毛利率 25.26%）、五轴高端升级契合国产替代、客户横跨多个高成长赛道。</p>
+  <div class="grid-2">
+    <div><h3>🟢 多方 Top（Bull）</h3><ul style="color:var(--color-muted);font-size:13.5px;padding-left:18px">
+      <li>财务真金白银，三年 OCF/归母&gt;1、无商誉、低负债（强｜8）</li>
+      <li>纵向一体化成本护城河，毛利率 25.26% vs 行业 4.0%（强｜7）</li>
+      <li>国产替代结构红利，五轴已量产（中｜6）</li>
+      <li>股东回报持续加码，分红率 46%→77%→62%（中｜7）</li>
+      <li>增长动能延续，2026H1 双+14%、合同负债 +37.7%（中｜7）</li>
+    </ul></div>
+    <div><h3>🔴 空方 Top（Bear）</h3><ul style="color:var(--color-muted);font-size:13.5px;padding-left:18px">
+      <li>估值历史中高位，PE 25.25 / 分位 62.9%，护城河不足以支撑（强｜8）</li>
+      <li>强周期+政策/补库β，2021→2023 净利曾腰斩（强｜8）</li>
+      <li>利润含理财补助粉饰，理财占归母 8.3%（中｜7）</li>
+      <li>营收增但 OCF 降 + 客户集中 61%（中｜6）</li>
+      <li>「AI工业母机+人形机器人」叙事无量化证据（中｜6）</li>
+    </ul></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2><span class="no">06</span>护城河评估</h2>
+  <table>
+    <thead><tr><th>维度</th><th>评估</th></tr></thead>
+    <tbody>
+      <tr><td>是什么</td><td>纵向一体化<b>成本优势</b>（核心）+ 五轴国产替代卡位</td></tr>
+      <tr><td>有多宽</td><td><b>中等偏窄</b>：毛利率 25.26% vs 行业平均 4.0% 具显著盈利位，但自 2021 年 30% 收缩</td></tr>
+      <tr><td>能否持续10年</td><td>存疑：高端五轴部件进口依存度 60%+，技术代际追赶决定长期性</td></tr>
+    </tbody>
+  </table>
+  <div class="chart-box"><div id="chart-gm" class="chart-container"></div><div class="chart-fallback" id="fb-gm"><table><thead><tr><th>对比</th><th>水平</th></tr></thead><tbody><tr><td>国盛智科毛利率</td><td>25.26%</td></tr><tr><td>行业平均利润率</td><td>4.0%</td></tr></tbody></table></div></div>
+</div>
+
+<div class="card">
+  <h2><span class="no">07</span>管理层与诚信</h2>
+  <p><b>正面</b>：分红率持续提高、回购+员工持股、OCF/净利&gt;1、无商誉、低负债。<b>审慎点</b>：2025 理财收益占归母 8.3%；营收 +22.34% 而 OCF -4.15% 背离 + 票据 +35.8%。</p>
+  <div class="callout ok">诚信结论：整体诚信度高（置信度 7），未发现管理层不诚实证据；仅需投资者自行剔除金融收益审视利润质量。</div>
+</div>
+
+<div class="card">
+  <h2><span class="no">08</span>风险与反向检查清单</h2>
+  <table>
+    <thead><tr><th>风险</th><th>方向</th><th>影响</th></tr></thead>
+    <tbody>
+      <tr><td>强周期回落</td><td>设备更新/资本开支退坡</td><td>盈利腰斩式反复</td></tr>
+      <tr><td>估值回归</td><td>叙事证伪+周期转弱双杀</td><td>PE 向成熟中枢 10-20x 回归</td></tr>
+      <tr><td>高价依赖</td><td>五轴部件进口依存 60%+</td><td>国产替代证伪</td></tr>
+      <tr><td>叙事证伪</td><td>机器人/AI 机床无订单落地</td><td>高估值失去支撑</td></tr>
+      <tr><td>价格战</td><td>行业利润率 4%</td><td>毛利率收缩，护城河侵蚀</td></tr>
+      <tr><td>财务细节</td><td>票据积累+客户集中 61%</td><td>回款与减值风险</td></tr>
+    </tbody>
+  </table>
+  <div class="grid-2">
+    <div class="callout danger">多方整体失效条件：<b>行业周期转弱 + 成长叙事证伪双杀</b>。</div>
+    <div class="callout ok">空方整体失效条件：<b>结构性上行覆盖周期波动 + 高估值被高增长消化</b>。</div>
+  </div>
+</div>
+
+<div class="card">
+  <h2><span class="no">09</span>周期位置 · 核心驱动 · 跟踪指标</h2>
+  <p><b>周期位置</b>：景气复苏 + 政策支撑，正处上行中段但具政策依赖；合同负债 +37.7% 短期可见度高；历史 2021→2023 盈利曾腰斩。</p>
+  <p><b>历史类比（李录框架）</b>：机床为强资本品周期，参考海天精工 / 创世纪盈利高波动及三一重工周期估价收缩，龙头 PE 顶区常向 10-20x 中枢回归；日本马扎克、德国德马吉等高端龙头估值中枢亦长期在 10-20x。当前 25.25x / 62.9% 分位处周期收益高位区，向下弹性大于向上，非历史性低位。</p>
+  <p><b>核心驱动</b>：① 国产替代（五轴量产、市占 60%）；② 设备更新政策；③ 高成长赛道布局（叙事阶段）；④ 一体化降本。</p>
+  <table>
+    <thead><tr><th>跟踪指标</th><th>意义</th></tr></thead>
+    <tbody>
+      <tr><td>五轴出货/机器人订单</td><td>叙事兑现与否（关键证伪点）</td></tr>
+      <tr><td>毛利率趋势</td><td>护城河是否被价格战侵蚀</td></tr>
+      <tr><td>OCF 与净利背离+票据</td><td>利润质量与回款风险</td></tr>
+      <tr><td>合同负债</td><td>前瞻景气度（当前 +37.7%）</td></tr>
+      <tr><td>理财占归母比重</td><td>主业真实弹性</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h2><span class="no">10</span>多空论证摘要（Bull vs Bear 对照 + 裁决）</h2>
+  <table>
+    <thead><tr><th>维度</th><th>🟢 多方（证据强度）</th><th>🔴 空方（证据强度）</th><th>精读中立判断</th></tr></thead>
+    <tbody class="bull bear">
+      <tr><td>增长</td><td class="g">2025及2026H1双高增+合同负债+37.7%（强）</td><td class="r">增长含政策/补库β，历史多次周期回落（强）</td><td>增长真实但<strong>周期性成分大</strong></td></tr>
+      <tr><td>护城河</td><td class="g">一体化成本+五轴量产+利润头部（强）</td><td class="r">毛利率收缩至25%、高端依赖进口（中）</td><td><strong>中等偏窄护城河</strong></td></tr>
+      <tr><td>财务质量</td><td class="g">OCF/净利&gt;1、无商誉、低负债（强）</td><td class="r">理财占利润8%+、票据增速高、OCF 背离（中）</td><td>健康但<strong>需剔除金融收益</strong></td></tr>
+      <tr><td>估值</td><td class="g">悲观37/合理52/乐观68亿；Fwd PE 20.6x（中）</td><td class="r">PE25x、PB2.49、分位62.9% 高位（强）</td><td><strong>偏高估、无安全边际</strong></td></tr>
+      <tr><td>周期/政策/国际</td><td class="g">五轴国产替代60%+设备更新（中）</td><td class="r">利润率4%价格战、进口依存60%、强周期（中）</td><td>结构性机会+周期性放大</td></tr>
+    </tbody>
+  </table>
+  <div class="chart-box"><div id="chart-radar" class="chart-container"></div><div class="chart-fallback" id="fb-radar"><table><thead><tr><th>六维</th><th>评分</th></tr></thead><tbody><tr><td>护城河</td><td>5</td></tr><tr><td>成长</td><td>7</td></tr><tr><td>财务</td><td>8</td></tr><tr><td>估值</td><td>5</td></tr><tr><td>管理层</td><td>7</td></tr><tr><td>确定性</td><td>6</td></tr></tbody></table></div></div>
+  <div class="callout"><b>综合裁决（偏空方）</b>：产业上国产替代有空间但高端进口依存 60%+ 说明自主化未完、门槛不高；周期上行弹性有限、向下弹性大；政策为外生变量；国际方向确定但节奏依赖技术代际追赶。市场已将「国产替代+机器人/AI 叙事」定价至 25.25x/62.9% 分位，<b>但叙事缺量化证据、增长周期成分大</b>。当前 42.6 亿处合理上沿、安全边际不足。订单落地→乐观 68 亿打开空间；周期转弱+证伪→向悲观 37 亿回归。<b>风险收益比略偏空方→「值得跟踪、等待深度回调」</b>。</div>
+</div>
+
+<div class="card">
+  <h2><span class="no">11</span>质量筛查结论</h2>
+  <table>
+    <thead><tr><th>项目</th><th>结果</th></tr></thead>
+    <tbody>
+      <tr><td>质量结论</td><td><span class="badge badge-y">YELLOW</span>（quality_score=6.6）</td></tr>
+      <tr><td>财务红牌</td><td>无触发 RED（8 项指标均未触发 No-Go）</td></tr>
+      <tr><td>综合评价</td><td>可跟踪（黄灯非禁区，但尚未构成买入条件）</td></tr>
+    </tbody>
+  </table>
+  <div class="callout">quality_verdict=YELLOW、quality_score=6.6 由调研流程在调研时直接写入 frontmatter，非文本解析所得。</div>
+</div>
+
+<div class="card">
+  <h2><span class="no">12</span>50 项投资决策清单 AUTO 扫描（摘要）</h2>
+  <table>
+    <thead><tr><th>层级</th><th>通过情况</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>🔴 CRITICAL</td><td>0/2 未通过 ✅</td><td>OCF/NI=1.28 ✅；有息负债/OCF 需人工复核 🟡</td></tr>
+      <tr><td>🟠 IMPORTANT</td><td>1/7 未通过 ✅</td><td>ROE=9.4%&lt;12%（周期低点可豁免）</td></tr>
+      <tr><td>⚪️ NORMAL</td><td>1/3 未通过 ✅</td><td>财报 PDF 下载记录（数据源降级）</td></tr>
+      <tr><td colspan="2">综合结论</td><td><b>✅ 放行</b>（无 No-Go，无 CRITICAL 未通过）</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="footer">
+  <p><b>免责声明</b>：本报告由本系统基于公开信息（同花顺 iFind 摘录、东财 F10、年报/半年报、证券时报/上证报）生成，<b>不构成任何投资建议</b>。机床行业具强周期属性，估值区间基于既定假设（三重锚定）推演，参数变化将显著改变结论。请结合自身能力圈独立判断。</p>
+  <p>数据时间点：2026-09-16 ｜ 报告由本系统基于公开信息生成，非投资建议。</p>
+</div>
+
+</div>
+
+<script>
+var THEME={accent:'#d4af37',up:'#e5484d',down:'#46a758',green:'#46a758',red:'#e5484d',grid:'rgba(255,255,255,0.06)',split:'#1a1a1a',muted:'#666666',ink:'#ffffff',surface:'#121212'};
+function base(obj){return Object.assign({backgroundColor:'transparent',textStyle:{color:THEME.ink,fontFamily:'inherit'},tooltip:{backgroundColor:'#121212',borderColor:THEME.split,textStyle:{color:THEME.ink},axisPointer:{type:'shadow'}},obj||{})}
+var charts={};
+function initChart(id){var el=document.getElementById(id);if(!el||typeof echarts==='undefined')return;var c=echarts.init(el);charts[id]=c;return c;}
+
+var financials=initChart('chart-financials');
+var fb1=document.getElementById('fb-financials');
+if(financials){financials.setOption(base({
+ color:['#d4af37','#e5484d','#46a758'],
+ legend:{textStyle:{color:THEME.ink},bottom:0},
+ grid:{left:45,right:45,top:30,bottom:40},
+ xAxis:{type:'category',data:['2023','2024','2025'],axisLine:{lineStyle:{color:THEME.split}},axisLabel:{color:THEME.muted}},
+ yAxis:[{type:'value',name:'亿元',nameTextStyle:{color:THEME.muted},axisLabel:{color:THEME.muted},splitLine:{lineStyle:{color:THEME.grid}}},{type:'value',name:'%',nameTextStyle:{color:THEME.muted},axisLabel:{color:THEME.muted},splitLine:{show:false},max:30}],
+ series:[
+  {name:'营收',type:'bar',data:[11.04,10.37,12.69],barWidth:36,itemStyle:{color:'#d4af37'}},
+  {name:'归母净利',type:'bar',data:[1.427,1.280,1.573],barWidth:36,itemStyle:{color:'#e5484d'}},
+  {name:'毛利率%',type:'line',yAxisIndex:1,data:[23.99,24.07,25.26],smooth:true,itemStyle:{color:'#46a758'},lineStyle:{width:3}}
+ ]
+})));} else if(fb1){fb1.classList.add('show');}
+
+var revstruct=initChart('chart-revstruct');
+var fb2=document.getElementById('fb-revstruct');
+if(revstruct){revstruct.setOption(base({
+ color:['#d4af37','#46a758','#e5484d'],
+ tooltip:{trigger:'item',formatter:'{b}: {c} 亿元'},legend:{textStyle:{color:THEME.ink},bottom:0},
+ series:[{type:'pie',radius:['42%','68%'],center:['50%','45%'],data:[
+  {name:'数控机床 10.52亿',value:10.52},{name:'装备部件 1.43亿',value:1.43},{name:'自动化 0.65亿',value:0.65}
+ ],itemStyle:{borderColor:'#000',borderWidth:2},label:{color:THEME.muted}}]
+})));} else if(fb2){fb2.classList.add('show');}
+
+var valuation=initChart('chart-valuation');
+var fb3=document.getElementById('fb-valuation');
+if(valuation){valuation.setOption(base({
+ color:['#d4af37','#46a758'],
+ tooltip:{trigger:'axis',formatter:function(p){return p[0].name+'：'+(p[0].name==='当前'?'市值 '+p[0].value+' 亿':'目标市值 '+p[0].value+' 亿')}},
+ grid:{left:45,right:70,top:30,bottom:40},
+ xAxis:{type:'category',data:['悲观 37亿','合理 52亿','乐观 68亿','当前 42.62亿'],axisLine:{lineStyle:{color:THEME.split}},axisLabel:{color:THEME.muted,interval:0}},
+ yAxis:{type:'value',name:'亿元',nameTextStyle:{color:THEME.muted},axisLabel:{color:THEME.muted},splitLine:{lineStyle:{color:THEME.grid}}},
+ series:[
+  {name:'目标市值',type:'bar',data:[{value:37,itemStyle:{color:'#e5484d'}},{value:52,itemStyle:{color:'#d4af37'}},{value:68,itemStyle:{color:'#46a758'}},{value:42.62,itemStyle:{color:'#a1a1a1'}}],barWidth:44,label:{show:true,position:'top',color:THEME.ink,formatter:function(p){return p.value+'亿'}}},
+  {name:'现价',type:'line',markLine:{symbol:'none',silent:true,data:[{yAxis:42.62}],lineStyle:{color:'#a1a1a1',type:'dashed'},label:{formatter:'现价 42.62亿',color:'#a1a1a1',position:'end'}}}
+ ]
+})));} else if(fb3){fb3.classList.add('show');}
+
+var gm=initChart('chart-gm');
+var fb4=document.getElementById('fb-gm');
+if(gm){gm.setOption(base({
+ color:['#d4af37','#a1a1a1'],
+ tooltip:{trigger:'axis',axisPointer:{type:'shadow'}},
+ grid:{left:120,right:40,top:20,bottom:30},
+ xAxis:{type:'value',name:'%',nameTextStyle:{color:THEME.muted},axisLabel:{color:THEME.muted},splitLine:{lineStyle:{color:THEME.grid}}},
+ yAxis:{type:'category',data:['行业平均利润率','国盛智科毛利率'],axisLine:{lineStyle:{color:THEME.split}},axisLabel:{color:THEME.ink}},
+ series:[{type:'bar',data:[{value:4.0,itemStyle:{color:'#a1a1a1'}},{value:25.26,itemStyle:{color:'#d4af37'}}],barWidth:26,label:{show:true,position:'right',color:THEME.ink,formatter:'{c}%'}}]
+})));} else if(fb4){fb4.classList.add('show');}
+
+var radar=initChart('chart-radar');
+var fb5=document.getElementById('fb-radar');
+if(radar){radar.setOption(base({
+ color:['#d4af37'],
+ tooltip:{},
+ radar:{indicator:[
+  {name:'护城河',max:10},{name:'成长',max:10},{name:'财务',max:10},{name:'估值',max:10},{name:'管理层',max:10},{name:'确定性',max:10}
+ ],radius:'62%',splitNumber:5,axisName:{color:THEME.ink},axisLine:{lineStyle:{color:THEME.split}},splitLine:{lineStyle:{color:THEME.grid}},splitArea:{show:true,areaStyle:{color:['rgba(0,0,0,0)','rgba(212,175,55,0.02)']}}},
+ series:[{type:'radar',data:[{value:[5,7,8,5,7,6],name:'六维评分',areaStyle:{color:'rgba(212,175,55,0.25)'},lineStyle:{color:'#d4af37',width:2},itemStyle:{color:'#d4af37'}}]}]
+})));} else if(fb5){fb5.classList.add('show');}
+
+window.addEventListener('error',function(e){if(e.target&&e.target.tagName==='SCRIPT'){document.querySelectorAll('.chart-fallback').forEach(function(f){f.classList.add('show');});}},true);
+window.addEventListener('resize',function(){Object.keys(charts).forEach(function(k){if(charts[k]&&charts[k].resize)charts[k].resize();});});
+</script>
+</body>
+</html>

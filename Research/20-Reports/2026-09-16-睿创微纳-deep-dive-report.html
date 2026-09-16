@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>睿创微纳（688002.SH）深度调研 · Deep-Dive Report</title>
+<style>
+  :root{
+    --color-canvas:#000000;
+    --color-surface:#0a0a0a;
+    --color-surface-raised:#111111;
+    --color-border:#1a1a1a;
+    --color-ink:#ffffff;
+    --color-ink-muted:#a1a1a1;
+    --color-ink-subtle:#666666;
+    --color-accent:#d4af37;
+    --color-accent-hover:#e6c25c;
+    --color-danger:#ee0000;
+    --fin-up:#ee0000;
+    --fin-down:#0abf6e;
+    --star-on:#d4af37;
+    --star-off:#3a3a3a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--color-canvas);
+    color:var(--color-ink);
+    font-family:"Geist","Inter",-apple-system,"Segoe UI",Roboto,"Microsoft YaHei",sans-serif;
+    font-size:16px;line-height:24px;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--color-accent);text-decoration:none;}
+  a:hover{color:var(--color-accent-hover);}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px;}
+  .mono{font-family:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;}
+  .muted{color:var(--color-ink-muted);}
+  .subtle{color:var(--color-ink-subtle);}
+
+  /* ===== Hero ===== */
+  .hero{border-bottom:1px solid var(--color-border);padding:48px 0 32px;}
+  .hero .kicker{color:var(--color-accent);font-weight:500;letter-spacing:.08em;font-size:13px;text-transform:uppercase;margin-bottom:16px;}
+  .hero h1{font-size:40px;font-weight:600;line-height:48px;letter-spacing:-1.4px;margin-bottom:12px;}
+  .hero h1 .code{color:var(--color-ink-muted);font-size:22px;letter-spacing:-.6px;}
+  .hero .tagline{color:var(--color-ink-muted);font-size:17px;max-width:820px;}
+  .hero .meta{margin-top:24px;display:flex;flex-wrap:wrap;gap:12px;}
+  .meta-item{border:1px solid var(--color-border);border-radius:12px;background:var(--color-surface);padding:10px 14px;}
+  .meta-item .k{color:var(--color-ink-subtle);font-size:11px;text-transform:uppercase;letter-spacing:.06em;}
+  .meta-item .v{font-size:14px;font-weight:500;margin-top:2px;}
+  .badge{display:inline-block;border-radius:9999px;padding:3px 12px;font-size:12px;font-weight:600;border:1px solid var(--color-border);margin-right:6px;}
+  .badge.gold{color:#000;background:var(--color-accent);border-color:var(--color-accent);}
+  .badge.green{color:var(--fin-down);border-color:var(--fin-down);}
+
+  /* ===== Section ===== */
+  section{padding:40px 0;border-bottom:1px solid var(--color-border);}
+  .sec-title{font-size:13px;color:var(--color-accent);font-weight:500;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;}
+  h2{font-size:22px;font-weight:600;letter-spacing:-.8px;margin-bottom:20px;}
+  h3{font-size:16px;font-weight:600;margin:24px 0 12px;color:var(--color-ink);}
+  p{margin:12px 0;color:var(--color-ink-muted);}
+  strong{color:var(--color-ink);}
+
+  /* ===== Cards & Grid ===== */
+  .card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:12px;padding:20px;margin:16px 0;}
+  .grid{display:grid;gap:16px;}
+  .g2{grid-template-columns:repeat(2,1fr);}
+  .g4{grid-template-columns:repeat(4,1fr);}
+  @media(max-width:760px){.g2,.g4{grid-template-columns:1fr;}}
+  .kpi{border:1px solid var(--color-border);border-radius:12px;background:var(--color-surface);padding:18px;}
+  .kpi .label{color:var(--color-ink-subtle);font-size:12px;text-transform:uppercase;letter-spacing:.05em;}
+  .kpi .num{font-size:28px;font-weight:600;letter-spacing:-1px;margin-top:6px;}
+  .kpi .sub{color:var(--color-ink-muted);font-size:12px;margin-top:4px;}
+  .up{color:var(--fin-up);} .down{color:var(--fin-down);}
+
+  /* ===== Table ===== */
+  table{width:100%;border-collapse:collapse;font-size:14px;margin:16px 0;}
+  th{color:var(--color-ink-subtle);text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.05em;padding:10px 12px;border-bottom:1px solid var(--color-border);font-weight:500;}
+  td{border-bottom:1px solid var(--color-border);padding:10px 12px;color:var(--color-ink-muted);}
+  td:first-child{color:var(--color-ink);}
+  tr:last-child td{border-bottom:none;}
+
+  /* ===== Chart ===== */
+  .chart-container{border:1px solid var(--color-border);border-radius:12px;background:var(--color-surface);padding:12px;margin:16px 0;}
+  .chart-container .chart{width:100%;height:360px;}
+  .chart-source{color:var(--color-ink-subtle);font-size:12px;margin-top:8px;padding:0 4px;}
+  .chart-fallback{display:none;padding:20px;color:var(--color-ink-muted);font-size:14px;}
+
+  /* ===== Star rating ===== */
+  .star-rating{color:var(--star-on);letter-spacing:2px;font-size:16px;white-space:nowrap;}
+  .star-rating .off{color:var(--star-off);}
+
+  /* ===== Critics matrix ===== */
+  .dual{border:1px solid var(--color-border);border-radius:12px;overflow:hidden;margin:16px 0;}
+  .dual .row{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--color-border);}
+  .dual .row:last-child{border-bottom:none;}
+  .dual .c{padding:16px 18px;}
+  .dual .c h4{font-size:13px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;}
+  .dual .bull h4{color:#8ef0cf;}
+  .dual .bear h4{color:#888;}
+  .dual .bull{background:linear-gradient(180deg,rgba(10,191,110,.06),transparent);}
+  .lbl{display:inline-block;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:600;margin-top:4px;}
+  .lbl.s{background:rgba(10,191,110,.15);color:#8ef0cf;}
+  .lbl.w{background:rgba(212,175,55,.15);color:var(--color-accent);}
+  .lbl.a{background:rgba(238,0,0,.15);color:#ff6b6b;}
+
+  /* ===== Divider verdict ===== */
+  .verdict{border:1px solid var(--color-border);border-left:3px solid var(--color-accent);border-radius:12px;background:var(--color-surface);padding:20px 22px;margin:20px 0;}
+  .verdict h4{color:var(--color-accent);font-size:13px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;}
+  .verdict p{color:var(--color-ink-muted);font-size:14px;}
+
+  /* ===== Pill list ===== */
+  .pill-list{list-style:none;}
+  .pill-list li{padding:10px 0;border-bottom:1px solid var(--color-border);color:var(--color-ink-muted);font-size:14px;}
+  .pill-list li:last-child{border-bottom:none;}
+  .pill-list li strong{color:var(--color-ink);}
+
+  /* ===== Footer ===== */
+  footer{padding:40px 0;color:var(--color-ink-subtle);font-size:12px;}
+  footer .disc{border:1px solid var(--color-border);border-radius:12px;padding:16px;margin-bottom:20px;color:var(--color-ink-subtle);}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- ================= HERO ================= -->
+  <div class="hero">
+    <div class="kicker">Investment Deep-Dive · Report</div>
+    <h1>睿创微纳 <span class="code">688002.SH</span></h1>
+    <div class="tagline">非制冷红外探测器全产业链国产龙头 —— 红外热成像 + 微波/激光多维感知技术平台（军民双市场）。首创 8μm 大面阵 + 车规认证，技术领先一代。</div>
+    <div class="meta">
+      <div class="meta-item"><div class="k">taskId</div><div class="v mono">deep-dive-睿创微纳-20260916-8391</div></div>
+      <div class="meta-item"><div class="k">报告期</div><div class="v">2026H1（半年报 07-21）</div></div>
+      <div class="meta-item"><div class="k">数据时点</div><div class="v">2026-09-16</div></div>
+      <div class="meta-item"><div class="k">质量筛查</div><div class="v"><span class="badge green">GREEN 8.8</span></div></div>
+      <div class="meta-item"><div class="k">综合判定</div><div class="v"><span class="badge gold">观察</span></div></div>
+    </div>
+    <div style="margin-top:16px;font-size:12px;color:var(--color-ink-subtle)">
+      <span class="badge">数据源降级</span> evaluate.ts/hithink(code=5003)+cninfo(403) 不可用 → 财报原文 + 同花顺 MCP 双源支撑
+    </div>
+  </div>
+
+  <!-- ================= 1 核心结论 ================= -->
+  <section id="conclusion">
+    <div class="sec-title">01 · 核心结论</div>
+    <h2>好生意、管理层诚实、护城河宽 —— 但当前安全边际薄</h2>
+
+    <div class="grid g4">
+      <div class="kpi"><div class="label">护城河宽度</div><div class="num">9.0<span style="font-size:14px;color:var(--color-ink-subtle)">/10</span></div><div class="sub">8μm/车规三重代差 + 全产业链</div></div>
+      <div class="kpi"><div class="label">2026H1 营收同比</div><div class="num up">+72.84%</div><div class="sub">43.97 亿</div></div>
+      <div class="kpi"><div class="label">2026H1 归母同比</div><div class="num up">+258.78%</div><div class="sub">12.59 亿（含低基数）</div></div>
+      <div class="kpi"><div class="label">PEG（重判）</div><div class="num">1.1–1.7</div><div class="sub">非 LYR 0.79，安全边际薄</div></div>
+    </div>
+
+    <div class="grid g2">
+      <div class="card">
+        <p><strong>🟢 多方（置信度 9/10）</strong></p>
+        <p>增长飞轮 + 经营质量兼备：<strong>8μm 批量出货 + 规模效应 + 良率提升</strong>驱动毛利 57.76%，扣非/归母 97.9%，OCF 14.35 亿 &gt; 净利。护城河宽且领先一代（8μm 首创/首个 6μm/晶圆级封装/车规），保护期 &gt;10 年。</p>
+      </div>
+      <div class="card">
+        <p><strong>🔴 空方（置信度 8/10）</strong></p>
+        <p>高增斜率不可线性外推：<strong>+258.78% 含 2024H1 -12.91% 低基数</strong>放大；毛利 57.76% 处历史极值区。PE-TTM 42.6 / PB 11.1 不便宜，PEG 重判后实为 1.1-1.7，安全边际薄。</p>
+      </div>
+    </div>
+
+    <div class="verdict">
+      <h4>综合判定 · 观察（🟡 正面可跟踪，暂不具备安全边际买入条件）</h4>
+      <p>基本面逐年转优、增长内生且优质、护城河宽深，符合深入研究池标准（GREEN 8.8）。但现市值 866 亿落在合理情景（约 960 亿）略下方，已按约 30% 可持续增速充分定价。<strong>安全边际买入条件</strong>：① 回调至悲观情景（约 500 亿）以下；② 或毛利率可持续性验证后（2026 全年/2027 保持 55%+）在合理中枢下方逢低关注。目标卖出市值约 1440 亿以上。</p>
+    </div>
+
+    <h3>四大师评分卡</h3>
+    <table>
+      <tr><th>维度</th><th>大师</th><th>评分</th><th style="text-align:right">核心判断</th></tr>
+      <tr><td>能力圈</td><td>巴菲特</td><td><span class="star-rating">★★★★</span><span class="star-rating off">★</span> <span class="mono">8.0</span></td><td style="text-align:right">生意本质清晰，但制程细节需专业背景</td></tr>
+      <tr><td>护城河</td><td>巴菲特</td><td><span class="star-rating">★★★★☆</span> <span class="mono">9.0</span></td><td style="text-align:right">三重技术代差+全产业链+资质，宽护城河</td></tr>
+      <tr><td>生意模式</td><td>段永平</td><td><span class="star-rating">★★★★</span><span class="star-rating off">★</span> <span class="mono">8.0</span></td><td style="text-align:right">高毛利+OCF&gt;净利+低杠杆内生复利</td></tr>
+      <tr><td>管理层诚信</td><td>段永平</td><td><span class="star-rating">★★★★</span><span class="star-rating off">★</span> <span class="mono">8.0</span></td><td style="text-align:right">🟢诚实，3 处存疑待验证</td></tr>
+      <tr><td>反向清单</td><td>芒格</td><td><span class="star-rating">★★★★</span><span class="star-rating off">★</span> <span class="mono">8.0</span></td><td style="text-align:right">风险识别全面</td></tr>
+      <tr><td>历史类比</td><td>李录</td><td><span class="star-rating">★★★★</span><span class="star-rating off">★</span> <span class="mono">8.0</span></td><td style="text-align:right">类比 FLIR，结构性+周期并存</td></tr>
+      <tr><td>综合</td><td>—</td><td colspan="2" style="text-align:right">已读取，由 composite.ts 系统加权</td></tr>
+    </table>
+  </section>
+
+  <!-- ================= 2 财务趋势 ================= -->
+  <section id="financials">
+    <div class="sec-title">02 · 财务与增长趋势</div>
+    <h2>营收连续三年加速、毛利率持续上行</h2>
+
+    <div class="chart-container">
+      <div id="chart-fin" class="chart"></div>
+      <div class="chart-source">数据来源：2023/2024/2025 年报 + 2026H1 半年报（deep-read §9.1）；毛利率为主营口径。净利 2026H1 含低基数放大。</div>
+    </div>
+
+    <table>
+      <tr><th>指标</th><th>2023</th><th>2024</th><th>2025</th><th>2026H1</th><th>趋势</th></tr>
+      <tr><td>营收（亿元）</td><td>35.59</td><td>43.16</td><td>63.04</td><td>43.97</td><td>加速</td></tr>
+      <tr><td>营收同比</td><td>+34.50%</td><td>+21.28%</td><td>+46.07%</td><td>+72.84%</td><td>波动后加速</td></tr>
+      <tr><td>归母净利（亿元）</td><td>4.96</td><td>5.69</td><td>11.25</td><td>12.59</td><td>单调向上</td></tr>
+      <tr><td>毛利率（主营）</td><td>50.41%</td><td>50.79%</td><td>53.41%</td><td>57.76%</td><td>持续上行</td></tr>
+      <tr><td>加权 ROE</td><td>10.99%</td><td>11.31%</td><td>18.68%</td><td>17.01%<span class="subtle">(半年)</span></td><td>显著抬升</td></tr>
+      <tr><td>经营现金流（亿元）</td><td>4.91</td><td>4.50</td><td>18.56</td><td>14.35</td><td>2025 强跃升</td></tr>
+      <tr><td>资产负债率</td><td>38.26%</td><td>37.20%</td><td>36.86%</td><td>34.50%</td><td>低杠杆</td></tr>
+      <tr><td>扣非/归母</td><td>88.1%</td><td>89.6%</td><td>93.7%</td><td>97.9%</td><td>非经依赖下降</td></tr>
+    </table>
+
+    <div class="card">
+      <p><strong>2026H1 关键质量数据</strong>：营收 43.97 亿（+72.84%）；归母 12.59 亿（+258.78%）；<strong>扣非 12.33 亿（+275.38%）</strong>、扣非/归母 97.9%；主营毛利率 57.76%；OCF 14.35 亿（+350.76%）&gt; 归母。<strong>⚠️ 增速含 2024H1 -12.91% 低基数放大，不可线性外推</strong>。非经仅 0.27 亿（占 2.1%），利润几乎全由经常性主业驱动，盈利质量高、可持续。</p>
+    </div>
+  </section>
+
+  <!-- ================= 3 估值 ================= -->
+  <section id="valuation">
+    <div class="sec-title">03 · 估值与安全边际</div>
+    <h2>三情景估值区间（PEG + Forward PE）</h2>
+
+    <div class="grid g4">
+      <div class="kpi"><div class="label">PE-TTM</div><div class="num">42.6</div><div class="sub">不便宜</div></div>
+      <div class="kpi"><div class="label">PB</div><div class="num">11.09</div><div class="sub">历史高分位</div></div>
+      <div class="kpi"><div class="label">PEG 重判</div><div class="num">1.1–1.7</div><div class="sub">LYR 0.79 失真</div></div>
+      <div class="kpi"><div class="label">当前市值</div><div class="num">866亿</div><div class="sub">合理情景下方</div></div>
+    </div>
+
+    <div class="chart-container">
+      <div id="chart-valuation" class="chart"></div>
+      <div class="chart-source">三情景目标市值：2027E 归母 × Forward PE。悲观 20亿×25x=500亿 ｜ 合理 30亿×32x=960亿 ｜ 乐观 38亿×38x=1440亿。当前 866 亿处合理情景略下方。</div>
+    </div>
+
+    <h3>估值方法与 PEG 重判</h3>
+    <div class="card">
+      <p><strong>品种路由</strong>：高成长（growth）→ 主模型 <strong>PEG + Forward PE 前瞻法</strong>（辅助：同业成长半导体前瞻 PE 25-40x + 历史分位）。</p>
+      <p><strong>PEG 重判（关键）</strong>：PEG(LYR)=0.79 基于 LYR 54% 增速（含低基数）失真。以可持续增速 25-40% 重判 → g=40% 时 PEG≈1.07、g=30% 时 ≈1.42、g=25% 时 ≈1.70。<strong>当前 PEG 实为 1.1-1.7，PEG&lt;1 的"便宜"判定不成立，安全边际显著薄于表面。</strong></p>
+      <p><strong>倍数锚定</strong>：PEG 三档（悲观 1.25 / 合理 1.07 / 乐观 0.95）+ 同业前瞻 PE 25-40x + 自身历史高分位三重交叉校验；三情景区间宽度（500-1440 亿）反映可预测性中等。</p>
+    </div>
+
+    <table>
+      <tr><th>参数（2027E）</th><th>悲观</th><th>合理</th><th>乐观</th><th style="text-align:right">隐含涨跌 vs 866亿</th></tr>
+      <tr><td>可持续增速假设</td><td>20%</td><td>30%</td><td>40%</td><td style="text-align:right">—</td></tr>
+      <tr><td>归母净利（亿元）</td><td>20</td><td>30</td><td>38</td><td style="text-align:right">—</td></tr>
+      <tr><td>Forward PE</td><td>25x</td><td>32x</td><td>38x</td><td style="text-align:right">—</td></tr>
+      <tr><td><strong>目标市值（亿元）</strong></td><td><strong>500</strong></td><td><strong>960</strong></td><td><strong>1440</strong></td><td style="text-align:right"><span class="down">-42%</span> / <span class="up">+11%</span> / <span class="up">+66%</span></td></tr>
+    </table>
+
+    <div class="verdict">
+      <h4>安全边际条件</h4>
+      <p><strong>目标买入市值</strong>：约 400 亿以下（保守估值 20亿×25x×0.8）。<strong>目标卖出市值</strong>：约 1440 亿以上。<strong>当前不构成安全边际买入</strong>——现价已按约 30% 可持续增速充分定价，未留显著折价。最大估值下行敞口为毛利率跌破 50% 触发的三情景下移（目标中枢 960 → 500 亿）。</p>
+    </div>
+  </section>
+
+  <!-- ================= 4 多空对照 ================= -->
+  <section id="bullbear">
+    <div class="sec-title">04 · 多空论证与综合裁决</div>
+    <h2>五维度 Bull vs Bear 对照（证据强度分级）</h2>
+
+    <div class="dual">
+      <div class="row">
+        <div class="c bull"><h4>🟢 Bull · 多方</h4>
+          <p><strong>1. 增长飞轮+经营质量兼备</strong>（强/9）：2026H1 营收 +72.84%、归母 +258.78%、扣非占比 97.9%、OCF&gt;净利</p>
+          <p><strong>2. 护城河宽且领先一代</strong>（强/9）：8μm 首创/首个 6μm/晶圆级封装/车规+全产业链+4国产业化</p>
+          <p><strong>3. 财务安全垫厚</strong>（强/8）：负债极低、OCF&gt;净利、研发全费用化、分红回购</p>
+          <p><strong>4. 车载/低空多场景放量</strong>（中/7）：25+ 厂商 30+ 车型、4D 雷达/冷原子钟</p>
+          <p><strong>5. 估值相对成长有支撑</strong>（中/6）：PEG(LYR) 0.79、Forward PE 尚可</p>
+        </div>
+        <div class="c bear"><h4>🔴 Bear · 空方</h4>
+          <p><strong>1. 高增不可外推+毛利极值</strong>（强/8）：+258.78% 含低基数；57.76% 处极值区</p>
+          <p><strong>2. 估值偏高</strong>（中/7）：PE 42.6/PB 11.1/EV-EBITDA 57，戴维斯双杀</p>
+          <p><strong>3. 财务红旗历史波动</strong>（中/7）：2023 应收 +47.87%&gt;营收、2024 OCF -8.51%、2026H1 存货 +14%</p>
+          <p><strong>4. 微波第二曲线拖累</strong>（中/7）：2025 收入 -29.59%/毛利率 4.52%</p>
+          <p><strong>5. 产能过剩/价格战/地缘</strong>（中/6）：民品价格战、出口北美地缘、补贴退坡</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-container">
+      <div id="chart-pattern" class="chart"></div>
+      <div class="chart-source">多空五维度论证据强度评分（0-10）；估值为空方占优、其余维度多方占优；裁决见下方。</div>
+    </div>
+
+    <table>
+      <tr><th>维度</th><th style="text-align:center">🟢 多方强度</th><th style="text-align:center">🔴 空方强度</th><th>综合裁决（结合外围因素）</th></tr>
+      <tr><td>增长</td><td style="text-align:center">9</td><td style="text-align:center">7</td><td><span class="lbl s">偏多方</span> 产业周期处上行（低空/车载/户外渗透早期），增长真实优质；但斜率不可线性外推</td></tr>
+      <tr><td>护城河</td><td style="text-align:center">9</td><td style="text-align:center">6</td><td><span class="lbl s">偏多方</span> 红外主业宽深&gt;10年，技术代差短期难复制；微波待验证不计入成长</td></tr>
+      <tr><td>财务质量</td><td style="text-align:center">8</td><td style="text-align:center">7</td><td><span class="lbl s">偏多方</span> 历史波动多已修复（应收收敛、OCF转强）；需盯应收/存货与政补口径</td></tr>
+      <tr><td>估值</td><td style="text-align:center">6</td><td style="text-align:center">8</td><td><span class="lbl a">偏空方</span> PEG 重判 1.1-1.7，安全边际薄；估值不便宜是当前最大瑕疵</td></tr>
+      <tr><td>周期/政策/国际</td><td style="text-align:center">8</td><td style="text-align:center">6</td><td><span class="lbl w">中性偏多</span> 结构性&gt;周期性（周期上行+国产替代友好）；地缘/补贴退坡经越南基地对冲</td></tr>
+    </table>
+
+    <div class="verdict">
+      <h4>最大分歧点 · 高毛利 57.76% 的可持续性</h4>
+      <p><strong>裁决理由</strong>：① 产业理解——8μm 小像元+晶圆级封装是"成本下降→应用扩展"长周期结构性降本飞轮，2026H1 预告明示驱动为"8μm 批量出货+规模效应+良率提升"，属<strong>良性成本驱动型上行而非降价压缩型</strong>；② 行业周期——车载/低空处渗透率早期长周期，供给端结构未恶化；③ 政策/国际——国产替代友好，越南基地对冲北美地缘。<strong>采纳多方"成本驱动可持续"为基准情形（保持 2027E 合理 30% 增速），但将空方"毛利率回落"纳入悲观情景与安全边际买入条件</strong>。一旦跌破 50%，"量价齐升"叙事与 PEG 支撑同时失效，本标的买点成立与否的分水岭。</p>
+    </div>
+  </section>
+
+  <!-- ================= 5 增长驱动 ================= -->
+  <section id="growth">
+    <div class="sec-title">05 · 增长驱动与核心优势可持续性</div>
+    <h2>增长内因主导、优势由三重技术代差支撑</h2>
+
+    <div class="grid g2">
+      <div class="card">
+        <h3>当前高增长促成原因</h3>
+        <ul class="pill-list">
+          <li><strong>量增</strong>——8μm 批量出货 + 600 万探测器产能释放 + 参股吴越物芯 22.94% 弹性产能</li>
+          <li><strong>价增/结构升级</strong>——8μm 高毛利产品占比提升（红外 +51.74%）</li>
+          <li><strong>毛利率放大杠杆</strong>——毛利 57.76% 上行致净利增速（+258.78%）显著高于营收（+72.84%）</li>
+          <li><strong>行业景气</strong>——低空/户外/工业/车载需求高景气 + 在手订单消化</li>
+          <li><strong>内因占比高</strong>——8μm 降本 + 车载/低空渗透 + 产能出海企业可主导，成长确定性较强</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>核心优势（相对同行）</h3>
+        <ul class="pill-list">
+          <li><strong>红外毛利率 55.17%</strong>——技术代差 + 全链成本（民品价格战同业数据缺失，置信度 ≤6）</li>
+          <li><strong>技术领先约一代</strong>——8μm 首创 vs 民品 12/17μm；晶圆级封装/ASIC 化</li>
+          <li><strong>经营质量</strong>——OCF&gt;净利、扣非/归母 97.9%</li>
+          <li><strong>独特壁垒因果链</strong>——8μm/车规三重代差（护城河）→ 单位成本领先 → 55%+ 毛利（溢价）→ 规模再降本（护城河加深）；红外主业保护 &gt;10 年</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="verdict">
+      <h4>优势可持续性判断</h4>
+      <p><strong>趋势</strong>：扩大（2025-2026H1）→ 高位稳定（2027）。<strong>侵蚀风险（概率+幅度）</strong>：民品价格战/产能过剩（中-高，大）→ 毛利率最大变量；技术扩散/8μm 被追（低，大）；成本传导（中，中）；客户压价（中，中）。<strong>敏感性</strong>：主营毛利率每收窄 5pp（→~52.8%）约压缩归母 15-18%（粗估，中置信度）；跌破 50% 则目标中枢由 960 亿下移至 500 亿（-42%）。</p>
+    </div>
+  </section>
+
+  <!-- ================= 6 反向清单 ================= -->
+  <section id="inversion">
+    <div class="sec-title">06 · 反向检查清单（芒格）</div>
+    <h2>什么情况下我们会对这家公司判断错了？</h2>
+    <div class="card">
+      <ul class="pill-list">
+        <li><strong>1. "毛利不会坍塌"错了</strong>？——民品价格战/景气回落致毛利率跌破 50%，"量价齐升"叙事与 PEG 支撑同时失效，戴维斯双杀（最大反向情景）。</li>
+        <li><strong>2. "高增可持续"错了</strong>？——特装暂定价集中确认/终审价差、低基数消退后 2026H2-2027 增速显著放缓（现市值隐含约 30% 持续增速）。</li>
+        <li><strong>3. "微波第二曲线终将兑现"错了</strong>？——若微波/低空/卫通持续失血，研发投入难兑现，拖累整体利润。</li>
+        <li><strong>4. "财务质量转优"错了</strong>？——若 2023 式应收背离、2024 式 OCF 背离再现（暂定价回款、特装账期集中爆雷），盈利含金量存疑。</li>
+        <li><strong>5. "民品追赶滞后"错了</strong>？——若高德/大立/海康微影 8μm/新制程快速跟进，技术代差收窄。</li>
+        <li><strong>6. 治理事件复发</strong>——依赖核心人物马宏，个人/合规事件治理折价（2023 曾被留置扰动）。</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ================= 7 风险 & 跟踪 ================= -->
+  <section id="risk">
+    <div class="sec-title">07 · 风险提示与跟踪指标</div>
+    <h2>高/中/低分级风险 + 5 个核心跟踪指标</h2>
+
+    <div class="grid g2">
+      <div class="card">
+        <h3>风险提示</h3>
+        <table>
+          <tr><th>风险</th><th style="text-align:center">等级</th></tr>
+          <tr><td>毛利率坍塌（跌破50%）</td><td style="text-align:center"><span class="lbl a">高</span></td></tr>
+          <tr><td>高增斜率回落（低基数消退）</td><td style="text-align:center"><span class="lbl a">高</span></td></tr>
+          <tr><td>特装暂定价/应收爆雷</td><td style="text-align:center"><span class="lbl w">中-高</span></td></tr>
+          <tr><td>微波第二曲线持续失血</td><td style="text-align:center"><span class="lbl w">中</span></td></tr>
+          <tr><td>民品竞争/产能过剩</td><td style="text-align:center"><span class="lbl w">中-高</span></td></tr>
+          <tr><td>出口管制/补贴退坡/地缘</td><td style="text-align:center"><span class="lbl w">中</span></td></tr>
+          <tr><td>治理集中风险复发</td><td style="text-align:center"><span class="lbl s">低-中</span></td></tr>
+        </table>
+      </div>
+      <div class="card">
+        <h3>核心跟踪指标</h3>
+        <ol class="pill-list" style="padding-left:18px">
+          <li><strong>归母/扣非净利同比 + 扣非/归母比</strong>（阈值：营收增速 &lt;25% 视为失速信号）</li>
+          <li><strong>主营毛利率（8μm 占比）</strong>（守住 55%+ / 跌破 50% 即安全边际失效）</li>
+          <li><strong>红外收入增速 + 车载定点落地/出货</strong></li>
+          <li><strong>OCF/净利 + 应收/存货增速</strong>（回款质量与积压）</li>
+          <li><strong>特装暂定价终审差价 + 微波/低空/卫通订单</strong>（第二曲线兑现度）</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 8 附录 ================= -->
+  <section id="appendix">
+    <div class="sec-title">08 · 附录</div>
+    <h2>质量筛查报告摘要 + 关键来源</h2>
+
+    <div class="card">
+      <h3>质量筛查报告摘要</h3>
+      <p><span class="badge green">GREEN</span> <strong>质量综合 8.8 / 10</strong>（由 quality-screen 产出，固化于公司笔记 frontmatter）｜ 红牌 0 ｜ 黄牌 0 ｜ 估值路由：growth（PEG+Forward PE）</p>
+      <p><strong>7 项评分</strong>：盈利能力 9 ｜ 现金流质量 10 ｜ 杠杆安全 7 ｜ 估值合理性 9（PEG 分档）｜ 成长性 9 ｜ 生意模式护城河 8 ｜ 盈利质量 10</p>
+      <p><strong>红牌筛查</strong>：8 项财务红牌均未触发（有息负债极低、商誉占净资产 &lt;3% 无减值、应收增速收敛、存货增速 &lt; 营收）。</p>
+      <p class="muted" style="font-size:13px">注：估值维度按 PEG 分档给"合理"，但 PEG 重判 1.1-1.7 已偏离"便宜"，本报告在估值与安全边际章节已作约束。</p>
+    </div>
+
+    <div class="card">
+      <h3>关键数据来源（数据源降级）</h3>
+      <p class="muted" style="font-size:14px">evaluate.ts/hithink（code=5003）与 cninfo（WAF 403）不可用 → 财务/估值以 <strong>2023/2024/2025 年报 + 2026H1 半年报 + 业绩预增公告（deep-read 精读）</strong> + <strong>同花顺 MCP 快照（2026-09-16）</strong>双源为准。行业规模引用 Yole（置信度 ≤6 已标注）。</p>
+      <table>
+        <tr><th>数据</th><th>数值</th><th>时点</th></tr>
+        <tr><td>总市值</td><td>866.34 亿</td><td>2026-09-16</td></tr>
+        <tr><td>PE-TTM / PB / PS</td><td>42.61 / 11.09 / 10.62</td><td>2026-09-16</td></tr>
+        <tr><td>PEG（LYR → 重判）</td><td>0.79 → 1.1-1.7</td><td>2026-09-16</td></tr>
+        <tr><td>Forward PE（2026E 归母 24 亿）</td><td>36.1x</td><td>2026-09-16</td></tr>
+        <tr><td>全球热像仪市场（Yole）</td><td>72→92.6 亿美元（CAGR 4.2%）</td><td>2024→2030</td></tr>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3>50 项投资决策清单 AUTO 扫描结论</h3>
+      <p><span class="badge green">放行</span> <span class="mono">退出码 0（未触发 No-Go）</span> —— 🔴 CRITICAL 未通过 0/2 ｜ 🟠 IMPORTANT 未通过 0/7 ｜ ⚪️ NORMAL 未通过 0/3。3 个 AUTO 无法判断的 MANUAL 项（重/轻资产、商誉占比、有息负债红线）已由 ReportWriter 依据财报精读人工回填核实通过。</p>
+    </div>
+
+    <h3>相关研究（Obsidian 双链）</h3>
+    <p class="mono" style="color:var(--color-ink-muted)">[[睿创微纳-公司研究]] · [[红外热成像与多维感知芯片-行业分析]] · [[半导体-行业概览]] · [[2026-09-16-睿创微纳-deep-read]] · [[2026-09-16-睿创微纳-processed]] · [[2026-09-16-睿创微纳估值采集快照]]</p>
+  </section>
+
+  <footer>
+    <div class="disc">
+      <strong>免责声明</strong>：本报告由本系统基于公开信息自动生成，仅供内部研究参考，不构成任何投资建议。数据时点 2026-09-16，数据源降级（evaluate.ts/hithink 不可用，以财报原文 + 同花顺 MCP 双源为准）。投资有风险，决策需谨慎。
+    </div>
+    <div class="mono">taskId: deep-dive-睿创微纳-20260916-8391 ｜ ReportWriter · 2026-09-16 ｜ Powered by 投研 Agent 系统</div>
+  </footer>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+<script>
+(function(){
+  "use strict";
+  var PALETTE = ["#d4af37","#e6c25c","#ffffff","#a1a1a1","#666666","#0abf6e"];
+  var UP="#ee0000", DOWN="#0abf6e";
+  var DARK_BASE = {
+    backgroundColor:"#0a0a0a",
+    textStyle:{color:"#a1a1a1",fontFamily:"Inter, 'Microsoft YaHei', sans-serif"},
+    title:{textStyle:{color:"#ffffff"}},
+    legend:{textStyle:{color:"#a1a1a1"}},
+    tooltip:{backgroundColor:"#111111",borderColor:"#1a1a1a",textStyle:{color:"#ffffff"}},
+    grid:{left:44,right:20,top:40,bottom:36},
+    xAxis:{axisLine:{lineStyle:{color:"#1a1a1a"}},axisLabel:{color:"#666666"}},
+    yAxis:{axisLine:{lineStyle:{color:"#1a1a1a"}},axisLabel:{color:"#666666"},splitLine:{lineStyle:{color:"#1a1a1a"}}}
+  };
+
+  var charts = {};
+
+  function tryInit(id){
+    if(typeof echarts === "undefined") return false;
+    var el = document.getElementById(id);
+    if(!el) return false;
+    charts[id] = echarts.init(el);
+    return true;
+  }
+
+  function fallback(id, html){
+    var el = document.getElementById(id);
+    if(el){ el.innerHTML = '<div class="chart-fallback" style="display:block">'+html+'</div>'; }
+  }
+
+  var fallbacks = {};
+
+  // ---- chart-fin: 营收/净利/毛利率趋势 ----
+  var chartFin = {
+    title:{text:"营收 / 归母净利 / 毛利率 趋势",left:"center",textStyle:{color:"#ffffff",fontSize:15}},
+    tooltip:{trigger:"axis"},
+    legend:{bottom:0,data:["营收(亿)","归母净利(亿)","毛利率(%)"]},
+    grid:{left:48,right:50,top:48,bottom:44},
+    xAxis:{type:"category",data:["2023","2024","2025","2026H1"]},
+    yAxis:[
+      {type:"value",name:"亿元",position:"left"},
+      {type:"value",name:"%",position:"right",min:0,max:80}
+    ],
+    series:[
+      {name:"营收(亿)",type:"bar",data:[35.59,43.16,63.04,43.97],color:PALETTE[0],barWidth:28},
+      {name:"归母净利(亿)",type:"bar",data:[4.96,5.69,11.25,12.59],color:PALETTE[5],barWidth:28},
+      {name:"毛利率(%)",type:"line",yAxisIndex:1,data:[50.41,50.79,53.41,57.76],color:"#ffffff",smooth:true,lineStyle:{width:3}}
+    ]
+  };
+  fallbacks["chart-fin"] = "图表加载失败：营收 35.59→43.16→63.04→43.97 亿；归母净利 4.96→5.69→11.25→12.59 亿；毛利率 50.41%→50.79%→53.41%→57.76%。";
+
+  // ---- chart-valuation: 三情景目标市值 ----
+  var chartVal = {
+    title:{text:"三情景目标市值（亿元） vs 当前",left:"center",textStyle:{color:"#ffffff",fontSize:15}},
+    tooltip:{trigger:"axis"},
+    legend:{bottom:0,data:["目标市值","当前市值(866)","隐含涨跌(%)"]},
+    grid:{left:60,right:56,top:44,bottom:44},
+    xAxis:{type:"category",data:["悲观(2027E 20亿×25x)","合理(2027E 30亿×32x)","乐观(2027E 38亿×38x)"]},
+    yAxis:[
+      {type:"value",name:"亿元"},
+      {type:"value",name:"%",min:-60,max:80,position:"right"}
+    ],
+    series:[
+      {name:"目标市值",type:"bar",data:[500,960,1440],color:PALETTE[0],barWidth:44,
+        label:{show:true,position:"top",color:"#ffffff",formatter:function(p){return p.value+"亿";}}},
+      {name:"当前市值(866)",type:"line",data:[866,866,866],color:PALETTE[2],lineStyle:{type:"dashed"}},
+      {name:"隐含涨跌(%)",type:"line",yAxisIndex:1,data:[-42,11,66],color:PALETTE[5],
+        lineStyle:{width:2},itemStyle:{color:PALETTE[5]}}
+    ]
+  };
+  fallbacks["chart-valuation"] = "三情景目标市值：悲观 500 亿(-42%) / 合理 960 亿(+11%) / 乐观 1440 亿(+66%)；当前 866 亿。";
+
+  // ---- chart-pattern: 多空五维度强度 ----
+  var chartPat = {
+    title:{text:"多空五维度论据强度（0-10）",left:"center",textStyle:{color:"#ffffff",fontSize:15}},
+    tooltip:{trigger:"axis",axisPointer:{type:"shadow"}},
+    legend:{bottom:0,data:["🟢 多方强度","🔴 空方强度"]},
+    grid:{left:64,right:24,top:44,bottom:44},
+    xAxis:{type:"value",max:10},
+    yAxis:{type:"category",data:["周期/政策/国际","估值","财务质量","护城河","增长"],axisLabel:{color:"#a1a1a1"}},
+    series:[
+      {name:"🟢 多方强度",type:"bar",data:[8,6,8,9,9],color:"#0abf6e",barGap:"20%",label:{show:true,position:"right",color:"#8ef0cf"}},
+      {name:"🔴 空方强度",type:"bar",data:[6,8,7,6,7],color:"#666666",label:{show:true,position:"right",color:"#888"}}
+    ]
+  };
+  fallbacks["chart-pattern"] = "多空强度：增长 7/9、护城河 6/9、财务质量 7/8、估值 8/6（空方占优）、政策 6/8。";
+
+  function mount(id, option, fb){
+    if(tryInit(id)){
+      charts[id].setOption(Object.assign({},DARK_BASE,option));
+      window.addEventListener("resize",function(){ if(charts[id]) charts[id].resize(); });
+    } else {
+      fallback(id, fb);
+    }
+  }
+
+  mount("chart-fin", chartFin, fallbacks["chart-fin"]);
+  mount("chart-valuation", chartVal, fallbacks["chart-valuation"]);
+  mount("chart-pattern", chartPat, fallbacks["chart-pattern"]);
+
+})();
+</script>
+</body>
+</html>
