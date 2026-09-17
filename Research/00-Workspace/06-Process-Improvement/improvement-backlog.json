@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0",
-  "updatedAt": "2026-09-16T10:43:22.816Z",
+  "updatedAt": "2026-09-17T08:23:21.554Z",
   "items": [
     {
       "problemCode": "qs-report-regex-range-misparse",
@@ -3186,31 +3186,37 @@
       "problemCode": "investment-checklist-auto-unit-misread",
       "targetKind": "script",
       "targetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
-      "symptom": "50项投资决策清单 AUTO 扫描器在解析公司笔记/报告时发生财务口径单位误读：营收『20.34亿』被读成 2034%、净利『0.32亿』被读成 142%，导致按原始百分比判定成长/估值类条目失真。本任务 report-writer 只能『仅采信关键词级判定』规避，片段性削弱了该发布门禁（CRITICAL>1 不发布）对财务类条目的自动判定可靠性。",
+      "symptom": "50项投资决策清单 AUTO 扫描器对本任务发生金额单位误读：第29/31项将归母净利『5.63亿』误判为增长『563.0%』，导致第31项『PE>40无高增长』按失真口径放行、实际按真实口径(2025归母+4.36%)应为❌；AUTO 退出码0『放行』与人工 quality-screen RED 判定冲突，只能靠人工关键字兜底。此为 2026-09-16 东箭(2034%/142%误读) 后的第二次独立复现。",
       "evidence": [
         {
           "grade": "A",
           "detail": "2026-09-16 deep-dive 东箭科技 report-writer 交付回报：『50项 AUTO 扫描——自动扫描器存在单位误读（营收=2034%/净利=142% 为 20.34亿/0.32亿 误读），仅采信关键词级判定』，职能清单最终以 quality-screen RED 兜底而非清单自动化判定。",
           "taskId": "deep-dive-东箭科技-20260916-4832"
+        },
+        {
+          "grade": "A",
+          "detail": "2026-09-17 deep-dive 中瓷电子 report-writer 交付回报：『第29/31项数值正则误抓(净利增速被误判563.0%)，第31项PE>40无高增长按真实口径(2025归母+4.36%)应为❌；AUTO放行不改变人工RED判定』；与东箭 ga3k 提供的 2034%/142% 误读属同一根因不同标的。",
+          "taskId": "deep-dive-中瓷电子-20260917-2419"
         }
       ],
-      "rootCauseHypothesis": "investment-checklist-auto.ts 正则将『X.XX亿元』数字未剥离单位直接乘以100换算为百分比，或对无百分号的数值默认按百分比处理，缺少元/亿/万元等金额单位识别与归一化。",
-      "goal": "investment-checklist-auto.ts 增加金额单位识别：『X亿元/X万元/X元』按金额归一化为亿元并转同比口径，仅对带%或明确增幅语义的数值做百分比判定；单元测试覆盖『20.34亿→营收20.34、增速字段仍需原文』与『营收-7.1%→-0.071』两组边界。",
+      "rootCauseHypothesis": "investment-checklist-auto.ts 正则将『X.XX亿元』金额未剥离单位直接×100换算为百分比，缺少金额单位(元/万/亿)识别与归一化，对无百分号的数值默认按百分比处理，导致成长/估值类条目自动判定失真。",
+      "goal": "investment-checklist-auto.ts 增加金额单位识别：『X亿元/X万元/X元』归一化为亿元并按同比口径计算，仅对带%或明确增幅语义的数值做百分比判定；单元测试覆盖『5.63亿→净利5.63亿元』与『+4.36%→0.0436』两组边界；重跑中瓷电子报告清单第31项应判❌。",
       "severity": "high",
-      "confidence": 0.8,
-      "benefit": "修复发布门禁的核心数据解析缺陷，使 50项清单对成长/估值类条目能可靠自动判定，避免依赖报告侧人工关键词兜底；作为多仓自动化 right-sourcing 的关键一环。",
-      "risk": "金额与百分比语义区分需谨慎，避免误将真百分比（如增速 -7.1%）当金额归一化而反向出错；需配套单元测试锁定。",
-      "acceptance": "对含『营收20.34亿/净利0.32亿』与『同比-7.1%』混合文本的目标，脚本正确区分金额单位与百分比；新增 2 组单测；重跑东箭报告清单不再出现 2034%/142% 误读。",
+      "confidence": 0.85,
+      "benefit": "本问题已有 东箭(2026-09-16)+中瓷(2026-09-17) 两个独立 taskId 的高(A级)证据复现，作为发布门禁核心数据解析缺陷，修复后成长/估值类条目可可靠自动判定，减少报告侧人工关键词兜底与 AUTO/人工结论冲突。",
+      "risk": "金额与百分比语义区分需谨慎，避免将真百分比当金额归一化反向出错；需配套单元测试锁定，回归既有任务不跳变。",
+      "acceptance": "含『归母5.63亿』与『+4.36%』混合文本目标，脚本正确区分金额与百分比；新增2组单测；重跑中瓷电子报告清单第31项为❌且不再出现563.0%误读。",
       "fingerprint": "9a1fc3e2c44732c6df70",
       "canonicalTargetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
       "status": "candidate",
       "taskIds": [
-        "deep-dive-东箭科技-20260916-4832"
+        "deep-dive-东箭科技-20260916-4832",
+        "deep-dive-中瓷电子-20260917-2419"
       ],
-      "occurrenceCount": 1,
+      "occurrenceCount": 2,
       "highestSeverity": "high",
       "firstSeenAt": "2026-09-16T10:25:35.271Z",
-      "lastSeenAt": "2026-09-16T10:25:35.271Z",
+      "lastSeenAt": "2026-09-17T08:00:30.974Z",
       "batchIds": []
     },
     {
@@ -3248,31 +3254,43 @@
       "problemCode": "cninfo-http403-forcing-mirror-downgrade",
       "targetKind": "command",
       "targetPath": ".trae/commands/deep-dive.md",
-      "symptom": "东箭2024年报巨潮(cninfo)PDF 接口返回 HTTP 403，被迫改用新浪财经镜像才完成下载；与 2026-09-16 国盛智科(qf3k) 记录的 cninfo-http403 属同一可复现现象，本次为新增复现证据，但本次同时存在官网 dongjian.cc 与深交所 disc 直连成功路径（东箭官网/深交所未封）。",
+      "symptom": "奥浦迈财报采集再次因 cninfo(PDF/公告 API)HTTP403 阻断 stock.ts --financial/--announcements 双路径；本任务新证据：同一 cninfo 源下 WebFetch 工具直连 static.cninfo.com.cn/finalpage 静态 PDF 成功(代理 IP 差异)，证明封禁为端点/IP/UA 级而非全源封锁。此为 国盛+东箭+中瓷 之后第4个独立 taskId 复现，且本次降级成功路径=WebFetch 直连静态 PDF，进一步扩展可复现绕过集合。",
       "evidence": [
         {
           "grade": "C",
           "detail": "2026-09-16 deep-dive 东箭科技：巨潮 static.cninfo.com.cn/finalpage/.../1223322685.PDF HTTP403，改新浪镜像 file.finance.sina.com.cn/.../11009105.PDF 成功；公司官网与深交所 disc 链接未受影响。",
           "taskId": "deep-dive-东箭科技-20260916-4832"
+        },
+        {
+          "grade": "A",
+          "detail": "2026-09-17 deep-dive 中瓷电子：stock.ts --code 003031 --financial/--announcements 均返回 HTTP 403；改用 https://np-anotice-stock.eastmoney.com/api/security/ann 分页成功取全部报告，PDF 依 https://pdf.dfcfw.com/pdf/H2_{art_code}_1.pdf 正常提取。",
+          "taskId": "deep-dive-中瓷电子-20260917-2419"
+        },
+        {
+          "grade": "A",
+          "detail": "2026-09-17 deep-dive 奥浦迈：stock.ts --code 688293 --financial/--announcements 均 HTTP403；fetch-file.ts 下载 PDF 亦 403；改 WebFetch 直连 static.cninfo.com.cn/finalpage 静态 PDF 成功并提取 4 份定期报告 markdown。",
+          "taskId": "deep-dive-奥浦迈-20260917-8417"
         }
       ],
-      "rootCauseHypothesis": "cninfo 公开 PDF 接口存在 IP/UA 级反爬封禁（同国盛 qf3k）；stock.ts 未内置 403 自动切新浪/东财备用源，而官网/交易所直连在三方并存时仍可成功，说明降级策略可先于 cninfo 完成。",
-      "goal": "支持国盛 qf3k 已提出的『cninfo 403 自动切备用源 + 受影响结论/证据等级清单』改进；东箭为 16-汽车/官网直连可行场景补充『官网直连优先』的取数顺序建议。",
+      "rootCauseHypothesis": "cninfo 公开公告/PDF 接口存在端点/IP/UA 级反爬封禁；stock.ts/fetch-file.ts 未内置 403 自动逐级降级(官网直连/新浪镜像/东方财富公告 API/WebFetch 直连静态 PDF)逻辑，导致每次需人工一轮以上源探测。",
+      "goal": "支持既有 candidate：stock.ts 在 cninfo 403 时自动降级并按『东方财富公告 API/新浪镜像/官网直连/WebFetch 直连静态 PDF』优先级链取数并自动记录『数据源降级』标注；累计证据集合扩展至 国盛(09-16)+东箭(09-16)+中瓷(09-17)+奥浦迈(09-17) 四例独立复现。",
       "severity": "low",
-      "confidence": 0.7,
-      "benefit": "为已进入 candidate 的 cninfo 403 问题补齐第二个独立复现证据（国盛+东箭），且提示官网直连可作为低成本优先路径。",
-      "risk": "不新增行为，仅补充证据与取数优先级建议，无破坏面。",
-      "acceptance": "cninfo 403 candidates 的 evidence 汇总包含国盛(2026-09-16)+东箭(2026-09-16)两个独立 taskId；若实施自动切源，东箭类官网可直连标的优先走官网/交易所直连，cninfo 作为后备。",
+      "confidence": 0.85,
+      "benefit": "本轮第4个独立 taskId 复现，且证明同为 cninfo 的静态 finalpage PDF 可经 WebFetch 直连成功，为降级链新增一个零额外源、无需镜像的可靠落点，消除每次深度调研都应答式人工源探测开销。",
+      "risk": "WebFetch 直连静态 PDF 依赖代理 IP 与工具可用性，且仅能『原文节选』非全量，落地为候补而非首选源；改动为取数层需回归既有 --financial/--announcements 正常路径。",
+      "acceptance": "stock.ts 在 cninfo 403 时自动改走降级链并输出『数据源降级:cninfo→…』标注；重跑奥浦迈案例无需人工探测即可取到三年年报+最新中报。",
       "fingerprint": "cf56e8487812164b1f17",
       "canonicalTargetPath": ".trae/commands/deep-dive.md",
-      "status": "observing",
+      "status": "candidate",
       "taskIds": [
-        "deep-dive-东箭科技-20260916-4832"
+        "deep-dive-东箭科技-20260916-4832",
+        "deep-dive-中瓷电子-20260917-2419",
+        "deep-dive-奥浦迈-20260917-8417"
       ],
-      "occurrenceCount": 1,
-      "highestSeverity": "low",
+      "occurrenceCount": 3,
+      "highestSeverity": "medium",
       "firstSeenAt": "2026-09-16T10:25:35.271Z",
-      "lastSeenAt": "2026-09-16T10:25:35.271Z",
+      "lastSeenAt": "2026-09-17T08:23:21.554Z",
       "batchIds": []
     },
     {
@@ -3366,6 +3384,130 @@
       "highestSeverity": "medium",
       "firstSeenAt": "2026-09-16T10:43:22.816Z",
       "lastSeenAt": "2026-09-16T10:43:22.816Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "quality-screen-file-mode-parses-wrong-period",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "quality-screen --file 报告模式在本任务对 deep-read(而非公司笔记)做筛查时误抓 2023 年 ROE/毛利率 与解析为 N/A 的增速，产出不可靠总分 3.3；info-alchemist 不得不改以 --mode auto + 干净2025数据重跑得 3.5 并采信。deep-read 与 processed/公司笔记 因引用多个财年数据，--file 的『首个匹配』解析策略存在口径漂移风险。",
+      "evidence": [
+        {
+          "grade": "C",
+          "detail": "2026-09-17 deep-dive 中瓷电子 info-alchemist 汇报：『--file 报告模式 RED/3.3(误抓2023年ROE/毛利率、增速解析N/A，不可靠) 与 --mode auto 干净2025数据+PEG20.89 RED/3.5(采用)』；交叉验证后结论一致但数值来源不同。",
+          "taskId": "deep-dive-中瓷电子-20260917-2419"
+        }
+      ],
+      "rootCauseHypothesis": "quality-screen.ts 对 --file 输入按关键词首个匹配提取指标，未感知文档含多财年列(deep-read/deep-dive 附录常含 2023/2024/2025 对比表)导致取到历史期而非研究截止期数据。",
+      "goal": "quality-screen --file 解析时优先锚定 research_cutoff/report_period 对应财年的数值段，对多财年对比表明确取最末(最新)财年列；或在文档含多个财年时显式告警『存在辩护口径选择风险，建议 --mode auto 显式参数』。",
+      "severity": "medium",
+      "confidence": 0.55,
+      "benefit": "避免 --file 模式在多财年 deep-read 上静默产出错期综合分而误导下游人工核对；为 single-task 首见观测，先入 observing/待二次复现升级。",
+      "risk": "改动取数锚定逻辑可能影响既有公司笔记(单财年)解析，需回归；若作为告警而非默认取数则无破坏面。",
+      "acceptance": "在含2023/2024/2025多财年的 deep-read 上 --file 要么正确取最新财年列、要么输出明确告警；既有单财年公司笔记回归不跳变。",
+      "fingerprint": "5a8290dbfd5cf9126f33",
+      "canonicalTargetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-中瓷电子-20260917-2419"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "medium",
+      "firstSeenAt": "2026-09-17T08:00:30.974Z",
+      "lastSeenAt": "2026-09-17T08:00:30.974Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "stock-ts-name-resolution-failure",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/stock-data/stock.ts",
+      "symptom": "stock.ts --name 「奥浦迈」返回『未找到 A 股「奥浦迈」』，但 688293.SH(上海奥浦迈生物科技股份有限公司,科创板)确实存在；本次被迫改按行业知识推断代码绕行。名称→代码映射对中文简称/略称解析存在缺口。",
+      "evidence": [
+        {
+          "grade": "C",
+          "detail": "2026-09-17 deep-dive 奥浦迈：stock.ts --name 奥浦迈 无法解析，人工核实 688293.SH 成功后方可进入 --code 路径取数。单次观测。",
+          "taskId": "deep-dive-奥浦迈-20260917-8417"
+        }
+      ],
+      "rootCauseHypothesis": "stock.ts 名称解析依赖巨潮/内部证券名模糊匹配，对未收录简称或与注册全称存在映射差异的公司(如略称/含地名的全称)无法回退命中，缺少多候选匹配与提示。",
+      "goal": "stock.ts --name 增加名称别名/模糊匹配回退(全称、去地名简称、行业代码联想)并在多候选时输出候选列表由用户择一；单测覆盖「奥浦迈→688293」这类略称案例。",
+      "severity": "low",
+      "confidence": 0.4,
+      "benefit": "避免名称类命令因解析失败中断取数流程，减少人工回退；属 low/单次观测，先入 observing 待二次复现升级。",
+      "risk": "模糊匹配可能返回错误标的，需匹配到唯一或输出候选由人工确认，避免自动误选；改动为名称解析层需回归既有名称命令。",
+      "acceptance": "重跑 stock.ts --name 奥浦迈 能至少输出含 688293.SH 的候选列表；现有常见名称命令回归不跳变。",
+      "fingerprint": "bf858d27afc123a71481",
+      "canonicalTargetPath": ".trae/scripts/stock-data/stock.ts",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-奥浦迈-20260917-8417"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "low",
+      "firstSeenAt": "2026-09-17T08:23:21.554Z",
+      "lastSeenAt": "2026-09-17T08:23:21.554Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "webFetch-partial-extract-leaves-verification-gaps",
+      "targetKind": "process",
+      "targetPath": ".trae/commands/deep-dive.md",
+      "symptom": "因 cninfo 403 走 WebFetch 直连 finalpage 静态 PDF(原文节选, parse_confidence medium)，奥浦迈 2025 年报扣非明细缺失、2026-01 收购澎立生物商誉金额未确认、2026H1 报表科目拆解未完成，深层财务数字不得不借助分红比例反推(2025 归母≈0.42亿、2026H1≈1.24亿)再经 document-reader 标为 3 项 🟡 存疑交交叉验证；证据链以间接推算而非直读原文支撑。",
+      "evidence": [
+        {
+          "grade": "C",
+          "detail": "2026-09-17 deep-dive 奥浦迈：deep-read 第4.2节扣非归因因 2025 年扣非明细未提取而标注缺失；澎立商誉与 2026H1 报表拆解同理存疑；净利数值依赖『分红比例=净利占比』反推。单次观测。",
+          "taskId": "deep-dive-奥浦迈-20260917-8417"
+        }
+      ],
+      "rootCauseHypothesis": "WebFetch 直连静态 PDF 只能做『原文节选』而非全量结构化提取，在 cninfo 403 降级路径下财务附表(明细/科目拆分)覆盖不足，间接推算替代直读原文，置信度受限。",
+      "goal": "降级路径下对关键财务附表(扣非明细/商誉/科目拆分)实施定向补采(分页/断点对缺失章节二次抓取)，或在 deep-read 对间接推算数值将置信度上限压至≤7 并显式标注『反推』；推动 stock.ts 降级链覆盖完整 PDF 提取。",
+      "severity": "medium",
+      "confidence": 0.55,
+      "benefit": "将『原文节选』降级路径的财务缺口显式暴露并留档，避免间接推算被当作直读事实用于下游估值/清单判定；为 process 层观测，待二次复现升级。",
+      "risk": "增加补采轮次会放大降级路径耗时；作为自定义 confidence 上限与标注策略实现无破坏面。",
+      "acceptance": "奥浦迈类(降级后仅节选)deep-read 对反推/缺失附表显式标注『反推/缺失』且置信度≤7；有条件时对缺失明细做二次补充抓取。",
+      "fingerprint": "fdb4d5f546c5a26c3b1a",
+      "canonicalTargetPath": ".trae/commands/deep-dive.md",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-奥浦迈-20260917-8417"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "medium",
+      "firstSeenAt": "2026-09-17T08:23:21.554Z",
+      "lastSeenAt": "2026-09-17T08:23:21.554Z",
+      "batchIds": []
+    },
+    {
+      "problemCode": "quality-screen-percent-param-no-guard",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "quality-screen --mode auto 传 --revenue-growth 19.40/--earnings-growth 98.07 时被脚本当 1940%/9807% 处理，误触发『大额一次性损益』失真警告并把综合分压到 RED/2.8；改传小数 0.194/0.9807 后正确输出 YELLOW/5.6。脚本对裸数值参数缺自动归一/取值域校验，百分制与比值语义混用依赖人工约定。",
+      "evidence": [
+        {
+          "grade": "C",
+          "detail": "2026-09-17 deep-dive 奥浦迈：quality-screen 首跑因百分数参数 RED/2.8 失真，inf-alchemist 改传小数得 YELLOW/5.6 采信。同批 20260816 曾修复 percent 传参约定，本次为约定未被脚本强制/校验的复现。单次观测。",
+          "taskId": "deep-dive-奥浦迈-20260917-8417"
+        }
+      ],
+      "rootCauseHypothesis": "quality-screen.ts 对 --*growth/-*margin 等数值参数未做取值域(0-1)或百分号语义归一，裸数(如 19.40)被直接视为×100 百分比导致失真；约定(传小数)仅靠文档未在脚本层校验。",
+      "goal": "quality-screen 对传入的 rate 类参数增加取值域校验：>10 时视为百分制并告警『疑似百分数，已按 /100 归一』或直接报错要求小数，避免静默产生防发布日期失真结论；既有 20260816 percent-fix 回归不跳变。",
+      "severity": "low",
+      "confidence": 0.5,
+      "benefit": "在传参约定追踪层的防呆校验，杜绝百分制/小数混用导致综合分误判(RED 级误降/误升)影响质量筛查落库；为 low/单次，先入 observing。",
+      "risk": "对合法 >1 数值(如 PB 倍数)等需排除误告警；改动限 rate(0-1 语义)参数，不影响非 rate 维。",
+      "acceptance": "重跑传 --revenue-growth 19.40 时脚本显式告警或归一，不再静默产出 1940% 失真与 RED/2.8 误降；合法小数路径不改变。",
+      "fingerprint": "a4a9ffc04ced26671018",
+      "canonicalTargetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "status": "observing",
+      "taskIds": [
+        "deep-dive-奥浦迈-20260917-8417"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "low",
+      "firstSeenAt": "2026-09-17T08:23:21.554Z",
+      "lastSeenAt": "2026-09-17T08:23:21.554Z",
       "batchIds": []
     }
   ],

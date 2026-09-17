@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>奥浦迈（688293.SH）深度调研报告 · 2026-09-17</title>
+<style>
+  :root{
+    --color-canvas:#000000;
+    --color-surface:#0a0a0a;
+    --color-surface-raised:#111111;
+    --color-border:#1a1a1a;
+    --color-ink:#ffffff;
+    --color-ink-muted:#a1a1a1;
+    --color-ink-subtle:#666666;
+    --color-accent:#d4af37;
+    --color-accent-hover:#e6c25c;
+    --color-danger:#ee0000;
+    --text-display:48px;
+    --text-heading:32px;
+    --text-title:24px;
+    --text-body:16px;
+    --text-label:14px;
+    --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-6:24px; --sp-8:32px; --sp-10:40px; --sp-16:64px;
+    --radius-sm:6px; --radius-md:12px; --radius-lg:16px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--color-canvas);
+    color:var(--color-ink);
+    font-family:"Geist","Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"PingFang SC","Microsoft YaHei",sans-serif;
+    font-size:var(--text-body);
+    line-height:24px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:var(--sp-16) var(--sp-6) var(--sp-16)}
+  .mono{font-family:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,"Courier New",monospace;font-size:12px;letter-spacing:0}
+  a{color:var(--color-accent);text-decoration:none}
+  a:hover{color:var(--color-accent-hover)}
+  .hairline{border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface)}
+  .raised{border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface-raised);padding:var(--sp-6)}
+  .grid{display:grid;gap:var(--sp-4)}
+  .g2{grid-template-columns:repeat(2,1fr)}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g4{grid-template-columns:repeat(4,1fr)}
+  @media(max-width:860px){.g2,.g3,.g4{grid-template-columns:1fr}}
+  .muted{color:var(--color-ink-muted)}
+  .subtle{color:var(--color-ink-subtle)}
+  .gold{color:var(--color-accent)}
+  .display{font-size:var(--text-display);line-height:48px;font-weight:600;letter-spacing:-2.4px}
+  .heading{font-size:var(--text-heading);line-height:40px;font-weight:600;letter-spacing:-1.28px;margin:var(--sp-8) 0 var(--sp-4)}
+  .title{font-size:var(--text-title);line-height:32px;font-weight:600;letter-spacing:-0.96px;margin:var(--sp-6) 0 var(--sp-3)}
+  .label{font-size:var(--text-label);line-height:20px;font-weight:500}
+  .chip{display:inline-block;padding:2px 10px;border:1px solid var(--color-border);border-radius:9999px;font-size:12px;color:var(--color-ink-muted);margin-right:var(--sp-2);line-height:20px}
+  .chip.gold{border-color:var(--color-accent);color:var(--color-accent)}
+  .stat{padding:var(--sp-4);border:1px solid var(--color-border);border-radius:var(--radius-sm);background:var(--color-surface)}
+  .stat .k{font-size:12px;color:var(--color-ink-subtle);line-height:16px}
+  .stat .v{font-size:var(--text-heading);line-height:40px;font-weight:600;letter-spacing:-1.28px;margin-top:var(--sp-1)}
+  .stat .d{font-size:12px;color:var(--color-ink-muted);line-height:16px;margin-top:var(--sp-1)}
+  .badge{display:inline-block;padding:3px 12px;border-radius:var(--radius-sm);font-size:12px;font-weight:600;line-height:20px}
+  .b-red{background:var(--color-danger);color:#000}
+  .b-yellow{background:var(--color-accent);color:#000}
+  .b-white{background:var(--color-ink);color:#000}
+  .b-ghost{border:1px solid var(--color-border);color:var(--color-ink-muted)}
+  table{width:100%;border-collapse:collapse;font-size:14px;line-height:20px}
+  th{text-align:left;color:var(--color-ink-subtle);font-weight:500;font-size:12px;padding:8px 10px;border-bottom:1px solid var(--color-border);letter-spacing:0}
+  td{padding:9px 10px;border-bottom:1px solid rgba(26,26,26,.6);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  .chart{width:100%;height:300px}
+  .divider{height:1px;background:var(--color-border);margin:var(--sp-8) 0}
+  .note{font-size:12px;color:var(--color-ink-subtle);line-height:18px;margin-top:var(--sp-3)}
+  .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:var(--sp-4)}
+  blockquote{border-left:2px solid var(--color-accent);padding-left:var(--sp-4);color:var(--color-ink-muted);margin:var(--sp-4) 0}
+  .section{border-top:1px solid var(--color-border);padding-top:var(--sp-8);margin-top:var(--sp-10)}
+</style>
+</head>
+<body>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+<div class="wrap">
+
+  <header>
+    <div style="margin-bottom:var(--sp-8)">
+      <span class="chip gold">深度调研 Deep-Dive</span>
+      <span class="chip">内部研究</span>
+      <span class="chip">置信度：中</span>
+      <span class="chip mono">2026-09-17</span>
+    </div>
+    <h1 class="display">奥浦迈 <span class="gold">688293.SH</span></h1>
+    <p class="muted" style="margin-top:var(--sp-2)">国产无血清细胞培养基 + 生物药 CDMO/CRO 平台 · 深度调研报告</p>
+  </header>
+
+  <div class="divider"></div>
+
+  <!-- 核心结论 -->
+  <section id="conclusion">
+    <h2 class="heading">核心结论</h2>
+    <div class="hairline" style="padding:var(--sp-6)">
+      <div class="label gold" style="letter-spacing:.5px;margin-bottom:var(--sp-3)">投资判断一句话</div>
+      <p style="font-size:20px;line-height:32px">奥浦迈是「好公司待证明盈利质量」的观察级标的——<span style="color:var(--color-accent)">培养基端护城河真实、财务安全垫优、国产替代长逻辑成立</span>，但当前 <span class="gold">77× PE + 99.4% 历史分位</span> 已透支高增长，且盈利质量（扣非依赖、ROE&lt;3%）尚未证明。<span style="color:var(--color-ink-muted)">结论：观望，现价不买入。</span></p>
+      <div style="margin-top:var(--sp-4)"><span class="badge b-yellow">🟡 YELLOW · 质量分 5.6</span>&nbsp;<span class="badge b-ghost">No-Go 未触发（管理层诚实）</span>&nbsp;<span class="badge b-ghost">建议观望</span></div>
+    </div>
+
+    <div class="grid g2" style="margin-top:var(--sp-6)">
+      <div class="raised">
+        <p class="label gold">护城河（置信度 6.0）</p>
+        <p style="margin-top:var(--sp-2)"><b>培养基端「中等偏宽、可持续」</b>——配方复杂度（70–100 种化学成分）+ 临床高转换成本 + 高毛利 50.85%，管线 170→247 累积锁定；<span class="muted">CDMO/CRO 端「未验证」</span>，研发占比收缩（17.71%→11.50%）与单一大客户脆弱构成侵蚀隐患。</p>
+        <p class="note">护城河分两段：培养基端可望维持 10 年，CDMO/CRO 端不确定。</p>
+      </div>
+      <div class="raised">
+        <p class="label gold">盈利质量（置信度 5.5）</p>
+        <p style="margin-top:var(--sp-2)">账面利润对非经常项依赖偏高、主业资本回报极低：扣非 2023 −60.89%、2024 推算 −81.03%，<b>ROE 三年 2.48%→0.99%→1.99% 均 &lt;3%</b>（杜邦：重资产 + 3.58 亿理财冗余 + 极低杠杆）。现金流面优秀（OCF/净利 2.52）、杠杆 6.60%。</p>
+        <p class="note">低 ROE 为结构性问题，非周期低点可简单豁免。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 关键指标 -->
+  <section>
+    <h2 class="title">估值与股价快照 <span class="subtle mono" style="font-weight:400">2026-09-17</span></h2>
+    <div class="kpi-row">
+      <div class="stat"><div class="k">最新股价</div><div class="v">70.11<span class="mono" style="font-size:14px;color:var(--color-ink-subtle)"> 元</span></div><div class="d gold">历史分位 99.4%（近一年最高位）</div></div>
+      <div class="stat"><div class="k">总市值</div><div class="v">99.7<span class="mono" style="font-size:14px;color:var(--color-ink-subtle)"> 亿</span></div><div class="d">总股本 1.42 亿股</div></div>
+      <div class="stat"><div class="k">PE-TTM</div><div class="v gold">77.77<span class="mono" style="font-size:14px;color:var(--color-ink-subtle)"> ×</span></div><div class="d">⚠️ 已透支高增长</div></div>
+      <div class="stat"><div class="k">Forward PE</div><div class="v">39.3<span class="mono" style="font-size:14px;color:var(--color-ink-subtle)"> ×</span></div><div class="d">2026E，预测期净利 2.5 亿</div></div>
+      <div class="stat"><div class="k">PEG</div><div class="v gold">0.79</div><div class="d">增速口径：yoy 单年同比 98%</div></div>
+      <div class="stat"><div class="k">PB-MRQ / PS-TTM</div><div class="v" style="font-size:26px">3.27 / 15.80</div><div class="d">PCF-TTM 67.54</div></div>
+    </div>
+  </section>
+
+  <!-- 估值与安全边际 -->
+  <section class="section" id="valuation">
+    <h2 class="heading">估值与安全边际（核心章节）</h2>
+    <div class="hairline" style="padding:var(--sp-6)">
+      <p class="label gold" style="margin-bottom:var(--sp-3)">目标市值三情景 <span class="muted mono" style="font-weight:400">（相对当前市值 99.7 亿）</span></p>
+      <div id="chartV" class="chart"></div>
+      <table style="margin-top:var(--sp-4)">
+        <thead><tr><th>情景</th><th>目标价（元）</th><th>目标市值（亿元）</th><th>隐含倍数（Forward PE）</th><th>相对当前</th></tr></thead>
+        <tbody>
+          <tr><td>悲观</td><td>97.2</td><td class="gold">138</td><td>55×</td><td>需 +38%</td></tr>
+          <tr><td>中性</td><td>138.7</td><td class="gold">197</td><td>79×</td><td>需 +98%</td></tr>
+          <tr><td>乐观</td><td>181.0</td><td class="gold">257</td><td>103×</td><td>需 +158%</td></tr>
+        </tbody>
+      </table>
+      <div class="divider" style="margin:var(--sp-6) 0"></div>
+      <p style="font-size:20px;line-height:32px">安全边际结论（置信度 7.5）：<span class="gold">当前价位几乎不含安全边际。</span></p>
+      <ul style="margin-top:var(--sp-4);display:grid;gap:var(--sp-2)">
+        <li class="muted">三情景目标市值（138/197/257 亿）均高于当前市值，但为「2.5 亿预测期净利 × 高倍数」的 <b style="color:var(--color-ink)">成长外推</b>，前提是 98% 高增速持续兑现。</li>
+        <li class="muted">PEG 0.79 的「吸引力」完全依赖 <b style="color:var(--color-ink)">98% 单年同比持续兑现</b>——由「澎立并表一次性增厚 + 低基数反弹」构成，任一证伪即戴维斯双杀。</li>
+        <li class="muted"><b style="color:var(--color-ink)">目标市值仅作「增速兑现情景」上行空间参考，不作为买入依据；目标买入价应显著低于当前。</b></li>
+      </ul>
+    </div>
+
+    <div class="grid g2" style="margin-top:var(--sp-4)">
+      <div class="raised">
+        <p class="label gold">估值模型（growth 品种）</p>
+        <p style="margin-top:var(--sp-2)">主模型：<b>PEG + Forward PE</b>，辅助 PEG 分档 + 历史分位交叉校验。选择信号：EPS≥0、净利同比 98% 且 PE&gt;30（77.77×）。</p>
+        <p class="note">倍数区间 55–103× 很宽，反映「增速可持续性 + 并表质量 + 税率」三重高不确定性——对该股可预测性低的诚实表达。</p>
+      </div>
+      <div class="raised">
+        <p class="label gold">三重锚定法（倍数取值依据）</p>
+        <ul style="margin-top:var(--sp-2);display:grid;gap:var(--sp-2)">
+          <li class="muted">PEG 锚：0.79（&lt;0.8 有吸引力）→ 中性 79× ≈ 98 增速 × 0.8 反推</li>
+          <li class="muted">同业前瞻 PE 锚：对标海外巨头早期放量期高估值区间</li>
+          <li class="muted">历史分位锚：当前分位 99.4%（近一年最高位）</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 财务 + 图表 -->
+  <section class="section" id="financials">
+    <h2 class="heading">财务数据摘要</h2>
+    <div class="grid g2">
+      <div class="raised">
+        <p class="label gold">营收 / 归母净利 / 扣非净利（亿元）</p>
+        <div id="chartF" class="chart"></div>
+      </div>
+      <div class="raised">
+        <p class="label gold">ROE（加权，%）三年轨迹</p>
+        <div id="chartR" class="chart"></div>
+      </div>
+    </div>
+    <div class="hairline" style="padding:var(--sp-6);margin-top:var(--sp-4)">
+      <table>
+        <thead><tr><th>指标</th><th>2023</th><th>2024</th><th>2025</th><th>趋势</th></tr></thead>
+        <tbody>
+          <tr><td>营收（亿元）</td><td>2.43</td><td>2.97</td><td>约 3.55</td><td>先降后连增（V 型）</td></tr>
+          <tr><td>营收同比</td><td>−17.41%</td><td>+22.26%</td><td>+19.40%</td><td>降 → 升 → 升</td></tr>
+          <tr><td>归母净利润（亿元）</td><td>0.54</td><td>约 0.21</td><td>约 0.42</td><td>大波动（降-降-升）</td></tr>
+          <tr><td>归母净利同比</td><td>−48.72%</td><td>−61.04%</td><td>+98.07%</td><td>低基数回升</td></tr>
+          <tr><td>扣非净利润（亿元）</td><td>0.35</td><td>约 0.07（推算）</td><td class="subtle">N/A</td><td>持续低迷</td></tr>
+          <tr><td>毛利率</td><td class="subtle">N/A</td><td class="subtle">N/A</td><td>50.85%</td><td>仅一年可得（高毛利）</td></tr>
+          <tr><td>净利率</td><td>22.22%*</td><td>约 7%（推算）</td><td>11.56%</td><td>回升</td></tr>
+          <tr><td>ROE（加权）</td><td>2.48%</td><td>0.99%</td><td>1.99%</td><td>低位波动、未回归健康</td></tr>
+          <tr><td>经营现金流（亿元）</td><td>0.58</td><td class="subtle">N/A</td><td>约 1.03</td><td>改善</td></tr>
+          <tr><td>资产负债率</td><td>约 6.21%*</td><td class="subtle">N/A</td><td>6.60%</td><td>极低杠杆</td></tr>
+        </tbody>
+      </table>
+      <p class="note">* 2023 净利率/负债率为估算；2024/2025 归母、2026H1 净利（1.24 亿）由分红比例反推，置信度 ≤7。三年口径存在税率切换（15%→25%）与并表范围变化，跨期可比性有限。</p>
+    </div>
+  </section>
+
+  <!-- 多维评估 -->
+  <section class="section" id="moat">
+    <h2 class="heading">横向评估</h2>
+    <div class="grid g3">
+      <div class="raised">
+        <p class="label gold">四大师评分卡</p>
+        <table style="margin-top:var(--sp-2)">
+          <thead><tr><th>维度</th><th>分</th></tr></thead>
+          <tbody>
+            <tr><td>能力圈（巴菲特）</td><td>6.0 ★★★☆</td></tr>
+            <tr><td>护城河（巴菲特）</td><td>5.5 ★★★</td></tr>
+            <tr><td>生意模式（段永平）</td><td>5.5 ★★★</td></tr>
+            <tr><td>管理层诚信（段永平）</td><td>6.5 ★★★☆</td></tr>
+            <tr><td>反向检查（芒格）</td><td>6.0 ★★★</td></tr>
+            <tr><td>历史类比（李录）</td><td>6.0 ★★★</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="raised">
+        <p class="label gold">护城河评估</p>
+        <ul style="margin-top:var(--sp-2);display:grid;gap:var(--sp-2)">
+          <li class="muted"><b style="color:var(--color-accent)">转换成本（强·核心）</b>：配方 70–100 种 + 临床阶段不轻易更换，管线 170→247 累积锁定</li>
+          <li class="muted"><b style="color:var(--color-ink)">成本/定价</b>：毛利率 50.85%，直销占比 95.24%</li>
+          <li class="muted"><b style="color:var(--color-ink)">牌照</b>：GMP 生产基地 ×2</li>
+          <li class="muted subtle">网络效应：无 · 规模效应：弱（CDMO 2024 计提减值）</li>
+        </ul>
+        <p class="note">宽度 5.5/10：培养基端中等偏宽（多方成立），CDMO/CRO 端待验证（空方有理）。</p>
+      </div>
+      <div class="raised">
+        <p class="label gold">生意模式（段永平框架）</p>
+        <ul style="margin-top:var(--sp-2);display:grid;gap:var(--sp-2)">
+          <li class="muted"><b style="color:var(--color-ink)">怎么赚</b>：卖无血清培养基（卖水人，高毛利 50.85%）+ CDMO/CRO 服务费</li>
+          <li class="muted"><b style="color:var(--color-ink)">谁付钱</b>：生物药企 / Biotech / 科研院所</li>
+          <li class="muted"><b style="color:var(--color-ink)">为什么选它</b>：配方壁垒 + 临床高转换成本 + 1700+ 客户</li>
+          <li class="muted">资本密集度：中偏重（CDMO 折旧）；现金流&gt;净利（OCF/净利 2.52）</li>
+        </ul>
+        <p class="note">整体「一般偏好的生意」：培养基端好生意雏形，CDMO/CRO 端重资产、订单周期依赖。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 多空论证 -->
+  <section class="section" id="bullbear">
+    <h2 class="heading">多空论证 · 综合裁决</h2>
+    <div class="hairline" style="padding:var(--sp-6)">
+      <div class="grid g2">
+        <div class="raised">
+          <p class="label gold">🟢 多方 Top 论点</p>
+          <ul style="margin-top:var(--sp-2);display:grid;gap:var(--sp-2)">
+            <li class="muted">培养基放量 + 高转换成本护城河 <span class="mono subtle">(强 / 7.5)</span></li>
+            <li class="muted">澎立并表业绩跃升 + 平台协同 <span class="mono subtle">(中强 / 6)</span></li>
+            <li class="muted">财务稳健 + 高分红回购 <span class="mono subtle">(中强 / 7)</span></li>
+            <li class="muted">国产替代长逻辑 <span class="mono subtle">(中 / 6)</span></li>
+            <li class="muted">PEG 0.79 <span class="mono subtle">(中 / 5)</span></li>
+          </ul>
+        </div>
+        <div class="raised">
+          <p class="label" style="color:var(--color-danger)">🔴 空方 Top 论点</p>
+          <ul style="margin-top:var(--sp-2);display:grid;gap:var(--sp-2)">
+            <li class="muted">扣非质量薄弱 + 三年低 ROE <span class="mono subtle">(强 / 8)</span></li>
+            <li class="muted">77× PE + 99.4% 历史分位估值透支 <span class="mono subtle">(强 / 7.5)</span></li>
+            <li class="muted">CDMO 承压 + 高企永久 25% 税率 <span class="mono subtle">(中强 / 7)</span></li>
+            <li class="muted">并表依赖 + 商誉 / 摊薄 <span class="mono subtle">(中强 / 6)</span></li>
+            <li class="muted">大客户 + 研发收缩 <span class="mono subtle">(中 / 6)</span></li>
+          </ul>
+        </div>
+      </div>
+      <div class="divider" style="margin:var(--sp-6) 0"></div>
+      <blockquote>
+        <b style="color:var(--color-accent)">最大分歧点：</b>「98% 增速与 PEG 0.79 能否持续兑现」+「澎立并表盈利质量提升是否真实」——同时决定多方（growth 合理）与空方（价值杀）谁能成立，双方现有证据均不完整（缺并表后真实报表与扣非明细）。
+      </blockquote>
+      <div style="display:grid;gap:var(--sp-2);margin-top:var(--sp-4)">
+        <p class="muted"><b style="color:var(--color-ink)">裁决：</b><b style="color:var(--color-accent)">采纳多方</b>的长期要素（培养基转换成本 + 国产替代结构性护城河、现金流下行保护）；<b style="color:var(--color-danger)">否决多方</b>的现价买入（98% 增速主体是并表一次性 + 低基数反弹，非可持续内生，且高企 25% 永久税率 + 价格战压制）；<b style="color:var(--color-danger)">采纳空方</b>的估值与质量判断（77× PE + 99.4% 分位 + 扣非依赖 + ROE&lt;3%，当前无安全边际证据充分）。</p>
+        <p class="gold" style="font-size:18px;line-height:28px">结论：看好生意模式与护城河，否定当前价格 → 观望待核。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 质量筛查 -->
+  <section class="section" id="quality">
+    <div class="g3" style="display:grid;gap:var(--sp-4)">
+      <div class="raised">
+        <p class="label gold">综合质量分</p>
+        <p class="display gold">5.6<span class="mono" style="font-size:20px;color:var(--color-ink-subtle)">/10</span></p>
+        <p style="margin-top:var(--sp-1)"><span class="badge b-yellow">🟡 YELLOW · 质量中性</span></p>
+      </div>
+      <div class="raised">
+        <p class="label gold">红牌（1 项）</p>
+        <ul style="margin-top:var(--sp-2);display:grid;gap:var(--sp-2)">
+          <li class="muted">🚨 ROE 仅 2.0%，三年 &lt;3%，低于 5% 资本回报红线</li>
+        </ul>
+      </div>
+      <div class="raised">
+        <p class="label gold">绿牌亮点</p>
+        <ul style="margin-top:var(--sp-2);display:grid;gap:var(--sp-2)">
+          <li class="muted">高毛利 50.8%（差异化/护城河）</li>
+          <li class="muted">OCF/净利 2.52（高含金量利润）</li>
+          <li class="muted">负债率 6.6%（财务结构稳健）</li>
+          <li class="muted">营收 +19.4%、净利 +98.1% 强成长</li>
+        </ul>
+      </div>
+    </div>
+    <p class="note">quality_verdict=YELLOW / quality_score=5.6 已回填公司笔记 frontmatter，与本节同一轮筛查同源。成长股豁免（PEG 0.79）依赖「98% 增速持续兑现」这一脆弱前提，故维持中性偏弱判断。</p>
+  </section>
+
+  <!-- 投资建议 -->
+  <section class="section" id="action">
+    <h2 class="heading">投资建议（段永平「本分」措辞）</h2>
+    <div class="raised" style="border-color:var(--color-accent)">
+      <p class="gold" style="font-size:20px;line-height:30px">当前操作：观望，不追高。现价（70.11 元，PE 77.77× 分位 99.4%）无安全边际，赔率不足。</p>
+      <div class="grid g2" style="margin-top:var(--sp-6)">
+        <div>
+          <p class="label" style="color:var(--color-ink-subtle)">不做的三件事</p>
+          <ul style="margin-top:var(--sp-3);display:grid;gap:var(--sp-2)">
+            <li class="muted">不因 PEG 0.79 &lt;1 就认为「便宜」——该 PEG 建立在不可靠的 98% 单年同比上</li>
+            <li class="muted">不因高分红叙事（分红+回购占净利 251.74%）就入场——绝对股息率低</li>
+            <li class="muted">不基于三情景目标市值（138/197/257 亿）在现价买入</li>
+          </ul>
+        </div>
+        <div>
+          <p class="label" style="color:var(--color-ink-subtle)">重新评估待验证条件</p>
+          <ul style="margin-top:var(--sp-3);display:grid;gap:var(--sp-2)">
+            <li class="muted">① 2026 中报/年报披露澎立并表真实报表（扣非/商誉/净利拆解）</li>
+            <li class="muted">② Forward PE 39.3 随增速兑现回落至约 25–30× 以下进入关注区间</li>
+            <li class="muted">③ 扣非盈利质量改善、ROE 向 12% 抬升</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 跟踪指标 -->
+  <section class="section" id="track">
+    <h2 class="title">跟踪指标</h2>
+    <div class="grid g2">
+      <div class="hairline" style="padding:var(--sp-4)"><span class="mono gold">01</span> <span class="muted" style="margin-left:var(--sp-2)">2026 中报/年报真实报表：澎立贡献 / 培养基内生 / 一次性项拆解</span></div>
+      <div class="hairline" style="padding:var(--sp-4)"><span class="mono gold">02</span> <span class="muted" style="margin-left:var(--sp-2)">澎立并表商誉金额与减值测试（红线项）</span></div>
+      <div class="hairline" style="padding:var(--sp-4)"><span class="mono gold">03</span> <span class="muted" style="margin-left:var(--sp-2)">培养基放量：产品收入、境外收入增速、中试/临床管线数（年增量≥50）</span></div>
+      <div class="hairline" style="padding:var(--sp-4)"><span class="mono gold">04</span> <span class="muted" style="margin-left:var(--sp-2)">盈利质量：扣非绝对值、非经常项占比、ROE 是否回升至 &gt;12%</span></div>
+      <div class="hairline" style="padding:var(--sp-4)"><span class="mono gold">05</span> <span class="muted" style="margin-left:var(--sp-2)">估值锚：Forward PE 39.3 / PEG 0.79 / 分位 99.4% 是否被持续确认</span></div>
+      <div class="hairline" style="padding:var(--sp-4)"><span class="mono gold">06</span> <span class="muted" style="margin-left:var(--sp-2)">税负与政策：实际适用税率（高企资格是否恢复）、Biotech 融资景气</span></div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="mono" style="color:var(--color-ink-subtle);display:flex;justify-content:space-between;flex-wrap:wrap;gap:var(--sp-2)">
+    <span>奥浦迈 688293.SH 深度调研 · taskId deep-dive-奥浦迈-20260917-8417</span>
+    <span>数据时点 2026-09-17 · 内部研究 · 不作投资建议</span>
+  </footer>
+
+</div>
+
+<script>
+const AXIS={axisLine:{lineStyle:{color:'#1a1a1a'}},axisLabel:{color:'#666'},splitLine:{lineStyle:{color:'#1a1a1a'}}};
+const TIP={backgroundColor:'#111',borderColor:'#1a1a1a',textStyle:{color:'#fff'}};
+const LEGEND={textStyle:{color:'#a1a1a1'}};
+
+// 估值三情景
+echarts.init(document.getElementById('chartV')).setOption({
+  backgroundColor:'transparent',
+  tooltip:Object.assign({trigger:'axis'},TIP),
+  grid:{left:40,right:20,top:30,bottom:30},
+  xAxis:Object.assign({type:'category',data:['当前','悲观','中性','乐观']},AXIS),
+  yAxis:Object.assign({type:'value',name:'亿元',nameTextStyle:{color:'#666'}},AXIS),
+  series:[{
+    name:'目标市值',type:'bar',barWidth:'38%',
+    data:[{value:99.7,itemStyle:{color:'#a1a1a1'}},{value:138,itemStyle:{color:'#d4af37'}},{value:197,itemStyle:{color:'#d4af37'}},{value:257,itemStyle:{color:'#d4af37'}}],
+    label:{show:true,position:'top',color:'#a1a1a1',fontSize:12}
+  }],
+  legend:LEGEND
+});
+
+// 营收/净利/扣非
+echarts.init(document.getElementById('chartF')).setOption({
+  backgroundColor:'transparent',
+  tooltip:Object.assign({trigger:'axis'},TIP),
+  legend:LEGEND,
+  grid:{left:40,right:20,top:40,bottom:30},
+  xAxis:Object.assign({type:'category',data:['2023','2024','2025']},AXIS),
+  yAxis:Object.assign({type:'value',name:'亿元',nameTextStyle:{color:'#666'}},AXIS),
+  series:[
+    {name:'营收',type:'bar',data:[2.43,2.97,3.55],itemStyle:{color:'#d4af37'}},
+    {name:'归母净利',type:'bar',data:[0.54,0.21,0.42],itemStyle:{color:'#ffffff'}},
+    {name:'扣非净利',type:'line',symbol:'diamond',data:[0.35,0.07,null],lineStyle:{color:'#ee0000',type:'dashed'},itemStyle:{color:'#ee0000'}}
+  ]
+});
+
+// ROE
+echarts.init(document.getElementById('chartR')).setOption({
+  backgroundColor:'transparent',
+  tooltip:Object.assign({trigger:'axis'},TIP),
+  grid:{left:40,right:20,top:30,bottom:30},
+  xAxis:Object.assign({type:'category',data:['2023','2024','2025']},AXIS),
+  yAxis:Object.assign({type:'value',name:'%',nameTextStyle:{color:'#666'},max:6},AXIS),
+  series:[{
+    name:'ROE',type:'line',smooth:true,symbol:'circle',data:[2.48,0.99,1.99],
+    lineStyle:{color:'#d4af37',width:2},itemStyle:{color:'#d4af37'},
+    areaStyle:{color:'rgba(212,175,55,0.08)'},
+    markLine:{silent:true,symbol:'none',data:[{yAxis:5,lineStyle:{color:'#ee0000',type:'dashed'},label:{formatter:'红线 5%',color:'#ee0000',position:'end'}}],label:{color:'#666'}}
+  }]
+});
+</script>
+</body>
+</html>

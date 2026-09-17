@@ -1,0 +1,101 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "deep-dive-奥浦迈-20260917-8417",
+  "origin": "process-improvement",
+  "command": "deep-dive 奥浦迈",
+  "status": "success",
+  "params": { "company": "奥浦迈", "stockCode": "688293.SH", "focus": "无血清细胞培养基+CDMO/CRO双轮(2026-01收购澎立生物并表)：高成长估值(PEG 0.79)背后的盈利质量验证——ROE 1.95% vs 50.8%毛利、77.77x PE/99.4%历史分位的安全边际" },
+  "terminalState": "succeeded",
+  "stageAcceptance": {
+    "step1_checkExistingAndLocate": "passed with caveat (无既有笔记，全新公司研究；stock.ts --name 「奥浦迈」名称解析失败『未找到 A 股「奥浦迈」』，改按行业知识核实 688293 科创板成功)",
+    "step2_dataIngestion": "passed with caveat (cninfo PDF接口 HTTP403 阻断 stock.ts --financial/--announcements；PowerShell/curl 加 Referer 获取 orgId 9900048799 与公告列表；fetch-file.ts 下载 PDF 仍 403，改 WebFetch 直连 static.cninfo.com.cn/finalpage 静态 PDF 成功(代理 IP 差异)，提取 2023/2024/2025 三年年报+2026 半年报为 md(parse_confidence medium/原文节选)；2025 归母经分红反推≈0.42亿、2026H1≈1.24亿；澎立生物 2026-01 并表；业绩预告/快报沿用年报口径；研报经东财 reportapi 元数据(原 dfcfw PDF 返回首页回退))",
+    "step3_evaluateSnapshot": "passed (股价/PE-TTM 77.77/PB 3.27/PS 15.80/PEG 0.79/总市值99.7亿/Forward PE 39.3/250日区间34.31-70.98/历史分位99.4%；杜邦 ROE 1.95%；品种 growth 主 PEG+Forward PE；目标市值 138/197/257亿；PEG<1 显示成长口径估值合理但盈利质量待验证)",
+    "step4_documentReaderDeepRead": "passed (deep-read 覆盖 2023/2024/2025 三年年报+2026 中报，含 9大目标+第十章多空论证+三年连贯性；三年连贯性 🟢 管理层诚实未触发 No-Go；3 项 🟡 存疑(2025扣非明细缺失/澎立商誉金额未确认/2026H1报表拆解未完成)交验证)",
+    "step5_infoAlchemistAndQualityScreen": "passed with caveat (processed 落盘，frontmatter 含 quality_8_metrics/quality_8_series/related_notes(三生国健等)；quality-screen 首次误判 RED/2.8(--revenue-growth 19.40/--earnings-growth 98.07 被当 1940%/9807% 触发失真警告压分)，改传小数 --revenue-growth 0.194 --earnings-growth 0.9807 → YELLOW/5.6；frontmatter 回填 quality_verdict=YELLOW quality_score=5.6；唯一红牌 ROE 2.0%，亮点高毛利50.8%/OCF/净利2.52/负债率6.6%/成长)",
+    "step6_knowledgeArchitectWriteback": "passed (05-医药生物 新建 00-行业概览+01-细分行业(生命科学服务与细胞培养基-CXO)+02-公司研究 奥浦迈-公司研究(含估值模型与参数明细章节+trading 7项跟踪指标)；新建 00-MOC/医药生物-MOC+双向链接)",
+    "step7_reportWriter": "passed (简版 md 报告含多空综合裁决+目标市值区间+增长与优势可持续性分析+质量筛查汇总+附录《50项清单AUTO扫描块》CRITICAL 0/2 未通过、放行；另依据 design.md 黑金风格手工构建独立 HTML，md+html 双份同源)"
+  },
+  "inputs": [
+    "Research/00-Workspace/02-Processing/pdf-texts/奥浦迈/2023年年度报告.md",
+    "Research/00-Workspace/02-Processing/pdf-texts/奥浦迈/2024年年度报告.md",
+    "Research/00-Workspace/02-Processing/pdf-texts/奥浦迈/2025年年度报告.md",
+    "Research/00-Workspace/02-Processing/pdf-texts/奥浦迈/2026年半年度报告.md",
+    "Research/00-Workspace/02-Processing/pdf-texts/奥浦迈/evaluate-snapshot.md",
+    "Research/00-Workspace/02-Processing/2026-09-17-奥浦迈-deep-read.md",
+    "Research/00-Workspace/02-Processing/2026-09-17-奥浦迈-processed.md"
+  ],
+  "outputs": [
+    "Research/10-Knowledge/05-医药生物/00-行业概览/医药生物-行业概览.md",
+    "Research/10-Knowledge/05-医药生物/01-细分行业/生命科学服务与细胞培养基-CXO-行业分析.md",
+    "Research/10-Knowledge/05-医药生物/02-公司研究/奥浦迈-公司研究.md",
+    "Research/10-Knowledge/00-MOC/医药生物-MOC.md",
+    "Research/20-Reports/2026-09-17-奥浦迈-deep-dive-report.md",
+    "Research/20-Reports/2026-09-17-奥浦迈-deep-dive-report.html"
+  ],
+  "issues": [
+    {
+      "problemCode": "cninfo-http403-forcing-mirror-downgrade",
+      "targetKind": "command",
+      "targetPath": ".trae/commands/deep-dive.md",
+      "symptom": "奥浦迈财报采集再次因 cninfo(PDF/公告 API)HTTP403 阻断 stock.ts --financial/--announcements 双路径；本任务新证据：同一 cninfo 源下 WebFetch 工具直连 static.cninfo.com.cn/finalpage 静态 PDF 成功(代理 IP 差异)，证明封禁为端点/IP/UA 级而非全源封锁。此为 国盛+东箭+中瓷 之后第4个独立 taskId 复现，且本次降级成功路径=WebFetch 直连静态 PDF，进一步扩展可复现绕过集合。",
+      "evidence": [
+        { "grade": "A", "detail": "2026-09-17 deep-dive 奥浦迈：stock.ts --code 688293 --financial/--announcements 均 HTTP403；fetch-file.ts 下载 PDF 亦 403；改 WebFetch 直连 static.cninfo.com.cn/finalpage 静态 PDF 成功并提取 4 份定期报告 markdown。" }
+      ],
+      "rootCauseHypothesis": "cninfo 公开公告/PDF 接口存在端点/IP/UA 级反爬封禁；stock.ts/fetch-file.ts 未内置 403 自动逐级降级(官网直连/新浪镜像/东方财富公告 API/WebFetch 直连静态 PDF)逻辑，导致每次需人工一轮以上源探测。",
+      "goal": "支持既有 candidate：stock.ts 在 cninfo 403 时自动降级并按『东方财富公告 API/新浪镜像/官网直连/WebFetch 直连静态 PDF』优先级链取数并自动记录『数据源降级』标注；累计证据集合扩展至 国盛(09-16)+东箭(09-16)+中瓷(09-17)+奥浦迈(09-17) 四例独立复现。",
+      "severity": "medium",
+      "confidence": 0.85,
+      "benefit": "本轮第4个独立 taskId 复现，且证明同为 cninfo 的静态 finalpage PDF 可经 WebFetch 直连成功，为降级链新增一个零额外源、无需镜像的可靠落点，消除每次深度调研都应答式人工源探测开销。",
+      "risk": "WebFetch 直连静态 PDF 依赖代理 IP 与工具可用性，且仅能『原文节选』非全量，落地为候补而非首选源；改动为取数层需回归既有 --financial/--announcements 正常路径。",
+      "acceptance": "stock.ts 在 cninfo 403 时自动改走降级链并输出『数据源降级:cninfo→…』标注；重跑奥浦迈案例无需人工探测即可取到三年年报+最新中报。"
+    },
+    {
+      "problemCode": "stock-ts-name-resolution-failure",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/stock-data/stock.ts",
+      "symptom": "stock.ts --name 「奥浦迈」返回『未找到 A 股「奥浦迈」』，但 688293.SH(上海奥浦迈生物科技股份有限公司,科创板)确实存在；本次被迫改按行业知识推断代码绕行。名称→代码映射对中文简称/略称解析存在缺口。",
+      "evidence": [
+        { "grade": "C", "detail": "2026-09-17 deep-dive 奥浦迈：stock.ts --name 奥浦迈 无法解析，人工核实 688293.SH 成功后方可进入 --code 路径取数。单次观测。" }
+      ],
+      "rootCauseHypothesis": "stock.ts 名称解析依赖巨潮/内部证券名模糊匹配，对未收录简称或与注册全称存在映射差异的公司(如略称/含地名的全称)无法回退命中，缺少多候选匹配与提示。",
+      "goal": "stock.ts --name 增加名称别名/模糊匹配回退(全称、去地名简称、行业代码联想)并在多候选时输出候选列表由用户择一；单测覆盖「奥浦迈→688293」这类略称案例。",
+      "severity": "low",
+      "confidence": 0.4,
+      "benefit": "避免名称类命令因解析失败中断取数流程，减少人工回退；属 low/单次观测，先入 observing 待二次复现升级。",
+      "risk": "模糊匹配可能返回错误标的，需匹配到唯一或输出候选由人工确认，避免自动误选；改动为名称解析层需回归既有名称命令。",
+      "acceptance": "重跑 stock.ts --name 奥浦迈 能至少输出含 688293.SH 的候选列表；现有常见名称命令回归不跳变。"
+    },
+    {
+      "problemCode": "webFetch-partial-extract-leaves-verification-gaps",
+      "targetKind": "process",
+      "targetPath": ".trae/commands/deep-dive.md",
+      "symptom": "因 cninfo 403 走 WebFetch 直连 finalpage 静态 PDF(原文节选, parse_confidence medium)，奥浦迈 2025 年报扣非明细缺失、2026-01 收购澎立生物商誉金额未确认、2026H1 报表科目拆解未完成，深层财务数字不得不借助分红比例反推(2025 归母≈0.42亿、2026H1≈1.24亿)再经 document-reader 标为 3 项 🟡 存疑交交叉验证；证据链以间接推算而非直读原文支撑。",
+      "evidence": [
+        { "grade": "C", "detail": "2026-09-17 deep-dive 奥浦迈：deep-read 第4.2节扣非归因因 2025 年扣非明细未提取而标注缺失；澎立商誉与 2026H1 报表拆解同理存疑；净利数值依赖『分红比例=净利占比』反推。单次观测。" }
+      ],
+      "rootCauseHypothesis": "WebFetch 直连静态 PDF 只能做『原文节选』而非全量结构化提取，在 cninfo 403 降级路径下财务附表(明细/科目拆分)覆盖不足，间接推算替代直读原文，置信度受限。",
+      "goal": "降级路径下对关键财务附表(扣非明细/商誉/科目拆分)实施定向补采(分页/断点对缺失章节二次抓取)，或在 deep-read 对间接推算数值将置信度上限压至≤7 并显式标注『反推』；推动 stock.ts 降级链覆盖完整 PDF 提取。",
+      "severity": "medium",
+      "confidence": 0.55,
+      "benefit": "将『原文节选』降级路径的财务缺口显式暴露并留档，避免间接推算被当作直读事实用于下游估值/清单判定；为 process 层观测，待二次复现升级。",
+      "risk": "增加补采轮次会放大降级路径耗时；作为自定义 confidence 上限与标注策略实现无破坏面。",
+      "acceptance": "奥浦迈类(降级后仅节选)deep-read 对反推/缺失附表显式标注『反推/缺失』且置信度≤7；有条件时对缺失明细做二次补充抓取。"
+    },
+    {
+      "problemCode": "quality-screen-percent-param-no-guard",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "quality-screen --mode auto 传 --revenue-growth 19.40/--earnings-growth 98.07 时被脚本当 1940%/9807% 处理，误触发『大额一次性损益』失真警告并把综合分压到 RED/2.8；改传小数 0.194/0.9807 后正确输出 YELLOW/5.6。脚本对裸数值参数缺自动归一/取值域校验，百分制与比值语义混用依赖人工约定。",
+      "evidence": [
+        { "grade": "C", "detail": "2026-09-17 deep-dive 奥浦迈：quality-screen 首跑因百分数参数 RED/2.8 失真，inf-alchemist 改传小数得 YELLOW/5.6 采信。同批 20260816 曾修复 percent 传参约定，本次为约定未被脚本强制/校验的复现。单次观测。" }
+      ],
+      "rootCauseHypothesis": "quality-screen.ts 对 --*growth/-*margin 等数值参数未做取值域(0-1)或百分号语义归一，裸数(如 19.40)被直接视为×100 百分比导致失真；约定(传小数)仅靠文档未在脚本层校验。",
+      "goal": "quality-screen 对传入的 rate 类参数增加取值域校验：>10 时视为百分制并告警『疑似百分数，已按 /100 归一』或直接报错要求小数，避免静默产生防发布日期失真结论；既有 20260816 percent-fix 回归不跳变。",
+      "severity": "low",
+      "confidence": 0.5,
+      "benefit": "在传参约定追踪层的防呆校验，杜绝百分制/小数混用导致综合分误判(RED 级误降/误升)影响质量筛查落库；为 low/单次，先入 observing。",
+      "risk": "对合法 >1 数值(如 PB 倍数)等需排除误告警；改动限 rate(0-1 语义)参数，不影响非 rate 维。",
+      "acceptance": "重跑传 --revenue-growth 19.40 时脚本显式告警或归一，不再静默产出 1940% 失真与 RED/2.8 误降；合法小数路径不改变。"
+    }
+  ]
+}

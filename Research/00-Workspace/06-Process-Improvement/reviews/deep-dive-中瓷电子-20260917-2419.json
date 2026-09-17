@@ -1,0 +1,83 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "deep-dive-中瓷电子-20260917-2419",
+  "origin": "process-improvement",
+  "command": "deep-dive 中瓷电子",
+  "status": "success",
+  "params": { "company": "中瓷电子", "stockCode": "003031.SZ", "focus": "电子陶瓷外壳+第三代半导体GaN双主业：估值合理性(PEG 20.89)与增长可持续性(2026H1压价换量/库存+130.73%)" },
+  "terminalState": "succeeded",
+  "stageAcceptance": {
+    "step1_checkExistingAndLocate": "passed (无既有笔记，全新公司研究；stock.ts库内名称→003031 上交所主板",
+    "step2_dataIngestion": "passed with caveat (cninfo PDF接口 HTTP403 阻断 stock.ts --financial/--announcements；改用东方财富 np-anotice-stock API 分页成功拉取 2023/2024/2025 三年年报 + 2026 半年报，PDF 经 fetch-file.ts 提取为 md；本期因持续重组无业绩预告/快报；研报仅2份均为看多——东兴2025-02-06/民生2025-04-28，无看空研报)",
+    "step3_evaluateSnapshot": "passed (股价137.40/PE-TTM 91.11/PB 9.73/PEG 20.89/总市值619.7亿/营收28.78亿/归母5.63亿+4.36%；品种 general 主 PE/EV-EBITDA；PEG 显著偏贵>2 持续适用)",
+    "step4_documentReaderDeepRead": "passed (deep-read 覆盖2023/2024/2025三年年报+2026中报，含9大目标+4.2扣非归因+4.3波动归因+4.8逻辑勾稽+第九章三年连贯性+第十章多空论证；两年高红旗：库存+130.73% vs 营收+8.67%；No-Go 判定为『存疑』未触发一票否决；2025年报 Mixed/parse_confidence 0.7625/第203页需OCR；2026H1分产品毛利缺外部证据置信≤6 已标注)",
+    "step5_infoAlchemistAndQualityScreen": "passed (processed 落盘；quality-screen RED/3.5，估值维度3分为降级主因，敏感性补全杠杆分仍<4.5 结论稳健；报告模式 --file 误抓2023年ROE/毛利率与N/A增速故采用 --mode auto 干净2025数据；deep-read frontmatter 回填 quality_verdict=RED quality_score=3.5；2025归母vs扣非差0.28亿(5.0%)故 PEG 用归母口径可信)",
+    "step6_knowledgeArchitectWriteback": "passed (04-电子 新建 公司研究笔记+MOC更新，frontmatter 含 scores/target_market_cap_yi 160/315/480亿(全额低估现价619.7亿)/forward_pe 88.5/valuation_model PE/research_cutoff 2026H1；三情景目标全部低于现价→当前无安全边际；RED 三处标注『暂缓跟踪』)",
+    "step7_reportWriter": "passed (简版md报告含多空论证综合裁决+目标买入/卖出价区间+增长与优势可持续性分析+附录《50项清单AUTO扫描块》+《质量筛查汇总》；AUTO退出码0、未触发No-Go；AUTO对第31项『PE>40无高增长』误判放行——按真实口径2025归母+4.36%应为❌，人工RED判定未被AUTO放行覆盖；报告整体采纳空方估值判断)"
+  },
+  "inputs": [
+    "Research/00-Workspace/02-Processing/pdf-texts/中瓷电子/2023年年度报告.md",
+    "Research/00-Workspace/02-Processing/pdf-texts/中瓷电子/2024年年度报告.md",
+    "Research/00-Workspace/02-Processing/pdf-texts/中瓷电子/2025年年度报告.md",
+    "Research/00-Workspace/02-Processing/pdf-texts/中瓷电子/2026年半年度报告.md",
+    "Research/00-Workspace/02-Processing/pdf-texts/中瓷电子/2025-02-06-东兴证券-研报.md",
+    "Research/00-Workspace/02-Processing/pdf-texts/中瓷电子/2025-04-28-民生证券-研报.md",
+    "Research/00-Workspace/02-Processing/2026-09-17-中瓷电子-deep-read.md",
+    "Research/00-Workspace/02-Processing/2026-09-17-中瓷电子-processed.md"
+  ],
+  "outputs": [
+    "Research/10-Knowledge/04-电子/02-公司研究/中瓷电子-公司研究.md",
+    "Research/10-Knowledge/00-MOC/电子-MOC.md",
+    "Research/20-Reports/2026-09-17-中瓷电子-deep-dive-report.md"
+  ],
+  "issues": [
+    {
+      "problemCode": "investment-checklist-auto-unit-misread",
+      "targetKind": "script",
+      "targetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "symptom": "50项投资决策清单 AUTO 扫描器对本任务发生金额单位误读：第29/31项将归母净利『5.63亿』误判为增长『563.0%』，导致第31项『PE>40无高增长』按失真口径放行、实际按真实口径(2025归母+4.36%)应为❌；AUTO 退出码0『放行』与人工 quality-screen RED 判定冲突，只能靠人工关键字兜底。此为 2026-09-16 东箭(2034%/142%误读) 后的第二次独立复现。",
+      "evidence": [
+        { "grade": "A", "detail": "2026-09-17 deep-dive 中瓷电子 report-writer 交付回报：『第29/31项数值正则误抓(净利增速被误判563.0%)，第31项PE>40无高增长按真实口径(2025归母+4.36%)应为❌；AUTO放行不改变人工RED判定』；与东箭 ga3k 提供的 2034%/142% 误读属同一根因不同标的。" }
+      ],
+      "rootCauseHypothesis": "investment-checklist-auto.ts 正则将『X.XX亿元』金额未剥离单位直接×100换算为百分比，缺少金额单位(元/万/亿)识别与归一化，对无百分号的数值默认按百分比处理，导致成长/估值类条目自动判定失真。",
+      "goal": "investment-checklist-auto.ts 增加金额单位识别：『X亿元/X万元/X元』归一化为亿元并按同比口径计算，仅对带%或明确增幅语义的数值做百分比判定；单元测试覆盖『5.63亿→净利5.63亿元』与『+4.36%→0.0436』两组边界；重跑中瓷电子报告清单第31项应判❌。",
+      "severity": "high",
+      "confidence": 0.85,
+      "benefit": "本问题已有 东箭(2026-09-16)+中瓷(2026-09-17) 两个独立 taskId 的高(A级)证据复现，作为发布门禁核心数据解析缺陷，修复后成长/估值类条目可可靠自动判定，减少报告侧人工关键词兜底与 AUTO/人工结论冲突。",
+      "risk": "金额与百分比语义区分需谨慎，避免将真百分比当金额归一化反向出错；需配套单元测试锁定，回归既有任务不跳变。",
+      "acceptance": "含『归母5.63亿』与『+4.36%』混合文本目标，脚本正确区分金额与百分比；新增2组单测；重跑中瓷电子报告清单第31项为❌且不再出现563.0%误读。"
+    },
+    {
+      "problemCode": "cninfo-http403-forcing-mirror-downgrade",
+      "targetKind": "command",
+      "targetPath": ".trae/commands/deep-dive.md",
+      "symptom": "中瓷电子财报采集因巨潮(cninfo)PDF接口 HTTP403 阻断 stock.ts --financial/--announcements 双路径，被迫切换东方财富 np-anotice-stock API 分页拉取全部定期报告。同 2026-09-16 国盛(qf3k)、东箭(4832) 记录的 cninfo-http403 属同一可复现封禁现象，本次为第三个独立 taskId 复现，且降级目的地为东方财富公告 API(前两例为新浪镜像/官网直连)，进一步扩展了可复现降级源集合。",
+      "evidence": [
+        { "grade": "A", "detail": "2026-09-17 deep-dive 中瓷电子：stock.ts --code 003031 --financial/--announcements 均返回 HTTP 403；改用 https://np-anotice-stock.eastmoney.com/api/security/ann 分页成功取全部报告，PDF 依 https://pdf.dfcfw.com/pdf/H2_{art_code}_1.pdf 正常提取。" }
+      ],
+      "rootCauseHypothesis": "cninfo 公开 PDF/公告接口存在 IP/UA 级反爬封禁(国有资本目录多源可证)；stock.ts 未内置 403 自动切备用源(新浪/东方财富/官网/交易所直连)逻辑，导致每次需人工多加一轮源探测。",
+      "goal": "支持既有 candidate：stock.ts 增加 cninfo 403 时自动降级到东方财富公告API/新浪镜像/官网/交易所直连的取数优先级链，并自动记录数据源降级标注；累计证据集合包含 国盛(2026-09-16)+东箭(2026-09-16)+中瓷(2026-09-17) 三例独立复现。",
+      "severity": "medium",
+      "confidence": 0.8,
+      "benefit": "消除每次深度调研都应答式的人工源探测开销，将 cninfo 失败转为自动降级；本任务已证明东方财富公告API+pdf.dfcfw.com 为可靠落点。",
+      "risk": "备用源链接地址/公告元数据口径与 cninfo 存在差异，需在地图校验(类别/日期/文件标题)后再落盘；改动为取数层，需回归既有 --financial/--announcements 正常路径。",
+      "acceptance": "stock.ts 在 cninfo 403 时自动改走东方财富公告API并输出『数据源降级:cninfo→eastmoney』标注；重跑中瓷电子类案例无需人工探测即可取到 2023/2024/2025年报+最新中报。"
+    },
+    {
+      "problemCode": "quality-screen-file-mode-parses-wrong-period",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "quality-screen --file 报告模式在本任务对 deep-read(而非公司笔记)做筛查时误抓 2023 年 ROE/毛利率 与解析为 N/A 的增速，产出不可靠总分 3.3；info-alchemist 不得不改以 --mode auto + 干净2025数据重跑得 3.5 并采信。deep-read 与 processed/公司笔记 因引用多个财年数据，--file 的『首个匹配』解析策略存在口径漂移风险。",
+      "evidence": [
+        { "grade": "C", "detail": "2026-09-17 deep-dive 中瓷电子 info-alchemist 汇报：『--file 报告模式 RED/3.3(误抓2023年ROE/毛利率、增速解析N/A，不可靠) 与 --mode auto 干净2025数据+PEG20.89 RED/3.5(采用)』；交叉验证后结论一致但数值来源不同。" }
+      ],
+      "rootCauseHypothesis": "quality-screen.ts 对 --file 输入按关键词首个匹配提取指标，未感知文档含多财年列(deep-read/deep-dive 附录常含 2023/2024/2025 对比表)导致取到历史期而非研究截止期数据。",
+      "goal": "quality-screen --file 解析时优先锚定 research_cutoff/report_period 对应财年的数值段，对多财年对比表明确取最末(最新)财年列；或在文档含多个财年时显式告警『存在辩护口径选择风险，建议 --mode auto 显式参数』。",
+      "severity": "medium",
+      "confidence": 0.55,
+      "benefit": "避免 --file 模式在多财年 deep-read 上静默产出错期综合分而误导下游人工核对；为 single-task 首见观测，先入 observing/待二次复现升级。",
+      "risk": "改动取数锚定逻辑可能影响既有公司笔记(单财年)解析，需回归；若作为告警而非默认取数则无破坏面。",
+      "acceptance": "在含2023/2024/2025多财年的 deep-read 上 --file 要么正确取最新财年列、要么输出明确告警；既有单财年公司笔记回归不跳变。"
+    }
+  ]
+}
