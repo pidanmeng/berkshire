@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0",
-  "updatedAt": "2026-09-17T08:23:21.554Z",
+  "updatedAt": "2026-09-21T14:16:45.112Z",
   "items": [
     {
       "problemCode": "qs-report-regex-range-misparse",
@@ -3509,6 +3509,96 @@
       "firstSeenAt": "2026-09-17T08:23:21.554Z",
       "lastSeenAt": "2026-09-17T08:23:21.554Z",
       "batchIds": []
+    },
+    {
+      "id": "ISSUE-001",
+      "severity": "low",
+      "evidenceGrade": "C",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "problemCode": "quality-screen-overall-score-zero",
+      "description": "quality-screen.ts 输出综合质量分为0.0（JSON overallScore=0），但7项质量评分卡有实际分数（5/5/1/7/6/3/5.4），加权后应为4.5。脚本可能未从7项评分正确计算overallScore，导致frontmatter quality_score需手动计算回填",
+      "confidence": 0.7,
+      "status": "observing",
+      "evidence": [
+        {
+          "grade": "C",
+          "type": "command-output",
+          "detail": "quality-screen.ts --mode report 输出JSON中overallScore=0，但sevenQuality各维度有实际分数（profitability=5, cashQuality=5, leverageSafety=1, valuation=7, growth=6, businessMoat=3, earningsQuality=5.4）",
+          "taskId": "deep-dive-国轩高科-20260921-7375"
+        }
+      ],
+      "fingerprint": "b4d1f094265a3601a8ac",
+      "canonicalTargetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "taskIds": [
+        "deep-dive-国轩高科-20260921-7375"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "low",
+      "firstSeenAt": "2026-09-21T14:16:08.851Z",
+      "lastSeenAt": "2026-09-21T14:16:45.112Z",
+      "batchIds": [],
+      "symptom": "quality-screen.ts overallScore=0 但7项子分有值，需手动计算加权分回填frontmatter"
+    },
+    {
+      "id": "ISSUE-002",
+      "severity": "low",
+      "evidenceGrade": "C",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/file-ingestion/fetch-file.ts",
+      "problemCode": "pdf-texts-frontmatter-missing",
+      "description": "fetch-file.ts 提取的PDF Markdown文件缺少标准frontmatter（source/pdf_title/page_count/parse_confidence等字段），不满足交付质量检查要求",
+      "confidence": 0.6,
+      "status": "observing",
+      "evidence": [
+        {
+          "grade": "C",
+          "type": "file-inspection",
+          "detail": "pdf-texts/国轩高科/2025年年度报告.md 文件开头无frontmatter（无---包裹的YAML块），直接以正文内容开始",
+          "taskId": "deep-dive-国轩高科-20260921-7375"
+        }
+      ],
+      "fingerprint": "a31d863021d5c66794f6",
+      "canonicalTargetPath": ".trae/scripts/file-ingestion/fetch-file.ts",
+      "taskIds": [
+        "deep-dive-国轩高科-20260921-7375"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "low",
+      "firstSeenAt": "2026-09-21T14:16:08.851Z",
+      "lastSeenAt": "2026-09-21T14:16:45.112Z",
+      "batchIds": [],
+      "symptom": "fetch-file.ts输出的PDF Markdown无frontmatter，不满足交付质量检查要求"
+    },
+    {
+      "id": "ISSUE-003",
+      "severity": "medium",
+      "evidenceGrade": "C",
+      "targetKind": "script",
+      "targetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "problemCode": "three-layer-structure-incomplete",
+      "description": "50项清单AUTO扫描发现三层结构覆盖未通过（缺少行业概览/细分行业级笔记），因deep-dive为单公司模式不产出行业级笔记，但清单仍检查此项",
+      "confidence": 0.5,
+      "status": "observing",
+      "evidence": [
+        {
+          "grade": "C",
+          "type": "command-output",
+          "detail": "investment-checklist-auto.ts 扫描结果第4项三层结构覆盖返回未通过，说明未完整发现三层结构",
+          "taskId": "deep-dive-国轩高科-20260921-7375"
+        }
+      ],
+      "fingerprint": "b6dbf3bfa5fcdbe08d9a",
+      "canonicalTargetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "taskIds": [
+        "deep-dive-国轩高科-20260921-7375"
+      ],
+      "occurrenceCount": 1,
+      "highestSeverity": "medium",
+      "firstSeenAt": "2026-09-21T14:16:08.851Z",
+      "lastSeenAt": "2026-09-21T14:16:45.112Z",
+      "batchIds": [],
+      "symptom": "investment-checklist-auto.ts对deep-dive模式检查三层结构覆盖，但该模式不产出行业级笔记"
     }
   ],
   "batches": [

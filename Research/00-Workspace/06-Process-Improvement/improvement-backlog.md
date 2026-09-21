@@ -1,6 +1,6 @@
 # 流程改进 Backlog
 
-> 状态真源：improvement-backlog.json · 最后更新：2026-09-17T08:23:21.554Z
+> 状态真源：improvement-backlog.json · 最后更新：2026-09-21T14:16:45.112Z
 
 | 状态 | 严重度 | 问题描述 | 目标文件 | 任务数 | 问题码 |
 |---|---|---|---|---:|---|
@@ -101,3 +101,6 @@
 | 观察 | 低 | stock.ts --name 「奥浦迈」返回『未找到 A 股「奥浦迈」』，但 688293.SH(上海奥浦迈生物科技股… | .trae/scripts/stock-data/stock.ts | 1 | stock-ts-name-resolution-failure |
 | 观察 | 中 | 因 cninfo 403 走 WebFetch 直连 finalpage 静态 PDF(原文节选, parse_conf… | .trae/commands/deep-dive.md | 1 | webFetch-partial-extract-leaves-verification-gaps |
 | 观察 | 低 | quality-screen --mode auto 传 --revenue-growth 19.40/--earnin… | .trae/scripts/quality-gate/quality-screen.ts | 1 | quality-screen-percent-param-no-guard |
+| 观察 | 低 | quality-screen.ts overallScore=0 但7项子分有值，需手动计算加权分回填frontmatt… | .trae/scripts/quality-gate/quality-screen.ts | 1 | quality-screen-overall-score-zero |
+| 观察 | 低 | fetch-file.ts输出的PDF Markdown无frontmatter，不满足交付质量检查要求 | .trae/scripts/file-ingestion/fetch-file.ts | 1 | pdf-texts-frontmatter-missing |
+| 观察 | 中 | investment-checklist-auto.ts对deep-dive模式检查三层结构覆盖，但该模式不产出行业级笔… | .trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts | 1 | three-layer-structure-incomplete |

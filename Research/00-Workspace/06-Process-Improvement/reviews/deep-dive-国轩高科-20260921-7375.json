@@ -1,0 +1,79 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "deep-dive-国轩高科-20260921-7375",
+  "command": "deep-dive",
+  "params": "国轩高科",
+  "origin": "process-improvement",
+  "terminalState": "succeeded",
+  "status": "completed",
+  "createdAt": "2026-09-21",
+  "inputFiles": [
+    "Research/00-Workspace/02-Processing/pdf-texts/国轩高科/2025年年度报告.md",
+    "Research/00-Workspace/02-Processing/pdf-texts/国轩高科/2024年年度报告.md",
+    "Research/00-Workspace/02-Processing/pdf-texts/国轩高科/2023年年度报告.md",
+    "Research/00-Workspace/02-Processing/pdf-texts/国轩高科/2026年半年度报告.md"
+  ],
+  "outputFiles": [
+    "Research/00-Workspace/02-Processing/2026-09-21-国轩高科-deep-read.md",
+    "Research/10-Knowledge/01-新能源/02-公司研究/国轩高科-公司研究.md",
+    "Research/20-Reports/2026-09-21-国轩高科-deep-dive-report.md"
+  ],
+  "stageVerification": {
+    "step1_checkExisting": { "status": "passed", "note": "无已有研究，全新公司" },
+    "step2_dataCollection": { "status": "passed", "note": "代码002074，4份财报PDF下载+提取成功，6篇研报获取，估值快照生成" },
+    "step3_documentReader": { "status": "passed", "note": "deep-read 59KB产出，9大精读目标+多空论证完成，三年年报覆盖2023/2024/2025" },
+    "step4_qualityScreen": { "status": "passed", "note": "quality-screen RED 4.5/10，frontmatter已回填" },
+    "step5_incrementalCompare": { "status": "skipped", "note": "全新公司无增量对比" },
+    "step6_knowledgeBase": { "status": "passed", "note": "公司笔记写入01-新能源/02-公司研究/，frontmatter完整含valuation_model" },
+    "step7_report": { "status": "passed", "note": "deep-dive报告写入20-Reports/，含5个附录" }
+  },
+  "errorSummary": "",
+  "issues": [
+    {
+      "id": "ISSUE-001",
+      "severity": "low",
+      "evidenceGrade": "C",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "problemCode": "quality-screen-overall-score-zero",
+      "description": "quality-screen.ts 输出综合质量分为0.0（JSON overallScore=0），但7项质量评分卡有实际分数（5/5/1/7/6/3/5.4），加权后应为4.5。脚本可能未从7项评分正确计算overallScore，导致frontmatter quality_score需手动计算回填",
+      "symptom": "quality-screen.ts overallScore=0 但7项子分有值，需手动计算加权分回填frontmatter",
+      "confidence": 0.7,
+      "status": "observing",
+      "evidence": [
+        { "grade": "C", "type": "command-output", "detail": "quality-screen.ts --mode report 输出JSON中overallScore=0，但sevenQuality各维度有实际分数（profitability=5, cashQuality=5, leverageSafety=1, valuation=7, growth=6, businessMoat=3, earningsQuality=5.4）" }
+      ]
+    },
+    {
+      "id": "ISSUE-002",
+      "severity": "low",
+      "evidenceGrade": "C",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/file-ingestion/fetch-file.ts",
+      "problemCode": "pdf-texts-frontmatter-missing",
+      "description": "fetch-file.ts 提取的PDF Markdown文件缺少标准frontmatter（source/pdf_title/page_count/parse_confidence等字段），不满足交付质量检查要求",
+      "symptom": "fetch-file.ts输出的PDF Markdown无frontmatter，不满足交付质量检查要求",
+      "confidence": 0.6,
+      "status": "observing",
+      "evidence": [
+        { "grade": "C", "type": "file-inspection", "detail": "pdf-texts/国轩高科/2025年年度报告.md 文件开头无frontmatter（无---包裹的YAML块），直接以正文内容开始" }
+      ]
+    },
+    {
+      "id": "ISSUE-003",
+      "severity": "medium",
+      "evidenceGrade": "C",
+      "targetKind": "script",
+      "targetPath": ".trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts",
+      "problemCode": "three-layer-structure-incomplete",
+      "description": "50项清单AUTO扫描发现三层结构覆盖未通过（缺少行业概览/细分行业级笔记），因deep-dive为单公司模式不产出行业级笔记，但清单仍检查此项",
+      "symptom": "investment-checklist-auto.ts对deep-dive模式检查三层结构覆盖，但该模式不产出行业级笔记",
+      "confidence": 0.5,
+      "status": "observing",
+      "evidence": [
+        { "grade": "C", "type": "command-output", "detail": "investment-checklist-auto.ts 扫描结果第4项三层结构覆盖返回未通过，说明未完整发现三层结构" }
+      ]
+    }
+  ],
+  "reviewStatus": "completed"
+}
