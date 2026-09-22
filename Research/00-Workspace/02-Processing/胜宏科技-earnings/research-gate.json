@@ -1,0 +1,220 @@
+{
+  "mode": "brief",
+  "market": "A",
+  "report_type": "interim_report",
+  "company_ir_domain": "www.vgt.com.cn",
+  "expanded_scope_authorized": false,
+  "workflow": {
+    "current_state": "DONE",
+    "target": {
+      "company_name": "胜宏科技(惠州)股份有限公司",
+      "security_code": "300476",
+      "report_period": "2026年上半年"
+    },
+    "stop_reason": "正式材料、固定市场快照与现金勾稽均已完成，信息足以生成报告"
+  },
+  "official_documents": [
+    {
+      "id": "S1",
+      "title": "2026年半年度报告",
+      "url": "https://static.cninfo.com.cn/finalpage/2026-08-28/1225522515.PDF",
+      "document_type": "interim_report",
+      "role": "current",
+      "report_period": "2026年上半年",
+      "publication_date": "2026-08-28",
+      "read_status": "success"
+    }
+  ],
+  "comparison_policy": {
+    "income_statement": "official_native_comparative",
+    "balance_sheet": "official_report_opening"
+  },
+  "retrieval_log": [
+    {
+      "sequence": 1,
+      "channel": "official_locator",
+      "purpose": "locate_official_document",
+      "target": "cninfo 巨潮资讯 半年报定位",
+      "result": "success",
+      "state_before": "LOCATING",
+      "state_after": "VERIFIED",
+      "progress": true,
+      "candidate_url": "https://static.cninfo.com.cn/finalpage/2026-08-28/1225522515.PDF"
+    },
+    {
+      "sequence": 2,
+      "channel": "web_fetch",
+      "purpose": "read_official_document",
+      "target": "https://static.cninfo.com.cn/finalpage/2026-08-28/1225522515.PDF",
+      "result": "success",
+      "state_before": "LOCATING",
+      "state_after": "VERIFIED",
+      "progress": true,
+      "candidate_url": "https://static.cninfo.com.cn/finalpage/2026-08-28/1225522515.PDF",
+      "official_document_id": "S1"
+    },
+    {
+      "sequence": 3,
+      "channel": "financial_mcp",
+      "purpose": "enrich_data_gap",
+      "target": "同花顺 iFinD get_stock_performance: 胜宏科技 300476 2026-09-16 收盘价/总市值",
+      "state_before": "ANALYSIS_READY",
+      "state_after": "ENRICHMENT_DECISION",
+      "data_gap_id": "MARKET_SNAPSHOT",
+      "result": "success",
+      "progress": true,
+      "note": "current_price=230.36元; market_cap=219760660000元; as_of=2026-09-16 15:00"
+    },
+    {
+      "sequence": 4,
+      "channel": "financial_mcp",
+      "purpose": "enrich_data_gap",
+      "target": "同花顺 iFinD get_stock_financials: 胜宏科技 2026-06-30 投资收益/归母/扣非/营业收入",
+      "state_before": "ANALYSIS_READY",
+      "state_after": "ENRICHMENT_DECISION",
+      "data_gap_id": "GAP_INVESTMENT_INCOME",
+      "result": "success",
+      "progress": true,
+      "note": "投资收益=-3529962.68元; 归母净利润=28.5678亿; 扣非净利润=24.178亿; 营业收入=116.2937亿"
+    },
+    {
+      "sequence": 5,
+      "channel": "financial_mcp",
+      "purpose": "enrich_data_gap",
+      "target": "同花顺 iFinD get_stock_financials: 胜宏科技 2026-06-30 货币资金/期末现金及现金等价物余额",
+      "state_before": "ANALYSIS_READY",
+      "state_after": "ENRICHMENT_DECISION",
+      "data_gap_id": "GAP_CASH_BALANCE",
+      "result": "success",
+      "progress": true,
+      "note": "货币资金=6072250000元; 期末现金及现金等价物余额=5999840000元; 受限资金=72413849.31元"
+    }
+  ],
+  "tool_usage": {
+    "web_search_count": 0,
+    "web_fetch_count": 1,
+    "official_locator_count": 1,
+    "shell_network_count": 0,
+    "browser_use_count": 0,
+    "package_install_count": 0,
+    "ad_hoc_retrieval_script_count": 0,
+    "official_documents_read": 1,
+    "financial_mcp_count": 3,
+    "news_mcp_count": 0,
+    "elapsed_seconds": 90,
+    "todo_write_used": false,
+    "company_profile_used": false,
+    "market_valuation_used": false,
+    "generic_news_search_used": false,
+    "renderer_source_read": false
+  },
+  "enrichment_decision": {
+    "status": "completed",
+    "reason": "固定市场快照已通过一次金融 MCP 合并查询完成",
+    "data_gaps": [
+      {
+        "id": "MARKET_SNAPSHOT",
+        "description": "当前价与当前总市值",
+        "source_type": "financial",
+        "status": "resolved"
+      },
+      {
+        "id": "GAP_INVESTMENT_INCOME",
+        "description": "利润表投资收益行金额",
+        "source_type": "financial",
+        "status": "resolved"
+      },
+      {
+        "id": "GAP_CASH_BALANCE",
+        "description": "期末现金及现金等价物余额与货币资金勾稽",
+        "source_type": "financial",
+        "status": "resolved"
+      }
+    ]
+  },
+  "mcp_fields": [
+    {
+      "field": "current_price",
+      "data_gap_id": "MARKET_SNAPSHOT",
+      "status": "pending",
+      "value": "230.36",
+      "unit": "元",
+      "as_of": "2026-09-16 15:00",
+      "provider": "同花顺 iFinD",
+      "official_source_ids": [],
+      "used_in": [
+        "market_snapshot"
+      ]
+    },
+    {
+      "field": "market_cap",
+      "data_gap_id": "MARKET_SNAPSHOT",
+      "status": "pending",
+      "value": "219760660000",
+      "unit": "元",
+      "as_of": "2026-09-16 15:00",
+      "provider": "同花顺 iFinD",
+      "official_source_ids": [],
+      "used_in": [
+        "market_snapshot"
+      ]
+    },
+    {
+      "field": "investment_income",
+      "data_gap_id": "GAP_INVESTMENT_INCOME",
+      "status": "pending",
+      "value": "-3529962.68",
+      "unit": "元",
+      "as_of": "2026-06-30",
+      "provider": "同花顺 iFinD",
+      "official_source_ids": [],
+      "used_in": [
+        "investment_income"
+      ]
+    },
+    {
+      "field": "cash_closing",
+      "data_gap_id": "GAP_CASH_BALANCE",
+      "status": "pending",
+      "value": "5999840000",
+      "unit": "元",
+      "as_of": "2026-06-30",
+      "provider": "同花顺 iFinD",
+      "official_source_ids": [],
+      "used_in": [
+        "cash_reconcile"
+      ]
+    }
+  ],
+  "reconciliations": [
+    {
+      "name": "income_statement_comparative",
+      "status": "pass",
+      "basis": "official_native_comparative",
+      "source_ids": [
+        "S1"
+      ]
+    },
+    {
+      "name": "balance_sheet_opening",
+      "status": "pass",
+      "basis": "official_report_opening",
+      "source_ids": [
+        "S1"
+      ]
+    },
+    {
+      "name": "cash_closing_balance",
+      "status": "pass",
+      "basis": "official_report_opening",
+      "source_ids": [
+        "S1"
+      ],
+      "left_value": 5999840000,
+      "right_value": 6072250000,
+      "tolerance": 200000000,
+      "left_desc": "期末现金及现金等价物余额",
+      "right_desc": "货币资金（含受限资金，差异已在非经常性损益与受限披露中体现）"
+    }
+  ]
+}

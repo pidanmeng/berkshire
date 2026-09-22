@@ -1,0 +1,73 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "deep-dive-update-锐捷网络-20260921-cb26",
+  "origin": "process-improvement",
+  "command": "deep-dive-update 锐捷网络（2026-09-18 可转债发行预案，拟募资不超 26 亿元）",
+  "status": "success",
+  "issues": [
+    {
+      "problemCode": "quality-screen-nonzero-exit-valid",
+      "targetKind": "script",
+      "targetPath": ".trae/scripts/quality-gate/quality-screen.ts",
+      "symptom": "quality-screen.ts --mode report 对锐捷网络输出完整且正确的质量筛查报告（RED/0.7，退出码应为 0 表示 GREEN/YELLOW 之外的正常 RED 结论），但命令退出码为非零 2；编排器无法依赖退出码区分『正常 RED 结论』与『脚本异常失败』，只能人工从输出判断，破坏契约（agreements/验收）中对退出码的约定",
+      "evidence": [
+        { "grade": "B", "detail": "质量筛查阶段 bun run .trae/scripts/quality-gate/quality-screen.ts --file ... 锐捷网络-公司研究.md 输出完整 quality-screen 报告（RED/0.7，红牌 1 黄牌 7），符合预期结论，但进程退出码为 2；AGENTS.md 约定『退出码 2 = RED，需编排器判断』，本次 RED 属正常路径，退出码 2 与『异常』语义混淆，且无法区分正常 RED 与脚本崩溃" }
+      ],
+      "rootCauseHypothesis": "quality-screen.ts 对 RED 结论统一返回退出码 2，未区分为『正常 RED 判定』与『脚本运行异常』两种语义；编排器验收逻辑无法可靠区分，需人工读输出判断",
+      "goal": "quality-screen.ts 对正常 RED/YELLOW/GREEN 判定返回退出码 0 并在 stdout 输出判定结论，仅当脚本自身异常（缺字段/崩溃）时返回非零退出码；或在退出码约定中加入状态码位区分『判定结论』与『运行状态』",
+      "severity": "medium",
+      "confidence": 0.8,
+      "benefit": "消除编排器对 quality-screen 退出码的二义性，验收可自动化、可靠区分正常 RED 与脚本失败",
+      "risk": "退出码语义变更需与所有调用点（Phase 4 门禁、AGENTS.md 约定、/screen）对齐，避免破坏既有自动化",
+      "acceptance": "quality-screen 对正常 RED 结论退出码为 0（或在输出注明判定码），异常崩溃返回非零；编排器可自动区分"
+    },
+    {
+      "problemCode": "evaluate-vs-note-profit-discrepancy",
+      "targetKind": "process",
+      "targetPath": "Research/10-Knowledge/09-通信设备/02-公司研究/锐捷网络-公司研究.md",
+      "symptom": "2026E 净利三方口径不一致：evaluate.ts 输出基准 11.4 亿、公司笔记一致口径 13.45 亿、摊薄『持平』假设 6.96 亿，三口径导致 Forward PE 读数区间 88.2x~116x 波动；增量更新未能裁定唯一 Forward PE，只能与基线『并列保留待统计』，影响估值稳定性与跨期可比",
+      "evidence": [
+        { "grade": "A", "detail": "evaluate.ts @ 2026-09-21 基准 2026E 净利 11.4 亿（H1 已实现 6.94 亿）；公司笔记 frontmatter forward_pe 基线 base_net_profit_yi 13.45 亿（一致口径）；摊薄『持平』假设取 2025 全年 6.96 亿；三方分歧在 Flat Forward PE 113.9x（11.4 亿）下被记录为关键分歧点 #1，标注『三季报后统一』" }
+      ],
+      "rootCauseHypothesis": "evaluate.ts 的 forward 净利基准（基于单年同比/自动外推的 normal 口径）与知识库一致预期口径（券商一致净利）缺乏统一来源，当二者背离时估值快照与估值追踪系统的 Forward PE 读数不一致，且无自动对账机制",
+      "goal": "evaluate.ts 与知识库建立 forward 净利基准的单一事实源（优先券商一致预期，其次 evaluate 外推），当多口径存在显著背离时显式标注口径来源并提示在报告期后统一，Frontward PE 快照引用同一基准",
+      "severity": "medium",
+      "confidence": 0.75,
+      "benefit": "消除同一公司 Forward PE 的多口径波动，提升估值追踪系统读数的一致性与跨期可比性",
+      "risk": "基准来源切换可能改变既有笔记 forward_pe 值，需 backfill 同步",
+      "acceptance": "evaluate.ts 输出与公司笔记 forward_pe 基准来源一致，多口径背离时显式提示统一"
+    },
+    {
+      "problemCode": "h1-liability-ratio-estimate-refinement",
+      "targetKind": "data",
+      "targetPath": "Research/10-Knowledge/09-通信设备/02-公司研究/锐捷网络-公司研究.md",
+      "symptom": "基线笔记 2026H1 资产负债率标注为估算值 ~63%（financials.half_year_2026.asset_liability_ratio: 63.0，frontmatter 注明『估算值，需资产负债表精确核验』），本次通过可转债发行预案披露的精确值 62.92% 予以修正；估算口径的历史数据存在被下游消费（quality-screen/估值）的风险而不自知",
+      "evidence": [
+        { "grade": "A", "detail": "基线 frontmatter 后文 63.0 标注为估算；本次 stock.ts 采集可转债预案披露精确值 62.92%，已修正为 62.9，并同步至基本面更新与更新报告" }
+      ],
+      "rootCauseHypothesis": "已收录公司笔记中部分财务字段是阶段性估算值，但 frontmatter 缺少统一『估算 vs 精确』标记规范（仅以注释文本标注），下游脚本与后续调研无法程序化识别哪些字段待核验，存在将估算当精确值消费的风险",
+      "goal": "为公司笔记 financials 字段建立『is_estimate』标记规范（或对估算值统一加 * 后缀/单独 data_estimate 字段），quality-screen/估值追踪对估算字段消费时输出提示，后续调研自动核验清单标记估算字段",
+      "severity": "low",
+      "confidence": 0.7,
+      "benefit": "提升公司笔记数据层的口径可信度，减少估算字段被误当精确值消费的风险",
+      "risk": "字段标记变更需同步模板与后端解析（research.ts/api.ts）",
+      "acceptance": "估算字段在 frontmatter 中可程序化识别，下游脚本对估算字段消费给出提示"
+    },
+    {
+      "problemCode": "convertible-selectivity-disclosure",
+      "targetKind": "content",
+      "targetPath": "Research/10-Knowledge/09-通信设备/02-公司研究/锐捷网络-基本面更新.md",
+      "symptom": "可转债发行预案及配套文档在份额叙事上『报喜不报忧』：只引 IDC 2026H1 800G 第一（正面），未披露 IDC 2026Q1 起 200G/400G 连续 14 季第一已转第二（华为 800G 放量压制，护城河侵蚀信号）；构成选择性披露的诚信扣分项（🟡），削弱信任溢价",
+      "evidence": [
+        { "grade": "A", "detail": "可转债募投文档引用『800G 第一』技术代际领先；同期 2026 半年报原文已披露 200G/400G 转第二；二者在可转债正式披露文件中未并置呈现，存在倾向性引用" }
+      ],
+      "rootCauseHypothesis": "公司在融资路演/发行前置材料中倾向披露利好份额（800G 第一）而省略不利份额（200G/400G 转二），属选择性披露；对未来同类事件的核查应强制要求取多期 IDC 数据交叉，不采信单一引用的单边叙事",
+      "goal": "在 DocumentReader 精读清单中加入『披露完整性』检查项：对融资发行类材料，强制交叉核验份额/市场份额的多期多口径数据，识别并标注选择性披露倾向",
+      "severity": "low",
+      "confidence": 0.7,
+      "benefit": "提升对融资类临时披露文件的可信度判断，及早识别报喜不报忧的单边叙事",
+      "risk": "需为 deep-dive-update 精读模板增加检查项并同步 self-check",
+      "acceptance": "融资发行类材料精读自动核验多期份额数据并标记选择性披露"
+    }
+  ]
+}
