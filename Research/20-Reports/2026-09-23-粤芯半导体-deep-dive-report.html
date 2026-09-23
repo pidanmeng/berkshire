@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>粤芯半导体（301660.SZ）深度调研 · Deep-Dive Report</title>
+<style>
+  :root{
+    --color-canvas:#000000;
+    --color-surface:#0a0a0a;
+    --color-surface-raised:#111111;
+    --color-border:#1a1a1a;
+    --color-ink:#ffffff;
+    --color-ink-muted:#a1a1a1;
+    --color-ink-subtle:#666666;
+    --color-accent:#d4af37;
+    --color-accent-hover:#e6c25c;
+    --color-danger:#ee0000;
+    --fin-up:#ee0000;
+    --fin-down:#0abf6e;
+    --star-on:#d4af37;
+    --star-off:#3a3a3a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--color-canvas);
+    color:var(--color-ink);
+    font-family:"Geist","Inter",-apple-system,"Segoe UI",Roboto,"Microsoft YaHei",sans-serif;
+    font-size:16px;line-height:24px;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--color-accent);text-decoration:none;}
+  a:hover{color:var(--color-accent-hover);}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px;}
+  .mono{font-family:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;}
+  .muted{color:var(--color-ink-muted);}
+  .subtle{color:var(--color-ink-subtle);}
+
+  /* ===== Hero ===== */
+  .hero{border-bottom:1px solid var(--color-border);padding:48px 0 32px;}
+  .hero .kicker{color:var(--color-accent);font-weight:500;letter-spacing:.08em;font-size:13px;text-transform:uppercase;margin-bottom:16px;}
+  .hero h1{font-size:40px;font-weight:600;line-height:48px;letter-spacing:-1.4px;margin-bottom:12px;}
+  .hero h1 .code{color:var(--color-ink-muted);font-size:22px;letter-spacing:-.6px;}
+  .hero .tagline{color:var(--color-ink-muted);font-size:17px;max-width:860px;}
+  .hero .meta{margin-top:24px;display:flex;flex-wrap:wrap;gap:12px;}
+  .meta-item{border:1px solid var(--color-border);border-radius:12px;background:var(--color-surface);padding:10px 14px;}
+  .meta-item .k{color:var(--color-ink-subtle);font-size:11px;text-transform:uppercase;letter-spacing:.06em;}
+  .meta-item .v{font-size:14px;font-weight:500;margin-top:2px;}
+  .badge{display:inline-block;border-radius:9999px;padding:3px 12px;font-size:12px;font-weight:600;border:1px solid var(--color-border);margin-right:6px;}
+  .badge.gold{color:#000;background:var(--color-accent);border-color:var(--color-accent);}
+  .badge.green{color:var(--fin-down);border-color:var(--fin-down);}
+  .badge.red{color:#ff6b6b;border-color:#ff6b6b;}
+
+  /* ===== Section ===== */
+  section{padding:40px 0;border-bottom:1px solid var(--color-border);}
+  .sec-title{font-size:13px;color:var(--color-accent);font-weight:500;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;}
+  h2{font-size:22px;font-weight:600;letter-spacing:-.8px;margin-bottom:20px;}
+  h3{font-size:16px;font-weight:600;margin:24px 0 12px;color:var(--color-ink);}
+  p{margin:12px 0;color:var(--color-ink-muted);}
+  strong{color:var(--color-ink);}
+
+  /* ===== Cards & Grid ===== */
+  .card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:12px;padding:20px;margin:16px 0;}
+  .grid{display:grid;gap:16px;}
+  .g2{grid-template-columns:repeat(2,1fr);}
+  .g4{grid-template-columns:repeat(4,1fr);}
+  @media(max-width:760px){.g2,.g4{grid-template-columns:1fr;}}
+  .kpi{border:1px solid var(--color-border);border-radius:12px;background:var(--color-surface);padding:18px;}
+  .kpi .label{color:var(--color-ink-subtle);font-size:12px;text-transform:uppercase;letter-spacing:.05em;}
+  .kpi .num{font-size:26px;font-weight:600;letter-spacing:-1px;margin-top:6px;}
+  .kpi .sub{color:var(--color-ink-muted);font-size:12px;margin-top:4px;}
+  .up{color:var(--fin-up);} .down{color:var(--fin-down);}
+
+  /* ===== Table ===== */
+  table{width:100%;border-collapse:collapse;font-size:14px;margin:16px 0;}
+  th{color:var(--color-ink-subtle);text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.05em;padding:10px 12px;border-bottom:1px solid var(--color-border);font-weight:500;}
+  td{border-bottom:1px solid var(--color-border);padding:10px 12px;color:var(--color-ink-muted);}
+  td:first-child{color:var(--color-ink);}
+  tr:last-child td{border-bottom:none;}
+  td.r,th.r{text-align:right;}
+
+  /* ===== Chart ===== */
+  .chart-container{border:1px solid var(--color-border);border-radius:12px;background:var(--color-surface);padding:12px;margin:16px 0;}
+  .chart-container .chart{width:100%;height:360px;}
+  .chart-source{color:var(--color-ink-subtle);font-size:12px;margin-top:8px;padding:0 4px;}
+  .chart-fallback{display:none;padding:20px;color:var(--color-ink-muted);font-size:14px;}
+
+  /* ===== Star rating ===== */
+  .star-rating{color:var(--star-on);letter-spacing:2px;font-size:16px;white-space:nowrap;}
+  .star-rating .off{color:var(--star-off);}
+
+  /* ===== Critics matrix ===== */
+  .dual{border:1px solid var(--color-border);border-radius:12px;overflow:hidden;margin:16px 0;}
+  .dual .row{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--color-border);}
+  .dual .row:last-child{border-bottom:none;}
+  .dual .c{padding:16px 18px;}
+  .dual .c h4{font-size:13px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;}
+  .dual .bull h4{color:#8ef0cf;}
+  .dual .bear h4{color:#888;}
+  .dual .bull{background:linear-gradient(180deg,rgba(10,191,110,.06),transparent);}
+  .dual .c p{margin:8px 0;font-size:14px;}
+  .lbl{display:inline-block;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:600;margin-top:4px;}
+  .lbl.s{background:rgba(10,191,110,.15);color:#8ef0cf;}
+  .lbl.w{background:rgba(212,175,55,.15);color:var(--color-accent);}
+  .lbl.a{background:rgba(238,0,0,.15);color:#ff6b6b;}
+
+  /* ===== Divider verdict ===== */
+  .verdict{border:1px solid var(--color-border);border-left:3px solid var(--color-accent);border-radius:12px;background:var(--color-surface);padding:20px 22px;margin:20px 0;}
+  .verdict h4{color:var(--color-accent);font-size:13px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;}
+  .verdict p{color:var(--color-ink-muted);font-size:14px;}
+
+  /* ===== Pill list ===== */
+  .pill-list{list-style:none;}
+  .pill-list li{padding:10px 0;border-bottom:1px solid var(--color-border);color:var(--color-ink-muted);font-size:14px;}
+  .pill-list li:last-child{border-bottom:none;}
+  .pill-list li strong{color:var(--color-ink);}
+
+  /* ===== Footer ===== */
+  footer{padding:40px 0;color:var(--color-ink-subtle);font-size:12px;}
+  footer .disc{border:1px solid var(--color-border);border-radius:12px;padding:16px;margin-bottom:20px;color:var(--color-ink-subtle);}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- ================= HERO ================= -->
+  <div class="hero">
+    <div class="kicker">Investment Deep-Dive · Report</div>
+    <h1>粤芯半导体 <span class="code">301660.SZ</span></h1>
+    <div class="tagline">大湾区首条 12 英寸特色工艺晶圆代工线 —— 模拟/功率/逻辑存储平台（180-90nm），国产替代 + 周期景气共振；但处深亏烧钱期，资本黑洞属性显著。</div>
+    <div class="meta">
+      <div class="meta-item"><div class="k">taskId</div><div class="v mono">deep-dive-粤芯半导体-20260923-4317</div></div>
+      <div class="meta-item"><div class="k">标的特殊状态</div><div class="v">创业板 IPO 发行中（2026-09-22 发行价 12.01 元）</div></div>
+      <div class="meta-item"><div class="k">数据时点</div><div class="v">2026-09-23</div></div>
+      <div class="meta-item"><div class="k">质量筛查</div><div class="v"><span class="badge red">RED 0.0</span></div></div>
+      <div class="meta-item"><div class="k">综合判定</div><div class="v"><span class="badge gold">观望</span></div></div>
+    </div>
+    <div style="margin-top:16px;font-size:12px;color:var(--color-ink-subtle)">
+      <span class="badge">数据源特殊性</span> 标的未上市→无上市后定期报告/研报。财务取自招股书三年法定审计报告（致同，2023/2024/2025）+ 2026H1 审阅；估值以发行定价 12.01 元为基准。多研报缺口，空方证据由财报原文自行挖掘。
+    </div>
+  </div>
+
+  <!-- ================= 1 核心结论 ================= -->
+  <section id="conclusion">
+    <div class="sec-title">01 · 核心结论</div>
+    <h2>增长真实但属"线性消耗"，资本黑洞 + RED 质量，无投安全边际</h2>
+
+    <div class="grid g4">
+      <div class="kpi"><div class="label">2023→2025 营收 CAGR</div><div class="num up">≈57%</div><div class="sub">2026H1 +69%，量增真实</div></div>
+      <div class="kpi"><div class="label">2025 主营毛利率</div><div class="num">-58.3%</div><div class="sub">深度为负，逐年收窄但未盈亏平衡</div></div>
+      <div class="kpi"><div class="label">磨母亏损 2025</div><div class="num up">-23.46 亿</div><div class="sub">扣非 -27.44 亿，三年扩大</div></div>
+      <div class="kpi"><div class="label">发行后总市值</div><div class="num">345.68 亿</div><div class="sub">PS 13.39（略低于可比均值 14.52）</div></div>
+    </div>
+
+    <div class="grid g2">
+      <div class="card">
+        <p><strong>🟢 多方（置信度 8/10）</strong></p>
+        <p>营收高增 + 盈利拐点方向明确：主营 CAGR 57%、26H1 +69%，毛利率 -114.9%→-58.3%→-26.5% 三连收窄逼近盈亏平衡；龙头满产（中芯利用率 93.7%）+ 成熟制程涨价 + 国产替代共振，"拐点期权"真实存在。</p>
+      </div>
+      <div class="card">
+        <p><strong>🔴 空方（置信度 9/10）</strong></p>
+        <p>资本黑洞、无可投安全边际：负毛利无自我造血、累计未弥补亏损 -100.8 亿、资产负债率 84.13%、有息负债约 168 亿、自由现金流巨负；经营现金流"+6 亿"靠折旧加回 24 亿 + 应付堆高 13 亿。quality-screen <strong>RED 0.0/10</strong>，非"值得跟踪"挡位。</p>
+      </div>
+    </div>
+
+    <div class="verdict">
+      <h4>综合判定 · 观望（🔴 RED 挡位，不纳入值得跟踪池）</h4>
+      <p>增长为真但质量差（增收不增利、线性消耗非复利）；护城河未兑现为盈利；亏损期无盈利锚、市销率对重资产低估自由现金流稀释，发行价相对净资产高位。<strong>当前不满足四大师投资纪律（坏生意 + 无安全边际）。</strong>唯一值得跟踪的是"盈亏平衡拐点期权"——在连续正毛利/持续正自由现金流被数据佐证前（涨价 + 三期满产双验证），不构成可投标的；拐点研判详见多空裁决与跟踪指标。</p>
+    </div>
+
+    <h3>四大师评分卡</h3>
+    <table>
+      <tr><th>维度</th><th>大师</th><th>评分</th><th style="text-align:right">核心判断</th></tr>
+      <tr><td>能力圈</td><td>巴菲特</td><td><span class="star-rating">★★★</span><span class="star-rating off">☆☆</span> <span class="mono">6.0</span></td><td style="text-align:right">重资产代工生意本质可理解，但特色工艺演进与周期交织，理解属中级</td></tr>
+      <tr><td>护城河</td><td>巴菲特</td><td><span class="star-rating">★★</span><span class="star-rating off">☆☆☆</span> <span class="mono">4.0</span></td><td style="text-align:right">当前负毛利无成本壁垒；特色工艺 Know-how + 区域卡位仅"远期期权"</td></tr>
+      <tr><td>生意模式</td><td>段永平</td><td><span class="star-rating">★</span><span class="star-rating off">☆☆☆☆</span> <span class="mono">2.0</span></td><td style="text-align:right">资本黑洞：无自我造血、无定价权，靠融资输血扩张</td></tr>
+      <tr><td>管理层诚信</td><td>段永平</td><td><span class="star-rating">★★★</span><span class="star-rating off">☆☆</span> <span class="mono">6.0</span></td><td style="text-align:right">致同标准审计、三年无重述、显著提示未盈利风险→坦诚；补助依赖+高位发行为减分</td></tr>
+      <tr><td>反向清单</td><td>芒格</td><td><span class="star-rating">★★★★</span><span class="star-rating off">☆</span> <span class="mono">8.0</span></td><td style="text-align:right">空方红旗识别充分，失败情景分析到位</td></tr>
+      <tr><td>历史类比</td><td>李录</td><td><span class="star-rating">★★★</span><span class="star-rating off">☆☆</span> <span class="mono">6.0</span></td><td style="text-align:right">类比中芯/晶合满产前烧钱段恰当，但兑现依赖周期、时间框架存疑</td></tr>
+      <tr><td>综合</td><td>—</td><td><span class="star-rating">★★</span><span class="star-rating off">☆☆☆</span> <span class="mono">由 composite.ts 加权</span></td><td style="text-align:right">整体高风险不确定标的，RED 挡位不跟踪</td></tr>
+    </table>
+  </section>
+
+  <!-- ================= 2 财务趋势 ================= -->
+  <section id="financials">
+    <div class="sec-title">02 · 财务与增长趋势</div>
+    <h2>营收高增、亏损扩大 —— 量增不增利的线性消耗</h2>
+
+    <div class="chart-container">
+      <div id="chart-fin" class="chart"></div>
+      <div class="chart-source">数据来源：招股书三年审计报告（2023/2024/2025）+ 2026H1 审阅（deep-read §9.1）；毛利率为主营口径。磨母净利持续为负且亏损扩大。</div>
+    </div>
+
+    <table>
+      <tr><th>指标</th><th>2023</th><th>2024</th><th>2025</th><th>2026H1</th><th>趋势</th></tr>
+      <tr><td>营收（亿元）</td><td>10.44</td><td>16.81</td><td>25.82</td><td>17.77</td><td>高增（+61%/+54%/+69%）</td></tr>
+      <tr><td>磨母净利（亿元）</td><td>-19.17</td><td>-22.53</td><td>-23.46</td><td>-10.52</td><td>亏损逐年扩大</td></tr>
+      <tr><td>主营毛利率</td><td>-114.9%</td><td>-71.0%</td><td>-58.3%</td><td>-26.5%</td><td>深度为负但逐年收窄</td></tr>
+      <tr><td>加权 ROE（磨母）</td><td>-23.87%</td><td>-37.30%</td><td>-61.16%</td><td>—</td><td>严重恶化</td></tr>
+      <tr><td>经营现金流（亿元）</td><td>1.00</td><td>6.40</td><td>6.21</td><td>11.29</td><td>靠折旧+应付垫正</td></tr>
+      <tr><td>资产负债率</td><td>—</td><td>67.79%</td><td>84.13%</td><td>—</td><td>杠杆快速抬升</td></tr>
+    </table>
+
+    <div class="card">
+      <p><strong>关键质量归因</strong>：营收连续高增（CAGR 57%）但<strong>增收不增利</strong>——每增 1 元营收对应更多折旧/利息摊薄，磨母亏损三年扩至 -23.46 亿、扣非 -27.44 亿。<strong>经营现金流"转正"含金量低</strong>：+6.21 亿完全靠巨额折旧（24.07 亿）加回 + 应付堆高 13 亿，自由现金流巨幅为负。营收与利润方向彻底背离，属"产能换规模"的早周期扩张。</p>
+    </div>
+  </section>
+
+  <!-- ================= 3 估值 ================= -->
+  <section id="valuation">
+    <div class="sec-title">03 · 估值与安全边际</div>
+    <h2>三情景 PS 估值（lossmaking 反转路径）—— 无实质安全边际</h2>
+
+    <div class="grid g4">
+      <div class="kpi"><div class="label">发行价</div><div class="num">12.01 元</div><div class="sub">2026-09-22</div></div>
+      <div class="kpi"><div class="label">2025 静态 PS</div><div class="num">13.39</div><div class="sub">可比均值 14.52，折价约 8%</div></div>
+      <div class="kpi"><div class="label">PE-TTM</div><div class="num">N/A</div><div class="sub">亏损无 PE</div></div>
+      <div class="kpi"><div class="label">PB</div><div class="num">高位</div><div class="sub">相对账面净资产放大</div></div>
+    </div>
+
+    <div class="chart-container">
+      <div id="chart-valuation" class="chart"></div>
+      <div class="chart-source">三情景目标市值 = 2027E 营收 × PS。悲观 38亿×7x=266亿(-23%) ｜ 合理 45亿×9x=405亿(+17%) ｜ 乐观 52亿×11x=572亿(+44%)。当前 345.68 亿处合理情景下方。</div>
+    </div>
+
+    <h3>估值方法与倍数锚定</h3>
+    <div class="card">
+      <p><strong>品种路由</strong>：lossmaking → 主模型 <strong>PB + PS（反转路径）</strong>（净利为负、无盈利锚；成长赛道惯例用市销率）。辅助：PS vs 可比均值 + 毛利率收敛/OCF 转正验证反转。</p>
+      <p><strong>PS 三重锚定（关键）</strong>：① 发行定价 2025 摊薄静态 PS 13.39；② 可比公司 2025 静态 PS——中芯 15.52 / 华虹 26.10 / 晶合 7.54 / 芯联 8.94（均值剔燕东微 14.52）；③ 重资产自由现金流稀释折价（空方证据→中性 PS 应显著低于可比均值）。<strong>中性 PS 9x 已低于可比均值，仍高于晶合(7.5)/芯联(8.9)——相对其亏损状态与最小规模，PS 并不便宜。</strong></p>
+    </div>
+
+    <table>
+      <tr><th>参数（2027E）</th><th>悲观</th><th>合理</th><th>乐观</th><th style="text-align:right">隐含涨跌 vs 345.68 亿</th></tr>
+      <tr><td>营收假设（亿元）</td><td>38</td><td>45</td><td>52</td><td style="text-align:right">—</td></tr>
+      <tr><td>PS 倍数</td><td>7x</td><td>9x</td><td>11x</td><td style="text-align:right">—</td></tr>
+      <tr><td><strong>目标市值（亿元）</strong></td><td><strong>266</strong></td><td><strong>405</strong></td><td><strong>572</strong></td><td style="text-align:right"><span class="down">-23%</span> / <span class="up">+17%</span> / <span class="up">+44%</span></td></tr>
+      <tr><td>目标价（元）</td><td>9.2</td><td>14.1</td><td>19.9</td><td style="text-align:right">—</td></tr>
+    </table>
+
+    <div class="verdict">
+      <h4>安全边际条件</h4>
+      <p><strong>目标买入市值</strong>：约 213 亿以下（悲观 266×0.8，且仅在盈利拐点数据兑现后考虑，目标价 7.4 元以下）。<strong>目标卖出市值</strong>：约 572 亿以上（乐观上沿 19.9 元附近）。<strong>当前不构成安全边际买入</strong>——只有"涨价 + 满产 → 亏损收窄"被数据佐证后，才谈得上安全边际；在此之前上市即存在破发/估值下修风险（RED 挡位不介入）。</p>
+    </div>
+  </section>
+
+  <!-- ================= 4 多空对照 ================= -->
+  <section id="bullbear">
+    <div class="sec-title">04 · 多空论证与综合裁决</div>
+    <h2>五维度 Bull vs Bear 对照（证据强度分级）</h2>
+
+    <div class="dual">
+      <div class="row">
+        <div class="c bull"><h4>🟢 Bull · 多方</h4>
+          <p><strong>1. 增长飞轮：营收高增</strong>（强/8）：主营 CAGR 57%、26H1 +69%，量能有龙头满产与国产替代背书</p>
+          <p><strong>2. 盈利拐点方向明确</strong>（中-强/7）：毛利率 -115%→-58%→-26.5% 三年改善 89pp，单季亏损率逐季收敛</p>
+          <p><strong>3. 特色工艺 Know-how</strong>（中/6）：BCD/SiPho/eNVM 平台真研发投入，为远期转化成本</p>
+          <p><strong>4. 区域卡位 + 政策红利</strong>（中/6）：大湾区首条 12 寸线，政府/国资输血 + 国产替代 + 大基金三期</p>
+          <p><strong>5. 周期景气顺风</strong>（强/8）：8 寸涨价 10%、功率/模拟多轮提价、中国区订单 91%</p>
+        </div>
+        <div class="c bear"><h4>🔴 Bear · 空方</h4>
+          <p><strong>1. 主营毛利深度为负、无自我造血</strong>（强/9）：2025 主营毛利 -58%（成本 158%×收入），"读一个行业都罕见的负毛利"</p>
+          <p><strong>2. 资本黑洞</strong>（强/9）：连亏 + 高杠杆 + 自由现金流巨负；累计未分配 -100.8 亿、有息债 168 亿、FV/折旧吞噬现金</p>
+          <p><strong>3. 无盈利锚、估值不便宜</strong>（中/8）：PS 13.39 高于晶合/芯联，对重资产低估自由现金流稀释，高位发行断板风险</p>
+          <p><strong>4. 客户集中与议价权弱</strong>（中/6）：前五应收占 71%，对客户/成本两端均无定价权</p>
+          <p><strong>5. 行业产能过剩 + 出口管制</strong>（中/6）：成熟制程价格战、关键设备材料受限延长折旧压力</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-container">
+      <div id="chart-pattern" class="chart"></div>
+      <div class="chart-source">多空五维度论证据强度评分（0-10）；财务质量/估值空方显著占优，增长/周期多方占优；裁决见下方。</div>
+    </div>
+
+    <table>
+      <tr><th>维度</th><th style="text-align:center">🟢 多方强度</th><th style="text-align:center">🔴 空方强度</th><th>综合裁决（结合外围因素）</th></tr>
+      <tr><td>增长</td><td style="text-align:center">8</td><td style="text-align:center">6</td><td><span class="lbl s">偏多方</span> 增长真实性高：龙头满产+国产替代验证量增为真，但属周期性放量非复利——"增长为真、质量差"</td></tr>
+      <tr><td>护城河</td><td style="text-align:center">6</td><td style="text-align:center">7</td><td><span class="lbl a">偏空方</span> 护城河为远期期权未变现：区域卡位非排他、特色工艺筹码待正毛利财年验证</td></tr>
+      <tr><td>财务质量</td><td style="text-align:center">4</td><td style="text-align:center">9</td><td><span class="lbl a">空方占优</span> 全表最弱环：OCF"含金量低"（应付+13 亿/应收+8.9 亿），RED 与"不介入"的核心依据</td></tr>
+      <tr><td>估值</td><td style="text-align:center">6</td><td style="text-align:center">8</td><td><span class="lbl a">偏空方</span> 无实质安全边际：PS 对重资产低估自由现金流稀释，中性 PS9 仍高于晶合/芯联</td></tr>
+      <tr><td>周期/政策/国际</td><td style="text-align:center">8</td><td style="text-align:center">6</td><td><span class="lbl w">中性偏多</span> 景气为真（涨价/大基金三期顺风被验证），但属周期性繁荣；出口管制为中长期隐性风险</td></tr>
+    </table>
+
+    <div class="verdict">
+      <h4>最大分歧点 · 「盈利拐点与现金流回正的时点」</h4>
+      <p><strong>裁决理由</strong>：产业/周期证据（龙头满产、涨价传导、国产替代结构性需求）确实把"拐点会不会来"变成"何时来"的节奏博弈，多方"方向"部分成立；但空方"资本黑洞 + 现金流幻觉 + 无盈利锚"在外围（167 亿杠杆、自由现金流巨负、补助退坡风险）下被放大且更稳健。<strong>裁决：偏向空方的"风险收益不对称"——在盈利拐点被连续正毛利/持续正自由现金流佐证前，不构成可投标的；仅在挂钩"涨价 + 满产"双验证后的回调中，方有期权价值。</strong></p>
+    </div>
+  </section>
+
+  <!-- ================= 5 增长驱动 ================= -->
+  <section id="growth">
+    <div class="sec-title">05 · 增长驱动与核心优势可持续性</div>
+    <h2>增长由量增主导、外因占比高 —— 纯外因驱动需标注周期见顶风险</h2>
+
+    <div class="grid g2">
+      <div class="card">
+        <h3>高增长促成原因（量化归因）</h3>
+        <ul class="pill-list">
+          <li><strong>量增（产能释放）—— 主因</strong>：三期 2025Q1 投产爬坡；固定资产净值 71→124 亿、在建转固 63.78 亿</li>
+          <li><strong>价增/结构升级 —— 边际</strong>：成熟制程 2025-26 涨价导入期，但粤芯利用率不足单价传导弱</li>
+          <li><strong>新业务/第二曲线 —— 待验证</strong>：硅光/RRAM/存算一体为募投研发，尚未量产营收</li>
+          <li><strong>行业景气/政策红利 —— 较强</strong>：龙头满产 + 国产替代 + 大基金三期，境内订单 91%</li>
+          <li><strong>内/外因占比</strong>：可主导内因（满产爬坡）需资金/设备持续投入；外因（涨价+国产替代）占成长大头 → 周期+政策驱动，企业尚不拥有价格主导权</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>核心优势（相对同行）</h3>
+        <ul class="pill-list">
+          <li><strong>仅营收增速占优</strong>：CAGR 57%，高于多数可比；毛利率/净利率/ROE/现金流均不占优（为负或显著劣后）</li>
+          <li><strong>规模差异（劣势）</strong>：2025 营收约中芯 3.8%、华虹 14.9%；PS 13.39 高于晶合(7.54)/芯联(8.94)</li>
+          <li><strong>优势成因</strong>：营收增速来自低基数 + 国产替代倾斜，未转化为单位成本优势；区域卡位（大湾区首条 12 寸）非排他</li>
+          <li><strong>独特壁垒因果链</strong>：特色工艺平台（BCD/SiPho/eNVM）实现设计公司切换成本为唯一"幼苗"→ 需 1-2 个正毛利财年验证；当前<strong>无可持续 10 年壁垒</strong></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="verdict">
+      <h4>优势可持续性判断</h4>
+      <p><strong>趋势</strong>：高位但不健康（增利不增价）。<strong>被侵蚀因素</strong>：成本/折旧上行（概率高、影响大）→ 负毛利收窄放缓；成熟制程价格战/产能过剩（中、大）；产品结构低端缺乏提价能力（中）；先进工艺不在制程覆盖的落后风险（中）；出口管制限制设备（中）。<strong>敏感性</strong>：毛利率每再恶化 10pp（如 -26%→-36%），按 45 亿中性营收对应约 -4.5 亿净利影响，足以吞噬全部现金流回正进程——<strong>优势脆弱、杠杆高企、容错空间极小</strong>。</p>
+    </div>
+  </section>
+
+  <!-- ================= 6 反向清单 ================= -->
+  <section id="inversion">
+    <div class="sec-title">06 · 反向检查清单（芒格）</div>
+    <h2>什么情况下我们会对这家公司判断错了？</h2>
+    <div class="card">
+      <ul class="pill-list">
+        <li><strong>1. "拐点会在未来数季度到来"错了</strong>？——成熟制程涨价周期 2027 见顶 + 三期满产爬坡不及预期 → 毛利拐点证伪，"赌周期+赌满产"双双落空（最大反向情景）。</li>
+        <li><strong>2. "现金流转正是经营改善"错了</strong>？——OCF 靠折旧加回 + 应付堆高，若应收/存货回升或补助退坡，"现金流幻觉"即刻显形，自由现金流窟窿放大。</li>
+        <li><strong>3. "资本黑洞可控"错了</strong>？——168 亿有息债 + 在建折旧压垮现金流，累计亏损超 100 亿侵蚀净资产，终局为贱价出售/债务重组/持续增发稀释。</li>
+        <li><strong>4. "国产替代订单可持续"错了</strong>？——成熟制程供给过剩，中芯/华虹/晶合/芯联产能军备下，粤芯规模最小、成本最高，价格战最脆弱。</li>
+        <li><strong>5. "特色工艺形成切换成本"错了</strong>？——若特色平台交付/良率不及客户预期，无正毛利验证则"远期期权"证伪。</li>
+        <li><strong>6. 出口管制升级</strong>——关键设备/材料受限致产能与良率目标延迟，折旧压力与亏损期双双拉长。</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ================= 7 风险 & 跟踪 ================= -->
+  <section id="risk">
+    <div class="sec-title">07 · 风险提示与跟踪指标</div>
+    <h2>高/中/低分级风险 + 6 个核心跟踪指标</h2>
+
+    <div class="grid g2">
+      <div class="card">
+        <h3>风险提示</h3>
+        <table>
+          <tr><th>风险</th><th style="text-align:center">等级</th></tr>
+          <tr><td>资本黑洞：负毛利+连亏扩大吞净资产</td><td style="text-align:center"><span class="lbl a">高</span></td></tr>
+          <tr><td>杠杆：资产负债率 84.13%、有息债 168 亿</td><td style="text-align:center"><span class="lbl a">高</span></td></tr>
+          <tr><td>估值：亏损无盈利锚、PS 低估自由现金流稀释、高位发行断板/破发</td><td style="text-align:center"><span class="lbl a">高</span></td></tr>
+          <tr><td>行业：成熟制程产能过剩/价格战</td><td style="text-align:center"><span class="lbl w">中</span></td></tr>
+          <tr><td>出口管制影响设备/材料供给与扩产</td><td style="text-align:center"><span class="lbl w">中</span></td></tr>
+          <tr><td>政策：政府补助退坡显形补贴依赖（补助占营收 16%）</td><td style="text-align:center"><span class="lbl w">中</span></td></tr>
+        </table>
+      </div>
+      <div class="card">
+        <h3>核心跟踪指标</h3>
+        <ol class="pill-list" style="padding-left:18px">
+          <li><strong>主营毛利率是否连续两季转正</strong>（盈利拐点确立核心信号）</li>
+          <li><strong>产能利用率与月产出</strong>（三期 2026Q4 达产 4 万片/月爬坡进度）</li>
+          <li><strong>成熟制程代工报价 + 龙头利用率</strong>（中芯/华虹，景气风向标）</li>
+          <li><strong>经营现金流含金量</strong>（应收/应付变动 vs 折旧，印证"现金流幻觉"是否显形）</li>
+          <li><strong>上市后股价是否破发、PS 相对可比均值走势</strong></li>
+          <li><strong>政府补助占营收比重与退坡节奏</strong></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 8 附录 ================= -->
+  <section id="appendix">
+    <div class="sec-title">08 · 附录</div>
+    <h2>质量筛查报告摘要 + 关键来源</h2>
+
+    <div class="card">
+      <h3>质量筛查报告摘要</h3>
+      <p><span class="badge red">RED</span> <strong>质量综合 0.0 / 10</strong>（由 quality-screen 产出，固化于公司笔记 frontmatter）｜ 红牌 3 ｜ 黄牌 — ｜ 估值路由：lossmaking（PB+PS 反转路径）</p>
+      <p><strong>7 项评分</strong>：盈利能力 1 ｜ 现金流质量 1 ｜ 杠杆安全 1 ｜ 估值合理性 10（lossmaking 机械免低分，不构成买入依据）｜ 成长性 4 ｜ 生意模式护城河 1 ｜ 盈利质量 3</p>
+      <p><strong>红牌筛查（3 项触发）</strong>：ROE -61.16%、经营CF/净利 -0.26、资产负债率 84.13%。<strong>红牌≥2 项 → 不得标注"值得跟踪"等级，建议暂缓跟踪或排除，除非出现重大转机（盈利拐点确立）。</strong></p>
+    </div>
+
+    <div class="card">
+      <h3>关键数据来源（数据源特殊性：IPO 发行阶段）</h3>
+      <p class="muted" style="font-size:14px"><strong>招股说明书法定审计报告（致同会计师事务所，覆盖 2023/2024/2025 三个完整财年 + 2026H1 审阅）</strong> + <strong>IPO 发行公告（2026-09-22）</strong>为准。无上市后定期报告/券商研报——空方证据由财报原文自行挖掘。行业参考：中芯/华虹/晶合/芯联集成可比（静态 PS）。</p>
+      <table>
+        <tr><th>数据</th><th>数值</th><th>时点</th></tr>
+        <tr><td>发行价</td><td>12.01 元</td><td>2026-09-22</td></tr>
+        <tr><td>发行后总市值</td><td>345.68 亿元</td><td>2026-09-22</td></tr>
+        <tr><td>2025 静态 PS（超配）</td><td>13.39（未超配）/ 13.74（全超配）</td><td>2026-09-22</td></tr>
+        <tr><td>可比 2025 静态 PS</td><td>中芯 15.52 / 华虹 26.10 / 晶合 7.54 / 芯联 8.94</td><td>FY2025</td></tr>
+        <tr><td>2026H1 营收 / 主营毛利</td><td>17.77 亿 / -26.5%</td><td>2026H1</td></tr>
+      </table>
+    </div>
+
+    <h3>相关研究（Obsidian 双链）</h3>
+    <p class="mono" style="color:var(--color-ink-muted)">[[粤芯半导体-公司研究]] · [[2026-09-23-粤芯半导体-deep-read]] · [[半导体-行业概览]]</p>
+  </section>
+
+  <footer>
+    <div class="disc">
+      <strong>免责声明</strong>：本报告由本系统基于公开信息自动生成，仅供内部研究参考，不构成任何投资建议。标的处于创业板 IPO 发行阶段，财务数据取自招股书三年审计报告 + 2026H1 审阅，估值以发行定价为基准；结论待上市后首日行情与首季财报验证。质量挡位 RED。投资有风险，决策需谨慎。
+    </div>
+    <div class="mono">taskId: deep-dive-粤芯半导体-20260923-4317 ｜ ReportWriter · 2026-09-23 ｜ Powered by 投研 Agent 系统</div>
+  </footer>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+<script>
+(function(){
+  "use strict";
+  var PALETTE = ["#d4af37","#e6c25c","#ffffff","#a1a1a1","#666666","#0abf6e"];
+  var UP="#ee0000", DOWN="#0abf6e";
+  var DARK_BASE = {
+    backgroundColor:"#0a0a0a",
+    textStyle:{color:"#a1a1a1",fontFamily:"Inter, 'Microsoft YaHei', sans-serif"},
+    title:{textStyle:{color:"#ffffff"}},
+    legend:{textStyle:{color:"#a1a1a1"}},
+    tooltip:{backgroundColor:"#111111",borderColor:"#1a1a1a",textStyle:{color:"#ffffff"}},
+    grid:{left:44,right:20,top:40,bottom:36},
+    xAxis:{axisLine:{lineStyle:{color:"#1a1a1a"}},axisLabel:{color:"#666666"}},
+    yAxis:{axisLine:{lineStyle:{color:"#1a1a1a"}},axisLabel:{color:"#666666"},splitLine:{lineStyle:{color:"#1a1a1a"}}}
+  };
+
+  var charts = {};
+
+  function tryInit(id){
+    if(typeof echarts === "undefined") return false;
+    var el = document.getElementById(id);
+    if(!el) return false;
+    charts[id] = echarts.init(el);
+    return true;
+  }
+
+  function fallback(id, html){
+    var el = document.getElementById(id);
+    if(el){ el.innerHTML = '<div class="chart-fallback" style="display:block">'+html+'</div>'; }
+  }
+
+  var fallbacks = {};
+
+  // ---- chart-fin: 营收/净利/毛利率趋势 ----
+  var chartFin = {
+    title:{text:"营收 / 磨母净利 / 主营毛利率 趋势",left:"center",textStyle:{color:"#ffffff",fontSize:15}},
+    tooltip:{trigger:"axis"},
+    legend:{bottom:0,data:["营收(亿)","磨母净利(亿)","主营毛利率(%)"]},
+    grid:{left:48,right:50,top:48,bottom:44},
+    xAxis:{type:"category",data:["2023","2024","2025","2026H1"]},
+    yAxis:[
+      {type:"value",name:"亿元",position:"left"},
+      {type:"value",name:"%",position:"right",min:-130,max:0}
+    ],
+    series:[
+      {name:"营收(亿)",type:"bar",data:[10.44,16.81,25.82,17.77],color:PALETTE[0],barWidth:28},
+      {name:"磨母净利(亿)",type:"bar",data:[-19.17,-22.53,-23.46,-10.52],color:UP,barWidth:28},
+      {name:"主营毛利率(%)",type:"line",yAxisIndex:1,data:[-114.9,-71.0,-58.3,-26.5],color:"#ffffff",smooth:true,lineStyle:{width:3}}
+    ]
+  };
+  fallbacks["chart-fin"] = "图表加载失败：营收 10.44→16.81→25.82→17.77 亿；磨母净利 -19.17→-22.53→-23.46→-10.52 亿；主营毛利率 -114.9%→-71.0%→-58.3%→-26.5%。";
+
+  // ---- chart-valuation: 三情景目标市值 ----
+  var chartVal = {
+    title:{text:"三情景目标市值（亿元） vs 发行市值",left:"center",textStyle:{color:"#ffffff",fontSize:15}},
+    tooltip:{trigger:"axis"},
+    legend:{bottom:0,data:["目标市值","发行市值(345.68)","隐含涨跌(%)"]},
+    grid:{left:60,right:56,top:44,bottom:44},
+    xAxis:{type:"category",data:["悲观(2027E 38亿×7x)","合理(2027E 45亿×9x)","乐观(2027E 52亿×11x)"]},
+    yAxis:[
+      {type:"value",name:"亿元"},
+      {type:"value",name:"%",min:-40,max:60,position:"right"}
+    ],
+    series:[
+      {name:"目标市值",type:"bar",data:[266,405,572],color:PALETTE[0],barWidth:44,
+        label:{show:true,position:"top",color:"#ffffff",formatter:function(p){return p.value+"亿";}}},
+      {name:"发行市值(345.68)",type:"line",data:[345.68,345.68,345.68],color:PALETTE[2],lineStyle:{type:"dashed"}},
+      {name:"隐含涨跌(%)",type:"line",yAxisIndex:1,data:[-23,17,44],color:PALETTE[5],
+        lineStyle:{width:2},itemStyle:{color:PALETTE[5]}}
+    ]
+  };
+  fallbacks["chart-valuation"] = "三情景目标市值：悲观 266 亿(-23%) / 合理 405 亿(+17%) / 乐观 572 亿(+44%)；发行市值 345.68 亿。";
+
+  // ---- chart-pattern: 多空五维度强度 ----
+  var chartPat = {
+    title:{text:"多空五维度论据强度（0-10）",left:"center",textStyle:{color:"#ffffff",fontSize:15}},
+    tooltip:{trigger:"axis",axisPointer:{type:"shadow"}},
+    legend:{bottom:0,data:["🟢 多方强度","🔴 空方强度"]},
+    grid:{left:64,right:24,top:44,bottom:44},
+    xAxis:{type:"value",max:10},
+    yAxis:{type:"category",data:["周期/政策/国际","估值","财务质量","护城河","增长"],axisLabel:{color:"#a1a1a1"}},
+    series:[
+      {name:"🟢 多方强度",type:"bar",data:[8,6,4,6,8],color:"#0abf6e",barGap:"20%",label:{show:true,position:"right",color:"#8ef0cf"}},
+      {name:"🔴 空方强度",type:"bar",data:[6,8,9,7,6],color:"#666666",label:{show:true,position:"right",color:"#888"}}
+    ]
+  };
+  fallbacks["chart-pattern"] = "多空强度：增长 8/6、护城河 6/7、财务质量 4/9（空方优）、估值 6/8（空方优）、周期 8/6。";
+
+  function mount(id, option, fb){
+    if(tryInit(id)){
+      charts[id].setOption(Object.assign({},DARK_BASE,option));
+      window.addEventListener("resize",function(){ if(charts[id]) charts[id].resize(); });
+    } else {
+      fallback(id, fb);
+    }
+  }
+
+  mount("chart-fin", chartFin, fallbacks["chart-fin"]);
+  mount("chart-valuation", chartVal, fallbacks["chart-valuation"]);
+  mount("chart-pattern", chartPat, fallbacks["chart-pattern"]);
+
+})();
+</script>
+</body>
+</html>

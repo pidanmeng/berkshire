@@ -1,6 +1,6 @@
 # 流程改进 Backlog
 
-> 状态真源：improvement-backlog.json · 最后更新：2026-09-21T14:16:45.112Z
+> 状态真源：improvement-backlog.json · 最后更新：2026-09-23T09:26:30.357Z
 
 | 状态 | 严重度 | 问题描述 | 目标文件 | 任务数 | 问题码 |
 |---|---|---|---|---:|---|
@@ -104,3 +104,5 @@
 | 观察 | 低 | quality-screen.ts overallScore=0 但7项子分有值，需手动计算加权分回填frontmatt… | .trae/scripts/quality-gate/quality-screen.ts | 1 | quality-screen-overall-score-zero |
 | 观察 | 低 | fetch-file.ts输出的PDF Markdown无frontmatter，不满足交付质量检查要求 | .trae/scripts/file-ingestion/fetch-file.ts | 1 | pdf-texts-frontmatter-missing |
 | 观察 | 中 | investment-checklist-auto.ts对deep-dive模式检查三层结构覆盖，但该模式不产出行业级笔… | .trae/skills/research-quality-gate/scripts/investment-checklist-auto.ts | 1 | three-layer-structure-incomplete |
+| 候选 | 高 | fetch-file.ts 对『需要OCR』的 PDF 直接 Exit code 4 拒绝产出，而 IPO 招股书审计报… | .trae/scripts/file-ingestion/fetch-file.ts | 1 | fetch-file-ocr-hard-fail-no-degraded-path |
+| 观察 | 低 | deep-dive 命令与 AGENTS.md 均以『最近3个完整财年年报』定义精读覆盖，缺乏对『IPO 发行中未经市』… | .trae/commands/deep-dive.md | 1 | deep-dive-ipo-routing-undefined |
